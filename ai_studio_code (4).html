@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Loon Pond Stats</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Logo Colors */
+        .text-loon-blue { color: #0ea5e9; }
+        .bg-loon-blue { background-color: #0ea5e9; }
+        .tab-active { border-bottom: 4px solid #0ea5e9; color: #0ea5e9; font-weight: 900; }
+        
+        /* Table Styles */
+        .dark-table { background-color: #000; color: #fff; width: 100%; border-collapse: collapse; white-space: nowrap; }
+        .dark-table th { background-color: #111; color: #7dd3fc; font-size: 0.55rem; text-transform: uppercase; padding: 12px; border: 1px solid #222; }
+        .dark-table td { border: 1px solid #222; padding: 8px 10px; text-align: center; font-size: 0.8rem; }
+        .sticky-col { position: sticky; left: 0; background-color: #000; z-index: 10; text-align: left !important; min-width: 140px; font-weight: bold; border-right: 2px solid #0ea5e9 !important; }
+        
+        textarea#rosterInput { background-color: #ffffff !important; color: #000; border: 2px solid #0ea5e9; padding: 12px; font-family: monospace; font-size: 13px; width: 100%; height: 120px; }
+        .mode-btn-active { background-color: #0ea5e9 !important; color: white !important; font-weight: 900; }
+        .mode-btn-inactive { background-color: #1a1a1a !important; color: #666 !important; }
+
+        /* Drag and Drop */
+        #dropZone { transition: all 0.2s ease; border: 3px dashed #cbd5e1; }
+        #dropZone.drag-over { border-color: #0ea5e9; background-color: #f0f9ff; transform: scale(1.01); }
+
+        @media print {
+            nav, footer, .fixed, .no-print, button, textarea, .admin-box { display: none !important; }
+            header { background-color: white !important; color: black !important; border-bottom: 2px solid #0ea5e9 !important; display: block !important; padding: 10px !important; }
+            header img { display: block !important; width: 80px !important; filter: none !important; }
+            .dark-table { background-color: white !important; color: black !important; border: 1px solid #000 !important; }
+            .dark-table th, .dark-table td { border: 1px solid #000 !important; color: black !important; padding: 4px !important; font-size: 8pt !important; }
+            .sticky-col { background-color: white !important; position: static !important; border: 1px solid #000 !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-80">
+
+    <header class="bg-black text-white p-4 shadow-2xl flex justify-between items-center border-b-4 border-sky-500">
+        <div class="max-w-6xl mx-auto flex justify-between items-center w-full">
+            <div class="flex items-center gap-3">
+                <img src="logo.jpg" alt="Logo" class="w-14 h-14 object-contain rounded bg-white p-1" onerror="this.style.display='none'">
+                <div>
+                    <h1 class="text-xl font-black italic tracking-tighter leading-none uppercase">Loon Pond</h1>
+                    <p id="subHeader" class="text-[9px] text-sky-400 font-bold uppercase tracking-[0.2em] mt-1 italic">Stat Management</p>
+                </div>
+            </div>
+            <div class="flex gap-1 bg-zinc-900 p-1 rounded-lg no-print">
+                <button id="modeS" onclick="setMode('SINGLES')" class="text-[9px] px-3 py-1.5 rounded transition font-bold uppercase">Singles</button>
+                <button id="modeD" onclick="setMode('DOUBLES')" class="text-[9px] px-3 py-1.5 rounded transition font-bold uppercase">Doubles</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="flex bg-white shadow-sm sticky top-0 z-20 overflow-x-auto border-b no-print">
+        <button onclick="setTab('STANDINGS')" id="tabSTANDINGS" class="flex-1 min-w-[85px] py-4 text-[9px] uppercase tracking-widest tab-active">Standings</button>
+        <button onclick="setTab('STATS')" id="tabSTATS" class="flex-1 min-w-[85px] py-4 text-[9px] uppercase tracking-widest text-gray-400">Club Stats</button>
+        <button onclick="setTab('NHPA')" id="tabNHPA" class="flex-1 min-w-[85px] py-4 text-[9px] uppercase tracking-widest text-gray-400">NHPA Report</button>
+        <button onclick="setTab('ROBIN')" id="tabROBIN" class="flex-1 min-w-[85px] py-4 text-[9px] uppercase tracking-widest text-gray-400">Robin</button>
+        <button onclick="setTab('MANAGE')" id="tabMANAGE" class="flex-1 min-w-[85px] py-4 text-[9px] uppercase tracking-widest text-gray-400">Manage</button>
+    </nav>
+
+    <main id="viewContent" class="p-3 max-w-6xl mx-auto overflow-x-hidden"></main>
+
+    <!-- BATCH IMPORT FOOTER -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-2xl z-30 no-print">
+        <div id="dropZone" class="max-w-xl mx-auto p-5 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-gray-50 hover:bg-gray-100" onclick="document.getElementById('matchInput').click()">
+            <input type="file" id="matchInput" class="hidden" accept=".pdf" multiple>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-sky-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p class="text-xs font-black text-gray-700 uppercase tracking-widest text-center">Drop PDF(s) to Import Matches</p>
+            <p id="dropZoneLabel" class="text-[9px] text-gray-400 uppercase mt-1 italic">Importing to <span id="targetLeague">DOUBLES</span></p>
+        </div>
+    </div>
+
+    <script>
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        let mode = 'DOUBLES';
+        let view = 'STANDINGS';
+        let state = JSON.parse(localStorage.getItem('lp_final_master_v1')) || { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [] };
+
+        const clean = (n) => n ? n.toLowerCase().replace(/[^a-z]/g, '') : '';
+
+        function save() { localStorage.setItem('lp_final_master_v1', JSON.stringify(state)); render(); }
+        function setMode(m) { mode = m; render(); }
+        function setTab(t) { view = t; render(); }
+
+        // --- EXPORT TOOLS ---
+        function exportCurrentTable() {
+            const rows = document.querySelectorAll("table tr");
+            let csv = [];
+            for (let i = 0; i < rows.length; i++) {
+                let row = [], cols = rows[i].querySelectorAll("td, th");
+                for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+                csv.push(row.join(","));
+            }
+            const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `LoonPond_${mode}_${view}_${new Date().toLocaleDateString()}.csv`;
+            link.click();
+        }
+
+        function exportHCPOnly() {
+            const hist = state.history.filter(h => h.mode === mode);
+            const playerNames = [...new Set(hist.map(h => h.player))];
+            const scratch = mode === 'DOUBLES' ? 90 : 150;
+            let csv = "Player,Handicap\n";
+            playerNames.forEach(n => {
+                const games = hist.filter(g => g.player === n);
+                const avg = games.slice(-9).reduce((s,g)=>s+g.score,0) / (Math.min(games.length, 9) || 1);
+                csv += `"${n}",${Math.max(0, Math.floor((scratch-avg)*0.9))}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `LoonPond_${mode}_HCP_List.csv`; a.click();
+        }
+
+        // --- ROSTER EDITOR ---
+        function editPlayerS(idx) {
+            let p = state.roster.SINGLES[idx];
+            p.name = prompt("Edit Player Name:", p.name) || p.name;
+            p.startAvg = parseFloat(prompt("Edit Start Avg:", p.startAvg)) || 0;
+            p.cardNo = prompt("Edit Card #:", p.cardNo || "");
+            p.division = prompt("Edit Division:", p.division || "Open");
+            save();
+        }
+
+        function editTeamD(idx) {
+            let t = state.roster.DOUBLES[idx];
+            t.teamName = prompt("Edit Team Name:", t.teamName) || t.teamName;
+            t.members.forEach((m, i) => {
+                m.name = prompt(`Member ${i+1} Name:`, m.name) || m.name;
+                m.startAvg = parseFloat(prompt(`Member ${i+1} Start Avg:`, m.startAvg)) || 0;
+                m.cardNo = prompt(`Member ${i+1} Card #:`, m.cardNo || "");
+            });
+            save();
+        }
+
+        // --- BATCH IMPORT ---
+        const dz = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dz.addEventListener(e, (x) => { x.preventDefault(); x.stopPropagation(); }));
+        dz.addEventListener('dragover', () => dz.classList.add('drag-over'));
+        dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+        dz.addEventListener('drop', (e) => { dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+        document.getElementById('matchInput').addEventListener('change', (e) => handleFiles(e.target.files));
+
+        async function handleFiles(files) {
+            for (const file of Array.from(files)) {
+                if (file.type !== "application/pdf") continue;
+                const reader = new FileReader();
+                const promise = new Promise(resolve => {
+                    reader.onload = async function() {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        let text = "";
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const content = await page.getTextContent();
+                            text += content.items.map(item => item.str).join(' ') + " \n ";
+                        }
+                        processMatch(text, file.name);
+                        resolve();
+                    };
+                });
+                reader.readAsArrayBuffer(file);
+                await promise;
+            }
+            alert("Batch processing complete.");
+        }
+
+        function processMatch(text, fileName) {
+            const sessionId = Date.now();
+            let bonusTeamPos = null;
+            if (mode === 'DOUBLES') {
+                const totalM = text.match(/TOTAL:\s*Team\s*1\s*\((\d+)\)\s*vs\s*Team\s*2\s*\((\d+)\)/i);
+                if (totalM) bonusTeamPos = parseInt(totalM[1]) > parseInt(totalM[2]) ? "T1" : "T2";
+            }
+            const gameMatches = Array.from(text.matchAll(/GAME\s*(\d+)\s*:\s*(\d+)\s*-\s*(\d+)/gi));
+            const playerMatches = Array.from(text.matchAll(/([^:\n]+)\s*:\s*(\d+)\s*Pts\s*,\s*(\d+)\s*HC\s*,\s*(\d+)\s*Ringers/gi));
+            let winnerTeam = null;
+            playerMatches.forEach((m, idx) => {
+                let name = m[1].trim().replace(/\d+\s*-\s*\d+/, "").replace(/GAME\s*\d+|TOTAL/i, "").replace(/^[0-9\s-]+/, "").trim();
+                const score = parseInt(m[2]), ringers = parseInt(m[4]);
+                const pPerG = (mode === 'DOUBLES' ? 4 : 2);
+                const gIdx = Math.floor(idx / pPerG), pos = (idx % pPerG < (pPerG / 2)) ? "T1" : "T2";
+                let res = "T";
+                if (gameMatches[gIdx]) res = (pos === (parseInt(gameMatches[gIdx][2]) > parseInt(gameMatches[gIdx][3]) ? "T1" : "T2")) ? "W" : "L";
+                if (mode === 'DOUBLES' && bonusTeamPos === pos) {
+                    const team = state.roster.DOUBLES.find(t => t.members.some(mem => clean(mem.name) === clean(name)));
+                    if (team) winnerTeam = team.teamName;
+                }
+                state.history.push({ sessionId, player: name, score, ringers, result: res, mode, date: sessionId });
+            });
+            state.sessions.push({ id: sessionId, name: fileName, date: new Date().toLocaleDateString(), mode, matchWinner: winnerTeam });
+            save();
+        }
+
+        function importRoster() {
+            const rawText = document.getElementById('rosterInput').value;
+            if(!rawText) return;
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            let tempTeams = {}; let tempPlayers = []; 
+            lines.forEach(line => {
+                const parts = line.split(/\t| {2,}/).map(p => p.trim());
+                if(parts.length < 3) return;
+                const id = parts[0], fullName = parts[1], startAvg = parseFloat(parts[2]) || 0;
+                const div = parts[3] || "Open", cardNo = parts[4] || "", prevHighR = parseFloat(parts[5]) || 0;
+                const fName = fullName.split(',')[1] ? fullName.split(',')[1].trim() : fullName;
+                const pData = { name: fullName, firstName: fName, startAvg, division: div, prevHighRinger: prevHighR, cardNo: cardNo };
+                if(mode === 'DOUBLES') { if(!tempTeams[id]) tempTeams[id] = []; tempTeams[id].push(pData); } else { tempPlayers.push(pData); }
+            });
+            if(mode === 'DOUBLES') state.roster.DOUBLES = Object.keys(tempTeams).map(id => ({ teamName: tempTeams[id].map(m => m.firstName).join('/'), members: tempTeams[id] }));
+            else state.roster.SINGLES = tempPlayers;
+            save();
+            alert("Roster Processed!");
+        }
+
+        // --- UI ---
+        function render() {
+            document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active rounded px-3 py-1" : "mode-btn-inactive rounded px-3 py-1";
+            document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active rounded px-3 py-1" : "mode-btn-inactive rounded px-3 py-1";
+            document.getElementById('targetLeague').innerText = mode;
+
+            ['STANDINGS', 'STATS', 'NHPA', 'ROBIN', 'MANAGE'].forEach(t => { 
+                const el = document.getElementById('tab'+t); if(el) el.className = `flex-1 py-4 font-black text-[9px] uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; 
+            });
+
+            const content = document.getElementById('viewContent');
+            const hist = state.history.filter(h => h.mode === mode);
+            const shoes = mode === 'DOUBLES' ? 30 : 50;
+            const scratch = mode === 'DOUBLES' ? 90 : 150;
+
+            const tableActions = `<div class="flex gap-2 mb-4 no-print"><button onclick="exportCurrentTable()" class="bg-gray-800 text-white text-[9px] px-3 py-2 rounded font-bold uppercase shadow-sm">Export CSV</button><button onclick="window.print()" class="bg-gray-800 text-white text-[9px] px-3 py-2 rounded font-bold uppercase shadow-sm">Print Page</button></div>`;
+
+            if (view === 'STANDINGS') {
+                let rows = "";
+                if(mode === 'DOUBLES') {
+                    rows = (state.roster.DOUBLES || []).map(t => {
+                        const mClean = t.members.map(m => clean(m.name));
+                        const g = hist.filter(h => mClean.includes(clean(h.player)));
+                        const w = g.filter(x => x.result === 'W').length / 2, ti = g.filter(x => x.result === 'T').length / 2;
+                        const mp = state.sessions.filter(s => s.mode === mode && s.matchWinner === t.teamName).length;
+                        return { name: t.teamName, w, l: g.filter(x=>x.result==='L').length/2, ti, mp, pts: (w*2)+ti+mp };
+                    }).sort((a,b) => b.pts - a.pts).map(d => `<tr><td class="sticky-col text-xs uppercase">${d.name}</td><td>${d.w}</td><td>${d.l}</td><td>${d.ti}</td><td>${d.mp}</td><td class="text-sky-400 font-black text-lg">${d.pts}</td></tr>`).join('');
+                } else {
+                    rows = (state.roster.SINGLES || []).map(p => {
+                        const g = hist.filter(h => clean(h.player) === clean(p.name));
+                        const w = g.filter(x => x.result === 'W').length, ti = g.filter(x => x.result === 'T').length;
+                        return { name: p.name, w, l: g.filter(x=>x.result==='L').length, ti, pts: (w*2)+ti };
+                    }).sort((a,b) => b.pts - a.pts).map(d => `<tr><td class="sticky-col text-xs uppercase">${d.name}</td><td>${d.w}</td><td>${d.l}</td><td>${d.ti}</td><td class="text-sky-400 font-black text-lg">${d.pts}</td></tr>`).join('');
+                }
+                content.innerHTML = tableActions + `<table class="dark-table"><thead><tr><th class="sticky-col">Name</th><th>W</th><th>L</th><th>T</th>${mode==='DOUBLES'?'<th>MP</th>':''}<th>Total</th></tr></thead><tbody>${rows}</tbody></table>`;
+            } else if (view === 'STATS') {
+                const pNames = [...new Set(hist.map(h => h.player))];
+                const rows = pNames.map(pName => {
+                    const g = hist.filter(h => h.player === pName);
+                    const avg = g.slice(-9).reduce((a,b)=>a+b.score,0) / (Math.min(g.length, 9) || 1);
+                    const base = mode === 'SINGLES' ? (state.roster.SINGLES.find(p => clean(p.name) === clean(pName)) || {}).startAvg || 0 : (state.roster.DOUBLES.find(t => t.members.some(m => clean(m.name) === clean(pName)))?.members.find(m => clean(m.name) === clean(pName))?.startAvg || 0);
+                    const totP = g.reduce((s,x)=>s+x.score,0), totR = g.reduce((s,x)=>s+x.ringers,0);
+                    const hiPt = Math.max(...g.map(x=>x.score)), hiPl = Math.max(...g.map(x=>x.score-avg));
+                    return { name: pName, hcp: Math.max(0, Math.floor((scratch-avg)*0.9)), avg: avg.toFixed(1), rng: ((totR/(g.length*shoes))*100).toFixed(1), hi: hiPt, hiPl: hiPl.toFixed(0), totP, totR, start: base, imp: (avg-base).toFixed(1) };
+                }).sort((a,b) => a.hcp - b.hcp).map(s => `<tr><td class="sticky-col text-[10px] uppercase">${s.name}</td><td class="text-sky-400 font-black text-lg">${s.hcp}</td><td>${s.avg}</td><td>${s.rng}%</td><td>${s.hi}</td><td>+${s.hiPl}</td><td>${s.totP}</td><td>${s.totR}</td><td>${s.start}</td><td class="${s.imp>=0?'text-green-400':'text-red-400'} font-bold italic underline">${s.imp > 0 ? '+'+s.imp : s.imp}</td></tr>`).join('');
+                content.innerHTML = tableActions + `<div class="overflow-x-auto shadow-2xl border border-zinc-800"><table class="dark-table"><thead><tr><th class="sticky-col">Player</th><th>HCP</th><th>Avg</th><th>R%</th><th>Hi</th><th>Hi+</th><th>TotP</th><th>TotR</th><th>Start</th><th>Imp</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+            } else if (view === 'NHPA') {
+                const pNames = [...new Set(hist.map(h => h.player))];
+                const rows = pNames.map(pName => {
+                    const g = hist.filter(h => h.player === pName);
+                    const profile = mode === 'SINGLES' ? state.roster.SINGLES.find(p => clean(p.name) === clean(pName)) : state.roster.DOUBLES.find(t => t.members.some(m => clean(m.name) === clean(pName)))?.members.find(m => clean(m.name) === clean(pName));
+                    const totP = g.reduce((s,x)=>s+x.score,0), hiP = Math.max(...g.map(x=>x.score)), totS = g.length*shoes, totR = g.reduce((s,x)=>s+x.ringers,0);
+                    return `<tr><td class="sticky-col text-[10px]">${pName}</td><td>${profile ? profile.division : '-'}</td><td class="bg-zinc-900">${profile ? profile.cardNo || '-' : '-'}</td><td>${totP}</td><td>${hiP}</td><td>${totS}</td><td>${totR}</td><td>${profile ? profile.prevHighRinger : 0}%</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100)).toFixed(1)}%</td><td class="font-black bg-sky-900">${((totR/totS)*100).toFixed(1)}%</td></tr>`;
+                }).join('');
+                content.innerHTML = tableActions + `<div class="overflow-x-auto shadow-2xl"><table class="dark-table"><thead><tr><th class="sticky-col">Name</th><th>Div</th><th>Card #</th><th>Pts</th><th>HiP</th><th>Shoe</th><th>Rng</th><th>Prv%</th><th>Cur%</th><th>Final%</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+            } else if (view === 'MANAGE') {
+                const rosterList = mode === 'SINGLES' ? 
+                    state.roster.SINGLES.map((p,i) => `<div class="flex justify-between p-2 bg-white border mb-2 text-[10px] rounded shadow-sm"><div onclick="editPlayerSingles(${i})"><b>${p.name}</b><br>Start: ${p.startAvg} | Card: ${p.cardNo || '-'}</div><button onclick="state.roster.SINGLES.splice(${i},1);save()" class="text-red-500 font-bold px-2">✕</button></div>`).join('') :
+                    state.roster.DOUBLES.map((t,i) => `<div class="flex justify-between p-2 bg-white border-l-4 border-sky-500 mb-2 text-[10px] rounded shadow-sm"><div onclick="editTeamDoubles(${i})"><b>${t.teamName}</b><br>${t.members.map(m=>m.name).join(' • ')}</div><button onclick="state.roster.DOUBLES.splice(${i},1);save()" class="text-red-500 font-bold px-2">✕</button></div>`).join('');
+
+                content.innerHTML = `<div class="space-y-6 pb-40 max-w-xl mx-auto">
+                    <button onclick="exportHCPOnly()" class="w-full bg-sky-600 text-white p-3 rounded font-black text-[10px] uppercase shadow-lg">Download HCP CSV</button>
+                    <div class="bg-white p-4 rounded-xl shadow border"><h2 class="font-black text-xs uppercase mb-2">Roster Import</h2><textarea id="rosterInput" placeholder="Paste ID [tab] Name [tab] Avg [tab] Div [tab] Card# [tab] PrevR%"></textarea><button onclick="importRoster()" class="w-full bg-black text-white p-3 rounded mt-2 font-bold text-xs uppercase">Process Roster</button></div>
+                    <div class="bg-white p-4 rounded-xl shadow border"><h2 class="font-black text-xs uppercase mb-2 italic tracking-tighter">Current Roster (Tap to Edit)</h2>${rosterList || '<p class="text-xs text-gray-400 uppercase text-center py-4">Roster empty</p>'}</div>
+                    <div class="bg-white p-4 rounded-xl shadow border"><h2 class="font-black text-xs uppercase mb-2 italic tracking-tighter">Imports</h2>${state.sessions.filter(s => s.mode === mode).map(s => `<div class="flex justify-between p-2 border-b text-[10px] uppercase font-bold text-gray-500"><span>${s.name}</span><button onclick="state.sessions=state.sessions.filter(x=>x.id!==${s.id});state.history=state.history.filter(x=>x.sessionId!==${s.id});save()" class="text-red-500 underline ml-4">DEL</button></div>`).join('') || '<p class="text-xs text-gray-400 text-center py-4 uppercase">No Matches</p>'}</div>
+                </div>`;
+            } else if (view === 'ROBIN') {
+                const list = mode === 'DOUBLES' ? state.roster.DOUBLES.map(t => t.teamName) : state.roster.SINGLES.map(p => p.name);
+                content.innerHTML = `<div class="max-w-xl mx-auto p-4 bg-white rounded-2xl shadow border border-sky-100"><h2 class="font-black text-xs uppercase mb-4 text-sky-600 italic">Tournament Scheduler</h2><input type="number" id="posRoundInput" value="0" class="w-full p-2 border rounded mb-4 text-xs font-bold" placeholder="Position Rounds"><div class="space-y-1 mb-6 max-h-40 overflow-y-auto">${list.map(i => `<label class="flex items-center gap-3 p-2 bg-gray-50 rounded border text-[10px] uppercase font-bold"><input type="checkbox" value="${i}" class="robin-check"><span>${i}</span></label>`).join('')}</div><button onclick="window.generateRobin()" class="w-full bg-sky-500 text-white p-3 rounded-xl font-black text-xs uppercase shadow-md">Generate Weeks</button><div id="robinResults" class="mt-4"></div></div>`;
+            }
+        }
+
+        window.generateRobin = function() {
+            const p = Array.from(document.querySelectorAll('.robin-check:checked')).map(cb => cb.value);
+            const posCount = parseInt(document.getElementById('posRoundInput').value) || 0;
+            if(p.length<2) return; if(p.length%2!==0) p.push("BYE");
+            let sched = []; let tempP = [...p];
+            for(let r=0; r<p.length-1; r++){
+                let matches = [];
+                for(let i=0; i<tempP.length/2; i++){
+                    const h=tempP[i], a=tempP[tempP.length-1-i];
+                    if(h!=="BYE" && a!=="BYE") matches.push(`${h} vs ${a}`); else matches.push(`${h==="BYE"?a:h} (BYE)`);
+                }
+                sched.push(matches); tempP.splice(1, 0, tempP.pop());
+            }
+            let finalWeeks = sched.map((m, i) => ({ type: 'STD', matches: m }));
+            if (posCount > 0) {
+                const posMatches = []; for(let i=1; i < p.length; i+=2) posMatches.push(`${i} place vs ${i+1} place`);
+                if (posCount === 1) finalWeeks.splice(Math.floor(finalWeeks.length / 2), 0, { type: 'POS', matches: posMatches });
+                else if (posCount === 2) { finalWeeks.splice(Math.floor(finalWeeks.length / 2), 0, { type: 'POS', matches: posMatches }); finalWeeks.push({ type: 'POS', matches: posMatches }); }
+            }
+            document.getElementById('robinResults').innerHTML = finalWeeks.map((w, i) => `<div class="mb-2 p-2 bg-white border-l-4 ${w.type==='POS'?'border-orange-500':'border-sky-500'} text-[10px] font-bold shadow-sm uppercase">Week ${i+1} ${w.type==='POS'?'(Pos Round)':''}<br>${w.matches.join('<br>')}</div>`).join('');
+        };
+
+        render();
+    </script>
+</body>
+</html>
