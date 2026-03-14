@@ -24,29 +24,24 @@
         .r-sym { color: #38bdf8; font-size: 0.6rem; font-weight: bold; }
         .curr-row { background: #171717; outline: 1px solid #444; }
 
-        /* STANDINGS & DATA TABLES */
+        /* DATA TABLES */
         .std-table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #000; color: #fff; }
         .std-table th { background: #1a1a1a; color: #7dd3fc; font-size: 0.5rem; padding: 10px 1px; border: 1px solid #333; text-transform: uppercase; }
         .std-table td { border-bottom: 1px solid #222; padding: 10px 1px; text-align: center; font-size: 0.75rem; font-weight: bold; overflow: hidden; }
         .name-col { width: 38%; text-align: left !important; padding-left: 8px !important; border-right: 1.5px solid #0ea5e9 !important; font-size: 0.65rem !important; text-transform: uppercase; white-space: nowrap; text-overflow: ellipsis; }
         .pts-col { width: 14%; background: #0a0a0a; color: #0ea5e9; font-size: 0.9rem !important; }
 
-        /* BUTTONS */
+        /* BIG BUTTONS */
         .btn-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
-        .btn-score { background: white; border-bottom: 4px solid #cbd5e1; border-radius: 12px; height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: center; active:transform: scale(0.95); }
+        .btn-score { background: white; border-bottom: 4px solid #cbd5e1; border-radius: 12px; height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .btn-score .num { font-size: 2.2rem; font-weight: 900; color: #111; line-height: 1; }
         .btn-score .sym { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
 
-        .pitching-card { border: 4px solid #0ea5e9 !important; background-color: #f0f9ff !important; position: relative; }
-        .pitching-card::after { content: 'UP'; position: absolute; top: -8px; right: 5px; background: #0ea5e9; color: white; font-size: 0.55rem; padding: 2px 6px; border-radius: 4px; font-weight: 900; }
+        .pitching-card { border: 6px solid #0ea5e9 !important; background-color: #f0f9ff !important; position: relative; }
+        .pitching-card::after { content: 'UP'; position: absolute; top: -10px; right: 5px; background: #0ea5e9; color: white; font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; font-weight: 900; }
         
-        .action-bar { display: flex; gap: 8px; margin-bottom: 8px; justify-content: flex-end; padding-right: 4px; }
-        .action-btn { background: #fff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 900; color: #0ea5e9; }
-
         @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
         .print-only { display: none; }
-        .report-table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 10px; margin-top: 10px; }
-        .report-table td, .report-table th { border: 1px solid #000; padding: 2px; }
     </style>
 </head>
 <body class="min-h-screen pb-40">
@@ -92,7 +87,7 @@
         const db = getFirestore(app);
         const docRef = doc(db, "league", "masterData");
 
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234' };
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: false };
         let mode = 'DOUBLES';
         let view = 'STANDINGS';
         let isUnlocked = false;
@@ -112,9 +107,14 @@
         const getR = (pts) => pts>=6?2:(pts>=3?1:0);
 
         function getH(name) {
-            const hist = (state.history || []).filter(x => cleanN(x.player) === cleanN(name) && x.mode === mode).slice(-9);
             const rosterList = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members));
             const player = rosterList.find(p => cleanN(p.name) === cleanN(name));
+            
+            // If Handicaps are locked, use the value currently stored in the roster
+            if (state.hcpLocked) return player ? (player.currentHcp || 0) : 0;
+
+            // Otherwise, calculate rolling average
+            const hist = (state.history || []).filter(x => cleanN(x.player) === cleanN(name) && x.mode === mode).slice(-9);
             const baseAvg = player ? player.startAvg : 0;
             const avg = hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : baseAvg;
             const scratch = mode === 'DOUBLES' ? 90 : 150;
@@ -124,11 +124,41 @@
         window.setMode = (m) => { mode = m; render(); };
         window.setTab = (t) => { 
             if (t === 'MANAGE' && !isUnlocked) {
-                const pin = prompt("Enter PIN:");
+                const pin = prompt("Enter Manage PIN:");
                 if (pin === state.managePin) { isUnlocked = true; view = t; } 
                 else { alert("Incorrect"); return; }
             } else { view = t; }
             render(); 
+        };
+
+        window.toggleHcpLock = async () => {
+            state.hcpLocked = !state.hcpLocked;
+            // When locking, we "capture" the current rolling handicap into the player profiles
+            if (state.hcpLocked) {
+                const processList = (list) => {
+                    list.forEach(item => {
+                        if (item.members) { // Doubles Team
+                            item.members.forEach(m => m.currentHcp = getH(m.name));
+                        } else { // Singles Player
+                            item.currentHcp = getH(item.name);
+                        }
+                    });
+                };
+                processList(state.roster.SINGLES);
+                processList(state.roster.DOUBLES);
+            }
+            await save();
+            alert(state.hcpLocked ? "Handicaps LOCKED" : "Handicaps UNLOCKED (Rolling mode)");
+        };
+
+        window.resetSystem = async () => {
+            const pin = prompt("Enter PIN to WIPE ALL DATA:");
+            if (pin === state.managePin) {
+                if(confirm("Confirm Wipe?")) {
+                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: false };
+                    await save();
+                }
+            }
         };
 
         window.editFrameScore = (frameIdx) => {
@@ -141,6 +171,7 @@
 
         window.pickLiveTeams = () => {
             match.t1Name = document.getElementById('lt1').value; match.t2Name = document.getElementById('lt2').value;
+            if(!match.t1Name || !match.t2Name) return alert("Select teams");
             match.active = true; match.sessionAgg = { t1: 0, t2: 0 }; match.gameNum = 1; match.games = [];
             match.step = (mode === 'SINGLES') ? 'START_S' : 'PLAYERS';
             render();
@@ -180,7 +211,6 @@
             const s2 = match.currGameFrames.reduce((s,f)=>s+(f.p3||0)+(f.p4||0),0) + match.h3 + match.h4;
             match.sessionAgg.t1 += s1; match.sessionAgg.t2 += s2;
             match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, frames: [...match.currGameFrames], s1, s2 });
-            
             const sid = Date.now();
             const res1 = s1 > s2 ? 'W' : (s1===s2?'T':'L');
             const push = (p, sc, r, res) => state.history.push({ sessionId: sid, player: p, score: sc, ringers: r, result: res, mode, date: sid, gameNum: match.gameNum });
@@ -188,7 +218,6 @@
             if(mode==='DOUBLES') push(match.p2, match.currGameFrames.reduce((s,f)=>s+(f.p2||0),0), match.currGameFrames.reduce((s,f)=>s+getR(f.p2),0), res1);
             push(match.p3, match.currGameFrames.reduce((s,f)=>s+(f.p3||0),0), match.currGameFrames.reduce((s,f)=>s+getR(f.p3),0), res1==='W'?'L':(res1==='T'?'T':'W'));
             if(mode==='DOUBLES') push(match.p4, match.currGameFrames.reduce((s,f)=>s+(f.p4||0),0), match.currGameFrames.reduce((s,f)=>s+getR(f.p4),0), res1==='W'?'L':(res1==='T'?'T':'W'));
-
             if (match.gameNum < 3) { match.gameNum++; match.step = (mode === 'SINGLES') ? 'START_S' : 'PLAYERS'; }
             else {
                 const mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie');
@@ -198,22 +227,20 @@
             save();
         }
 
-        window.exportData = (type) => {
-            let csv = "Data,W,L,T,Pts\n";
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            a.download = `${type}.csv`; a.click();
-        };
-
-        window.printGeneric = () => { window.print(); };
-
         window.importRoster = () => {
             const raw = document.getElementById('rosterInput').value; if(!raw) return;
             const lines = raw.split('\n').filter(l => l.trim().length > 0);
             let tempTeams = {}; let tempPlayers = [];
             lines.forEach(line => {
                 const p = line.split(/\t| {2,}/).map(x => x.trim()); if(p.length < 3) return;
-                const obj = { name: p[1], startAvg: parseFloat(p[2])||0, division: p[3]||"Open", cardNo: p[4]||"", prevHighRinger: parseFloat(p[5])||0 };
+                const obj = { 
+                    name: p[1], 
+                    startAvg: parseFloat(p[2])||0, 
+                    division: p[3]||"Open", 
+                    cardNo: p[4]||"", 
+                    prevHighRinger: parseFloat(p[5])||0,
+                    currentHcp: parseFloat(p[6])||0 // New Column: Starting Handicap
+                };
                 if(mode==='DOUBLES'){ if(!tempTeams[p[0]]) tempTeams[p[0]] = []; tempTeams[p[0]].push(obj); }
                 else tempPlayers.push(obj);
             });
@@ -225,11 +252,12 @@
                     return { teamName: firstNames, members: tempTeams[id] };
                 });
             } else state.roster.SINGLES = tempPlayers;
-            save(); alert("Cloud Updated!");
+            save(); alert("Sync Complete!");
         };
 
         window.delR = (i) => { if(confirm("Del?")) { state.roster[mode].splice(i,1); save(); } };
         window.deleteS = (id) => { state.sessions = state.sessions.filter(x => x.id !== id); state.history = state.history.filter(h => h.sessionId !== id); save(); };
+        window.updatePin = () => { state.managePin = document.getElementById('newPin').value; save(); };
 
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition" : "text-[10px] px-4 py-2 rounded transition";
@@ -245,50 +273,55 @@
 
             if (view === 'SCORER') {
                 if (!match.active) {
-                    content.innerHTML = `<div class="p-6 bg-white rounded-2xl shadow max-w-md mx-auto mt-4"><h2 class="font-black text-center mb-6 uppercase text-sky-500 italic">Match Start</h2><select id="lt1" class="w-full p-4 border rounded-xl mb-4 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><select id="lt2" class="w-full p-4 border rounded-xl mb-6 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><button onclick="pickLiveTeams()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Start Series</button></div>`;
+                    content.innerHTML = `<div class="p-6 bg-white rounded-2xl shadow max-w-md mx-auto mt-4"><h2 class="font-black text-center mb-6 uppercase text-sky-500 italic">Series Start</h2><select id="lt1" class="w-full p-4 border rounded-xl mb-4 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><select id="lt2" class="w-full p-4 border rounded-xl mb-6 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><button onclick="pickLiveTeams()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Start Match</button></div>`;
                 } else if (match.step === 'PLAYERS' || match.step === 'START_S') {
-                    if(mode === 'SINGLES') { content.innerHTML = `<div class="p-10 bg-white rounded-2xl text-center max-w-md mx-auto mt-4"><h2 class="text-3xl font-black mb-4 uppercase">GAME ${match.gameNum}</h2><button onclick="startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Begin</button></div>`; }
-                    else {
-                        const t1 = state.roster.DOUBLES.find(x => x.teamName === match.t1Name).members;
-                        const t2 = state.roster.DOUBLES.find(x => x.teamName === match.t2Name).members;
-                        content.innerHTML = `<div class="p-6 bg-white rounded-2xl max-w-md mx-auto mt-4"><h2 class="text-sky-500 font-black text-center mb-4 uppercase italic">Lineup</h2><div class="space-y-4"><div class="p-3 bg-gray-50 border rounded-xl"><p class="text-[10px] font-black">${match.t1Name}</p><select id="sp1" class="w-full p-2 border mb-2 font-bold">${t1.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp2" class="w-full p-2 border font-bold">${t1.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><div class="p-3 bg-gray-50 border rounded-xl"><p class="text-[10px] font-black">${match.t2Name}</p><select id="sp3" class="w-full p-2 border mb-2 font-bold">${t2.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp4" class="w-full p-2 border font-bold">${t2.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><button onclick="startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Start</button></div></div>`;
-                    }
+                    const t1 = state.roster.DOUBLES.find(x => x.teamName === match.t1Name).members;
+                    const t2 = state.roster.DOUBLES.find(x => x.teamName === match.t2Name).members;
+                    content.innerHTML = `<div class="p-6 bg-white rounded-2xl max-w-md mx-auto mt-4"><h2 class="text-sky-500 font-black text-center mb-4 uppercase italic">G${match.gameNum} Lineup</h2><div class="space-y-4"><div class="p-3 bg-gray-50 border rounded-xl"><p class="text-[10px] font-black">${match.t1Name}</p><select id="sp1" class="w-full p-2 border mb-2 font-bold">${t1.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp2" class="w-full p-2 border font-bold">${t1.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><div class="p-3 bg-gray-50 border rounded-xl"><p class="text-[10px] font-black">${match.t2Name}</p><select id="sp3" class="w-full p-2 border mb-2 font-bold">${t2.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp4" class="w-full p-2 border font-bold">${t2.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><button onclick="startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Start Game ${match.gameNum}</button></div></div>`;
                 } else {
                     const p = getPitcher();
                     const s1C = match.currGameFrames.reduce((s,f)=>s+(f.p1||0)+(f.p2||0),0) + match.h1 + match.h2;
                     const s2C = match.currGameFrames.reduce((s,f)=>s+(f.p3||0)+(f.p4||0),0) + match.h3 + match.h4;
-                    content.innerHTML = `<div class="bg-black text-white p-2 flex justify-between px-4 text-[10px] font-black uppercase"><span>Agg: ${match.sessionAgg.t1+s1C}</span><span>G${match.gameNum}</span><span>Agg: ${match.sessionAgg.t2+s2C}</span></div><div class="grid grid-cols-2 gap-1 mb-2"><div class="p-4 bg-white ${cleanN(p)===cleanN(match.p1)||cleanN(p)===cleanN(match.p2)?'pitching-card':''} text-center"><p class="text-[9px] uppercase opacity-40 truncate">${match.t1Name}</p><p class="text-4xl font-black">${s1C}</p></div><div class="p-4 bg-white ${cleanN(p)===cleanN(match.p3)||cleanN(p)===cleanN(match.p4)?'pitching-card':''} text-center"><p class="text-[9px] uppercase opacity-40 truncate">${match.t2Name}</p><p class="text-4xl font-black text-red-600">${s2C}</p></div></div><div class="bg-sky-500 text-white p-2 text-center text-[10px] font-black uppercase italic mb-2">UP: ${p}</div><div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div><div class="micro-container mt-4"><table class="micro-table"><thead><tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T1</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T2</th></tr></thead><tbody><tr class="curr-row"><td class="sh-cell">${(match.currGameFrames.length+1)*2}</td><td class="r-sym">${getSym(match.currF.p1)}</td><td>${match.currF.p1??''}</td><td></td><td class="r-sym">${getSym(match.currF.p2)}</td><td>${match.currF.p2??''}</td><td></td><td class="t1-cell"></td><td class="r-sym">${getSym(match.currF.p3)}</td><td>${match.currF.p3??''}</td><td></td><td class="r-sym">${getSym(match.currF.p4)}</td><td>${match.currF.p4??''}</td><td></td><td class="t2-cell"></td></tr>${match.currGameFrames.map((f, i) => { const sl = match.currGameFrames.slice(0,i+1); const t1 = sl.reduce((s,x)=>s+(x.p1||0),0); const t2 = sl.reduce((s,x)=>s+(x.p2||0),0); const t3 = sl.reduce((s,x)=>s+(x.p3||0),0); const t4 = sl.reduce((s,x)=>s+(x.p4||0),0); return `<tr><td class="sh-cell" onclick="editFrameScore(${i})">${f.sh}</td><td class="r-sym">${getSym(f.p1)}</td><td>${f.p1}</td><td>${t1}</td><td class="r-sym">${getSym(f.p2)}</td><td>${f.p2}</td><td>${t2}</td><td class="t1-cell">${t1+t2+match.h1+match.h2}</td><td class="r-sym">${getSym(f.p3)}</td><td>${f.p3}</td><td>${t3}</td><td class="r-sym">${getSym(f.p4)}</td><td>${f.p4}</td><td>${t4}</td><td class="t2-cell">${t3+t4+match.h3+match.h4}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
+                    content.innerHTML = `<div class="bg-black text-white p-3 rounded-t-xl flex justify-between px-6 text-[11px] font-black uppercase"><span>Match Total: ${match.sessionAgg.t1+s1C}</span><span>Game ${match.gameNum}</span><span>Match Total: ${match.sessionAgg.t2+s2C}</span></div>
+                    <div class="grid grid-cols-2 gap-1 mb-2">
+                        <div class="p-6 bg-white ${cleanN(p)===cleanN(match.p1)||cleanN(p)===cleanN(match.p2)?'pitching-card':''} text-center shadow-inner"><p class="text-[10px] uppercase font-black opacity-40 truncate">${match.t1Name}</p><p class="text-7xl font-black tracking-tighter">${s1C}</p></div>
+                        <div class="p-6 bg-white ${cleanN(p)===cleanN(match.p3)||cleanN(p)===cleanN(match.p4)?'pitching-card':''} text-center shadow-inner"><p class="text-[10px] uppercase font-black opacity-40 truncate">${match.t2Name}</p><p class="text-7xl font-black text-red-600 tracking-tighter">${s2C}</p></div>
+                    </div><div class="bg-sky-500 text-white p-3 text-center text-[12px] font-black uppercase italic mb-2 tracking-widest shadow-lg">UP: ${p}</div>
+                    <div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div>
+                    <div class="micro-container mt-4"><table class="micro-table"><thead><tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T1</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T2</th></tr></thead><tbody><tr class="curr-row"><td class="sh-cell">${(match.currGameFrames.length+1)*2}</td><td class="r-sym">${getSym(match.currF.p1)}</td><td>${match.currF.p1??''}</td><td></td><td class="r-sym">${getSym(match.currF.p2)}</td><td>${match.currF.p2??''}</td><td></td><td class="t1-cell"></td><td class="r-sym">${getSym(match.currF.p3)}</td><td>${match.currF.p3??''}</td><td></td><td class="r-sym">${getSym(match.currF.p4)}</td><td>${match.currF.p4??''}</td><td></td><td class="t2-cell"></td></tr>${match.currGameFrames.map((f, i) => { const sl = match.currGameFrames.slice(0,i+1); const t1 = sl.reduce((s,x)=>s+(x.p1||0),0); const t2 = sl.reduce((s,x)=>s+(x.p2||0),0); const t3 = sl.reduce((s,x)=>s+(x.p3||0),0); const t4 = sl.reduce((s,x)=>s+(x.p4||0),0); return `<tr><td class="sh-cell" onclick="editFrameScore(${i})">${f.sh}</td><td class="r-sym">${getSym(f.p1)}</td><td>${f.p1}</td><td>${t1}</td><td class="r-sym">${getSym(f.p2)}</td><td>${f.p2}</td><td>${t2}</td><td class="t1-cell">${t1+t2+match.h1+match.h2}</td><td class="r-sym">${getSym(f.p3)}</td><td>${f.p3}</td><td>${t3}</td><td class="r-sym">${getSym(f.p4)}</td><td>${f.p4}</td><td>${t4}</td><td class="t2-cell">${t3+t4+match.h3+match.h4}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
                 }
             } else if (view === 'STANDINGS') {
                 const sess = state.sessions.filter(s => s.mode === mode);
                 const rows = state.roster[mode].map(t => {
-                    const name = t.teamName || t.name; let w=0, l=0, ti=0;
-                    const teamHist = history.filter(h => mode==='DOUBLES' ? t.members.some(m => cleanN(m.name) === cleanN(h.player)) : cleanN(t.name) === cleanN(h.player));
-                    const seenG = new Set();
-                    teamHist.forEach(g => { const k = `${g.sessionId}-${g.gameNum}`; if(!seenG.has(k)) { seenG.add(k); if(g.result==='W') w++; else if(g.result==='L') l++; else if(g.result==='T') ti++; } });
-                    const mp = sess.filter(s => cleanN(s.matchWinner) === cleanN(name)).length;
-                    return { name, w, l, ti, mp, pts: (w*2)+ti+mp };
-                }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="name-col font-black">${d.name}</td><td>${d.w}</td><td>${d.l}</td><td>${d.ti}</td><td>${d.mp}</td><td class="pts-col">${d.pts}</td></tr>`).join('');
-                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="printGeneric()">PDF</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Team</th><th>W</th><th>L</th><th>T</th><th>MP</th><th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                    const name = t.teamName || t.name; let w=0, l=0, ti=0; const teamG = history.filter(h => mode==='DOUBLES' ? t.members.some(m => cleanN(m.name) === cleanN(h.player)) : cleanN(t.name) === cleanN(h.player)); const seenG = new Set(); teamG.forEach(g => { const k = `${g.sessionId}-${g.gameNum}`; if(!seenG.has(k)) { seenG.add(k); if(g.result==='W') w++; else if(g.result==='L') l++; else if(g.result==='T') ti++; } }); const mp = sess.filter(s => cleanN(s.matchWinner) === cleanN(name)).length; return { name, w, l, ti, mp, pts: (w*2)+ti+mp };
+                }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="name-col font-black">${d.name}</td><td>${d.w}</td><td>${d.l}</td><td>${d.ti}</td><td>${d.mp}</td><td class="bg-zinc-900 text-sky-400 font-black pts-col">${d.pts}</td></tr>`).join('');
+                content.innerHTML = `<div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Team</th><th>W</th><th>L</th><th>T</th><th>MP</th><th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'STATS') {
                 const pNames = [...new Set(history.map(h => h.player))];
                 const rows = pNames.map(pName => {
-                    const g = history.filter(h => h.player === pName); const avg = g.slice(-9).reduce((s,x)=>s+x.score,0) / (g.slice(-9).length || 1); const sAvg = (roster.find(p => cleanN(p.name) === cleanN(pName)) || {startAvg: 0}).startAvg; const hiG = Math.max(...g.map(x=>x.score), 0);
-                    return `<tr><td class="name-col font-black">${pName}</td><td>${avg.toFixed(1)}</td><td>${hiG}</td><td>${(hiG-avg).toFixed(1)}</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td class="${(avg-sAvg)>=0?'text-green-400':'text-red-400'}">${(avg-sAvg).toFixed(1)}</td></tr>`;
+                    const g = history.filter(h => h.player === pName); const avg = g.slice(-9).reduce((s,x)=>s+x.score,0) / (g.slice(-9).length || 1); const sAvg = (roster.find(p => cleanN(p.name) === cleanN(pName)) || {startAvg: 0}).startAvg; const hiG = Math.max(...g.map(x=>x.score), 0); return `<tr><td class="name-col font-black">${pName}</td><td>${getH(pName)}</td><td>${avg.toFixed(1)}</td><td>${hiG}</td><td>${(hiG-avg).toFixed(1)}</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td class="${(avg-sAvg)>=0?'text-green-400':'text-red-400'}">${(avg-sAvg).toFixed(1)}</td></tr>`;
                 }).join('');
-                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="printGeneric()">PDF</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Player</th><th>Avg</th><th>HiG</th><th>Hi vs Avg</th><th>Hi Rng</th><th>Imp</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                content.innerHTML = `<div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Player</th><th>HCP</th><th>Avg</th><th>HiG</th><th>Hi vs Avg</th><th>Hi Rng</th><th>Imp</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'NHPA') {
                 const pNames = [...new Set(history.map(h => h.player))];
                 const rows = pNames.map(pName => {
-                    const g = history.filter(h => h.player === pName); const p = roster.find(x => cleanN(x.name) === cleanN(pName)) || {}; const totP = g.reduce((s,x)=>s+x.score,0); const totS = g.length * shoes; const totR = g.reduce((s,x)=>s+x.ringers,0); const last = pName.includes(',') ? pName.split(',')[0] : (pName.split(' ')[1] || pName); const first = pName.includes(',') ? pName.split(',')[1] : (pName.split(' ')[0] || '');
-                    return `<tr><td style="width:25%; text-align:left; padding-left:4px;">${last}, ${first}</td><td>${p.division||'-'}</td><td>${p.cardNo||'-'}</td><td>${totP}</td><td>${Math.max(...g.map(x=>x.score),0)}</td><td>${totS}</td><td>${totR}</td><td>${p.prevHighRinger||'0'}%</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td class="text-sky-400 font-black">${((totR/totS)*100||0).toFixed(1)}%</td></tr>`;
+                    const g = hist.filter(h => h.player === pName); const p = roster.find(x => cleanN(x.name) === cleanN(pName)) || {}; const totP = g.reduce((s,x)=>s+x.score,0); const totS = g.length * shoes; const totR = g.reduce((s,x)=>s+x.ringers,0); const last = pName.includes(',') ? pName.split(',')[0] : (pName.split(' ')[1] || pName); const first = pName.includes(',') ? pName.split(',')[1] : (pName.split(' ')[0] || ''); return `<tr><td style="width:25%; text-align:left; padding-left:4px;">${last}, ${first}</td><td>${p.division||'-'}</td><td>${p.cardNo||'-'}</td><td>${totP}</td><td>${Math.max(...g.map(x=>x.score),0)}</td><td>${totS}</td><td>${totR}</td><td>${p.prevHighRinger||'0'}%</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td class="text-sky-400 font-black">${((totR/totS)*100||0).toFixed(1)}%</td></tr>`;
                 }).join('');
-                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="printSanction()">OFFICIAL PDF</button></div><div class="bg-black p-1 rounded overflow-x-auto"><table class="std-table text-[0.5rem]"><thead><tr class="bg-zinc-800 text-sky-300"><th>Name</th><th>Div</th><th>Card</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="window.print()">Print Official PDF</button></div><div class="bg-black p-1 rounded overflow-x-auto"><table class="std-table text-[0.5rem]"><thead><tr class="bg-zinc-800 text-sky-300"><th>Name</th><th>Div</th><th>Card</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'MANAGE') {
                 const rHTML = state.roster[mode].map((item, idx) => `<div class="bg-white p-3 rounded-xl shadow mb-2 flex justify-between"><div><p class="font-black text-xs uppercase">${item.teamName || item.name}</p></div><div class="flex gap-2"><button onclick="delR(${idx})" class="text-red-500 border px-2 rounded font-black text-[10px]">Del</button></div></div>`).join('');
                 const sHTML = (state.sessions || []).filter(s => s.mode === mode).map(s => `<div class="bg-white p-2 rounded shadow mb-1 flex justify-between items-center text-[10px] font-bold"><span>${s.date} - ${s.name}</span><button onclick="deleteS(${s.id})" class="text-red-500">DEL</button></div>`).join('');
                 content.innerHTML = `<div class="p-4 space-y-4">
-                    <div class="bg-white p-6 rounded-2xl shadow border"><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-xl text-xs" placeholder="ID [Tab] Name..."></textarea><button onclick="importRoster()" class="w-full bg-black text-white p-4 rounded-xl font-black mt-2 uppercase">Sync Roster</button></div>
+                    <div class="bg-white p-6 rounded-2xl shadow border">
+                        <h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Handicap Control</h3>
+                        <button onclick="toggleHcpLock()" class="w-full p-4 rounded-xl font-black uppercase text-xs shadow-md transition ${state.hcpLocked ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked ? 'Unlock Handicaps (Rolling)' : 'Lock Current Handicaps'}</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow border">
+                        <h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Security</h3>
+                        <div class="flex gap-2"><input type="password" id="newPin" class="flex-1 border p-2 rounded text-xs" placeholder="New PIN"><button onclick="updatePin()" class="bg-black text-white px-4 py-2 rounded text-[10px] font-bold uppercase">Update PIN</button></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow border"><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-xl text-xs" placeholder="ID [Tab] Name [Tab] Avg [Tab] Div [Tab] Card [Tab] PrevR [Tab] HCP"></textarea><button onclick="importRoster()" class="w-full bg-black text-white p-4 rounded-xl font-black mt-2 uppercase">Sync Cloud Roster</button></div>
+                    <div class="bg-white p-6 rounded-2xl shadow border text-center"><h3 class="text-red-600 font-black uppercase text-xs mb-4">Maintenance</h3><button onclick="resetSystem()" class="w-full bg-red-600 text-white p-4 rounded-xl font-black uppercase text-xs shadow-xl active:scale-95 transition">Wipe System Data</button></div>
                     <div><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Edit Roster</h3>${rHTML}</div><div><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">History</h3>${sHTML}</div></div>`;
             }
         }
