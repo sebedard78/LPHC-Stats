@@ -3,23 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loon Pond Master Pro</title>
+    <title>Loon Pond Master Cloud</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto+Condensed:wght@400;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
-        
         .tab-active { border-bottom: 4px solid #0ea5e9; color: #0ea5e9; font-weight: 900; }
         .mode-btn-active { background-color: #0ea5e9 !important; color: white !important; font-weight: 900; }
 
-        /* MICRO SCORER - 15 COLUMNS - TALL ROW VERSION */
+        /* TALL MICRO SCORER */
         .micro-container { width: 100vw; margin-left: -0.5rem; overflow-x: hidden; background: #000; border-top: 1px solid #333; }
         .micro-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: 'Roboto Condensed', sans-serif; }
         .c-sh { width: 7%; } .c-r { width: 5%; } .c-p { width: 5%; } .c-s { width: 7.5%; } .c-t { width: 11%; }
         .micro-table th { font-size: 0.45rem; padding: 6px 0; color: #7dd3fc; background: #111; border: 0.5px solid #333; text-transform: uppercase; }
-        
-        /* DOUBLED HEIGHT CSS */
         .micro-table td { font-size: 0.85rem; padding: 14px 0; text-align: center; border: 0.5px solid #1a1a1a; color: #fff; line-height: 1; }
         .sh-cell { background: #000; color: #0ea5e9; font-weight: 900; border-right: 1.5px solid #0ea5e9 !important; font-size: 1rem !important; }
         .t1-cell { background: #0c4a6e; color: #fff; font-weight: 900; font-size: 0.9rem !important; }
@@ -33,27 +30,19 @@
         .std-table td { border-bottom: 1px solid #222; padding: 10px 1px; text-align: center; font-size: 0.68rem; font-weight: bold; overflow: hidden; }
         .name-col { width: 32%; text-align: left !important; padding-left: 6px !important; border-right: 1.5px solid #0ea5e9 !important; font-size: 0.62rem !important; text-transform: uppercase; white-space: nowrap; }
 
-        /* SCORING BUTTONS */
+        /* BUTTONS */
         .btn-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
-        .btn-score { background: white; border-bottom: 4px solid #cbd5e1; border-radius: 12px; height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: center; active:transform: scale(0.95); }
+        .btn-score { background: white; border-bottom: 4px solid #cbd5e1; border-radius: 12px; height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .btn-score .num { font-size: 2.2rem; font-weight: 900; color: #111; line-height: 1; }
         .btn-score .sym { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
 
         .pitching-card { border: 4px solid #0ea5e9 !important; background-color: #f0f9ff !important; position: relative; }
         .pitching-card::after { content: 'UP'; position: absolute; top: -8px; right: 5px; background: #0ea5e9; color: white; font-size: 0.55rem; padding: 2px 6px; border-radius: 4px; font-weight: 900; }
         
-        /* ACTION BAR */
         .action-bar { display: flex; gap: 8px; margin-bottom: 8px; justify-content: flex-end; padding-right: 4px; }
-        .action-btn { background: #fff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 900; color: #0ea5e9; text-transform: uppercase; }
+        .action-btn { background: #fff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 900; color: #0ea5e9; }
 
-        @media print { 
-            .no-print { display: none !important; } 
-            .print-only { display: block !important; } 
-            body { background: white; color: black; }
-            table { color: black !important; background: white !important; border: 1px solid black !important; }
-            th, td { color: black !important; border: 1px solid black !important; }
-            .name-col { border-right: 1px solid black !important; }
-        }
+        @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
         .print-only { display: none; }
         .report-table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 10px; margin-top: 10px; }
         .report-table td, .report-table th { border: 1px solid #000; padding: 2px; }
@@ -84,9 +73,27 @@
 
     <main id="viewContent" class="p-2 max-w-6xl mx-auto no-print"></main>
 
-    <script>
-        const STORAGE_KEY = 'lp_pro_v12_stats_pdf';
-        let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234' };
+    <script type="module">
+        // --- FIREBASE INTEGRATION ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // REPLACE THIS OBJECT WITH YOUR ACTUAL FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const docRef = doc(db, "league", "masterData");
+
+        // --- STATE & CORE LOGIC ---
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234' };
         let mode = 'DOUBLES';
         let view = 'STANDINGS';
         let isUnlocked = false;
@@ -94,21 +101,34 @@
         let match = { active: false, step: 'TEAMS', gameNum: 1, t1Name: '', t2Name: '', p1:'', p2:'', p3:'', p4:'', h1:0, h2:0, h3:0, h4:0, 
                       games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1:null, p2:null, p3:null, p4:null } };
 
-        function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); render(); }
-        function setMode(m) { mode = m; render(); }
-        
-        function setTab(t) { 
-            if (t === 'MANAGE' && !isUnlocked) {
-                const pin = prompt("Enter Manage PIN:");
-                if (pin === state.managePin) { isUnlocked = true; view = t; } 
-                else { alert("Incorrect PIN"); return; }
-            } else { view = t; }
-            render(); 
+        // Listen for Cloud Updates
+        onSnapshot(docRef, (snapshot) => {
+            if (snapshot.exists()) {
+                state = snapshot.data();
+                render();
+            } else {
+                save(); // Initialize if empty
+            }
+        });
+
+        async function save() {
+            await setDoc(docRef, state);
         }
 
+        window.setMode = (m) => { mode = m; render(); };
+        
+        window.setTab = (t) => { 
+            if (t === 'MANAGE' && !isUnlocked) {
+                const pin = prompt("Enter PIN:");
+                if (pin === state.managePin) { isUnlocked = true; view = t; } 
+                else { alert("Incorrect"); return; }
+            } else { view = t; }
+            render(); 
+        };
+
         const cleanN = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
-        function getSym(pts) { if(pts===null||pts===undefined) return '--'; if(pts>=6) return 'OO'; if(pts===4) return "O'"; if(pts===3) return 'O'; return '--'; }
-        function getR(pts) { return pts>=6?2:(pts>=3?1:0); }
+        const getSym = (pts) => { if(pts===null||pts===undefined) return '--'; if(pts>=6) return 'OO'; if(pts===4) return "O'"; if(pts===3) return 'O'; return '--'; };
+        const getR = (pts) => pts>=6?2:(pts>=3?1:0);
 
         function getH(name) {
             const hist = state.history.filter(x => cleanN(x.player) === cleanN(name) && x.mode === mode).slice(-9);
@@ -120,90 +140,25 @@
             return Math.max(0, Math.floor((scratch - avg) * 0.9));
         }
 
-        // --- EDIT LIVE SCORE ---
+        // --- SCORER ACTIONS ---
         window.editFrameScore = function(frameIdx) {
             const f = match.currGameFrames[frameIdx];
-            const pChoice = prompt(`Edit Frame ${f.sh/2} for which player?\n1: ${match.p1}\n2: ${match.p2}\n3: ${match.p3}\n4: ${match.p4}`);
+            const pChoice = prompt(`Edit P1, P2, P3, or P4?`);
             if (!['1','2','3','4'].includes(pChoice)) return;
-            const pts = parseInt(prompt(`Enter new score (0,1,2,3,4,6):`));
-            if (![0,1,2,3,4,6].includes(pts)) return alert("Invalid");
-            if (pChoice === '1') f.p1 = pts; else if (pChoice === '2') f.p2 = pts;
-            else if (pChoice === '3') f.p3 = pts; else if (pChoice === '4') f.p4 = pts;
-            render();
-        }
-
-        // --- EXPORT & PRINT ---
-        window.exportData = function(type) {
-            let csv = "";
-            const hist = state.history.filter(h => h.mode === mode);
-            const roster = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members));
-            const shoes = mode === 'DOUBLES' ? 30 : 50;
-
-            if (type === 'STANDINGS') {
-                csv = "Team,W,L,T,MP,Pts\n";
-                state.roster[mode].forEach(t => {
-                    const name = t.teamName || t.name;
-                    const sess = state.sessions.filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length;
-                    const g = hist.filter(h => mode==='DOUBLES' ? t.members.some(m=>cleanN(m.name)===cleanN(h.player)) : cleanN(t.name)===cleanN(h.player));
-                    const w = g.filter(x=>x.result==='W').length/(mode==='DOUBLES'?2:1);
-                    const ti = g.filter(x=>x.result==='T').length/(mode==='DOUBLES'?2:1);
-                    csv += `${name},${w},${g.length/(mode==='DOUBLES'?2:1)-w-ti},${ti},${sess},${(w*2)+ti+sess}\n`;
-                });
-            } else if (type === 'STATS') {
-                csv = "Player,Avg,HiG,Hi_vs_Avg,Hi_Rng,Imp\n";
-                const pNames = [...new Set(hist.map(h => h.player))];
-                pNames.forEach(pName => {
-                    const g = hist.filter(h => h.player === pName);
-                    const avg = g.slice(-9).reduce((s,x)=>s+x.score,0) / (g.slice(-9).length || 1);
-                    const startAvg = (roster.find(p => cleanN(p.name) === cleanN(pName)) || {startAvg:0}).startAvg;
-                    const hiG = Math.max(...g.map(x=>x.score),0);
-                    csv += `${pName},${avg.toFixed(1)},${hiG},${(hiG-avg).toFixed(1)},${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%,${(avg-startAvg).toFixed(1)}\n`;
-                });
+            const pts = parseInt(prompt(`New Score (0,1,2,3,4,6):`));
+            if ([0,1,2,3,4,6].includes(pts)) {
+                f['p'+pChoice] = pts;
+                render();
             }
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            a.download = `LoonPond_${type}_${mode}.csv`; a.click();
-        }
+        };
 
-        window.printGeneric = function(type) {
-            const area = document.getElementById('printArea');
-            const dateStr = new Date().toLocaleDateString();
-            let content = `<div style="text-align:center; display:flex; align-items:center; justify-content:center; gap:20px; border-bottom:2px solid #000; padding-bottom:10px;">
-                <img src="logo.jpg" style="width:60px; height:60px; object-fit:contain;" onerror="this.style.display='none'">
-                <div><h1 style="font-size:20px; margin:0;">Loon Pond Horseshoe Club</h1><p style="margin:0;">${mode} ${type} - ${dateStr}</p></div>
-            </div>` + document.getElementById('viewContent').innerHTML;
-            area.innerHTML = content; window.print();
-        }
-
-        window.printSanction = function() {
-            const area = document.getElementById('printArea');
-            const hist = state.history.filter(h => h.mode === mode);
-            const roster = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members));
-            const shoes = mode === 'DOUBLES' ? 30 : 50;
-            let content = `<div style="display:flex; align-items:center; gap:20px; border-bottom:2px solid #000; padding-bottom:10px;">
-                <img src="logo.jpg" style="width:70px; height:70px; object-fit:contain;" onerror="this.style.display='none'">
-                <div style="flex:1;"><h1 style="font-size:22px; margin:0;">National Horseshoe Pitchers Association</h1><p style="margin:0; font-size:14px; font-weight:bold;">Sanctioned Club/League Program - FINAL Stat Sheet</p></div>
-            </div><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px; font-size:12px;"><div>Club: Loon Pond Horseshoe Club</div><div>League Format: ${mode}</div></div>
-            <table style="width:100%; border-collapse:collapse; margin-top:20px; font-size:10px; border:2px solid #000;">
-                <thead><tr style="background:#eee;"><th style="border:1px solid #000; padding:5px; text-align:left;">Player (Last, First)</th><th style="border:1px solid #000;">Div</th><th style="border:1px solid #000;">Card</th><th style="border:1px solid #000;">1</th><th style="border:1px solid #000;">2</th><th style="border:1px solid #000;">3</th><th style="border:1px solid #000;">4</th><th style="border:1px solid #000;">5</th><th style="border:1px solid #000;">6</th><th style="border:1px solid #000;">7</th></tr></thead><tbody>`;
-            const pNames = [...new Set(hist.map(h => h.player))];
-            pNames.forEach(pName => {
-                const g = hist.filter(h => h.player === pName); const p = roster.find(x => cleanN(x.name) === cleanN(pName)) || {};
-                const totP = g.reduce((s,x)=>s+x.score,0); const totS = g.length * shoes; const totR = g.reduce((s,x)=>s+x.ringers,0);
-                const last = pName.includes(',') ? pName.split(',')[0] : (pName.split(' ')[1] || pName); const first = pName.includes(',') ? pName.split(',')[1] : (pName.split(' ')[0] || '');
-                content += `<tr><td style="border:1px solid #000; padding:5px;">${last}, ${first}</td><td style="border:1px solid #000; text-align:center;">${p.division||'-'}</td><td style="border:1px solid #000; text-align:center;">${p.cardNo||'-'}</td><td style="border:1px solid #000; text-align:center;">${totP}</td><td style="border:1px solid #000; text-align:center;">${Math.max(...g.map(x=>x.score),0)}</td><td style="border:1px solid #000; text-align:center;">${totS}</td><td style="border:1px solid #000; text-align:center;">${totR}</td><td style="border:1px solid #000; text-align:center;">${p.prevHighRinger||'0'}%</td><td style="border:1px solid #000; text-align:center;">${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td style="border:1px solid #000; text-align:center; font-weight:bold;">${((totR/totS)*100||0).toFixed(1)}%</td></tr>`;
-            });
-            content += `</tbody></table>`;
-            area.innerHTML = content; window.print();
-        }
-
-        // --- SCORER ---
         window.pickLiveTeams = function() {
             match.t1Name = document.getElementById('lt1').value; match.t2Name = document.getElementById('lt2').value;
             match.active = true; match.sessionAgg = { t1: 0, t2: 0 }; match.gameNum = 1; match.games = [];
             match.step = (mode === 'SINGLES') ? 'START_S' : 'PLAYERS';
             render();
-        }
+        };
+
         window.startTheLiveGame = function() {
             if (mode === 'DOUBLES') {
                 match.p1 = document.getElementById('sp1').value; match.p2 = document.getElementById('sp2').value;
@@ -212,12 +167,14 @@
             match.h1 = getH(match.p1); match.h2 = getH(match.p2); match.h3 = getH(match.p3); match.h4 = getH(match.p4);
             match.step = 'LIVE'; match.pitcherIdx = 0; match.currGameFrames = []; match.currF = { p1:null, p2:null, p3:null, p4:null };
             render();
-        }
+        };
+
         function getPitcher() {
             const f = match.currGameFrames.length + 1;
             const rot = (f % 2 !== 0) ? (mode==='SINGLES'?[match.p1,match.p3]:[match.p1,match.p3,match.p2,match.p4]) : (mode==='SINGLES'?[match.p3,match.p1]:[match.p3,match.p1,match.p4,match.p2]);
             return rot[match.pitcherIdx];
         }
+
         window.addScore = function(pts) {
             const p = getPitcher();
             if (p === match.p1) match.currF.p1 = pts; else if (p === match.p2) match.currF.p2 = pts;
@@ -229,12 +186,14 @@
                 if (match.currGameFrames.length >= (mode === 'DOUBLES' ? 15 : 25)) endGame();
             }
             render();
-        }
+        };
+
         function endGame() {
             const s1 = match.currGameFrames.reduce((s,f)=>s+(f.p1||0)+(f.p2||0),0) + match.h1 + match.h2;
             const s2 = match.currGameFrames.reduce((s,f)=>s+(f.p3||0)+(f.p4||0),0) + match.h3 + match.h4;
             match.sessionAgg.t1 += s1; match.sessionAgg.t2 += s2;
             match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, frames: [...match.currGameFrames], s1, s2 });
+            
             const sid = Date.now();
             const res1 = s1 > s2 ? 'W' : (s1===s2?'T':'L');
             const push = (p, sc, r, res) => state.history.push({ sessionId: sid, player: p, score: sc, ringers: r, result: res, mode, date: sid, gameNum: match.gameNum });
@@ -242,32 +201,55 @@
             if(mode==='DOUBLES') push(match.p2, match.currGameFrames.reduce((s,f)=>s+(f.p2||0),0), match.currGameFrames.reduce((s,f)=>s+getR(f.p2),0), res1);
             push(match.p3, match.currGameFrames.reduce((s,f)=>s+(f.p3||0),0), match.currGameFrames.reduce((s,f)=>s+getR(f.p3),0), res1==='W'?'L':(res1==='T'?'T':'W'));
             if(mode==='DOUBLES') push(match.p4, match.currGameFrames.reduce((s,f)=>s+(f.p4||0),0), match.currGameFrames.reduce((s,f)=>s+getR(f.p4),0), res1==='W'?'L':(res1==='T'?'T':'W'));
+
             if (match.gameNum < 3) { match.gameNum++; match.step = (mode === 'SINGLES') ? 'START_S' : 'PLAYERS'; }
             else {
                 const mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie');
                 const sessionEntry = { id: sid, name: `${match.t1Name} vs ${match.t2Name}`, date: new Date().toLocaleDateString(), mode, matchWinner: mW, fullData: [...match.games], agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2 };
-                state.sessions.push(sessionEntry); match.active = false;
-                window.generateReport(sessionEntry);
+                state.sessions.push(sessionEntry); match.active = false; window.generateReport(sessionEntry);
             }
             save();
         }
 
+        // --- REPORTING ---
         window.generateReport = function(session) {
             const area = document.getElementById('printArea');
-            let html = `<div style="text-align:center; display:flex; align-items:center; justify-content:center; gap:20px;">
+            let html = `<div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px;">
                 <img src="logo.jpg" style="width:60px; height:60px; object-fit:contain;" onerror="this.style.display='none'">
-                <div><h1 style="font-size:24px; font-weight:900; margin:0;">Loon Pond Horseshoe Club</h1><p style="margin:0;">Match Summary - ${session.date}</p><h2 style="font-size:18px;">TOTAL: ${session.name} (${session.agg1} vs ${session.agg2})</h2></div>
+                <div><h1 style="font-size:20px; font-weight:900;">Loon Pond Horseshoe Club</h1><p>Match Summary - ${session.date}</p><h2>TOTAL: ${session.name} (${session.agg1} vs ${session.agg2})</h2></div>
             </div>`;
             session.fullData.forEach(g => {
                 html += `<div style="margin-top:20px;"><h3>GAME ${g.gameNum}: ${g.s1} - ${g.s2}</h3><table class="report-table"><thead><tr><th>SH</th><th>P1</th><th>P1T</th><th>P2</th><th>P2T</th><th>T1</th><th>P3</th><th>P3T</th><th>P4</th><th>P4T</th><th>T2</th></tr></thead><tbody>${g.frames.map((f, i) => {
-                    const sl = g.frames.slice(0, i+1); const t1 = sl.reduce((s,x)=>s+(x.p1||0),0); const t2 = sl.reduce((s,x)=>s+(x.p2||0),0); const t3 = sl.reduce((s,x)=>s+(x.p3||0),0); const t4 = sl.reduce((s,x)=>s+(x.p4||0),0);
+                    const sl = g.frames.slice(0, i+1); const t1 = sl.reduce((s,x)=>s+(x.p1||0),0); const t2 = sl.reduce((s,x)=>s+(x.p2||0),0);
+                    const t3 = sl.reduce((s,x)=>s+(x.p3||0),0); const t4 = sl.reduce((s,x)=>s+(x.p4||0),0);
                     return `<tr><td>${f.sh}</td><td>${getSym(f.p1)}</td><td>${t1}</td><td>${getSym(f.p2)}</td><td>${t2}</td><td>${t1+t2+g.h1+g.h2}</td><td>${getSym(f.p3)}</td><td>${t3}</td><td>${getSym(f.p4)}</td><td>${t4}</td><td>${t3+t4+g.h3+g.h4}</td></tr>`;
                 }).join('')}</tbody></table></div>`;
             });
             area.innerHTML = html; window.print();
-        }
+        };
 
-        // --- RENDER ---
+        window.printSanction = function() {
+            const area = document.getElementById('printArea');
+            const shoes = mode === 'DOUBLES' ? 30 : 50;
+            const hist = state.history.filter(h => h.mode === mode);
+            const roster = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members));
+            let content = `<div style="display:flex; align-items:center; gap:20px; border-bottom:2px solid #000; padding-bottom:10px;">
+                <img src="logo.jpg" style="width:70px; height:70px; object-fit:contain;" onerror="this.style.display='none'">
+                <div style="flex:1;"><h1 style="font-size:22px; margin:0;">NHPA FINAL Stat Sheet</h1><p style="margin:0;">Loon Pond Horseshoe Club</p></div>
+            </div><table style="width:100%; border-collapse:collapse; margin-top:20px; font-size:10px; border:2px solid #000;">
+                <thead><tr style="background:#eee;"><th style="border:1px solid #000; padding:5px; text-align:left;">Player</th><th>Div</th><th>Card</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead><tbody>`;
+            const pNames = [...new Set(hist.map(h => h.player))];
+            pNames.forEach(pName => {
+                const g = hist.filter(h => h.player === pName); const p = roster.find(x => cleanN(x.name) === cleanN(pName)) || {};
+                const totP = g.reduce((s,x)=>s+x.score,0); const totS = g.length * shoes; const totR = g.reduce((s,x)=>s+x.ringers,0);
+                const last = pName.split(' ')[1] || pName; const first = pName.split(' ')[0] || '';
+                content += `<tr><td style="border:1px solid #000; padding:5px;">${last}, ${first}</td><td style="border:1px solid #000; text-align:center;">${p.division||'-'}</td><td style="border:1px solid #000; text-align:center;">${p.cardNo||'-'}</td><td>${totP}</td><td>${Math.max(...g.map(x=>x.score),0)}</td><td>${totS}</td><td>${totR}</td><td>${p.prevHighRinger||'0'}%</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td style="font-weight:bold;">${((totR/totS)*100||0).toFixed(1)}%</td></tr>`;
+            });
+            content += `</tbody></table>`;
+            area.innerHTML = content; window.print();
+        };
+
+        // --- RENDER ENGINE ---
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded" : "text-[10px] px-4 py-2 rounded";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded" : "text-[10px] px-4 py-2 rounded";
@@ -280,7 +262,7 @@
 
             if (view === 'SCORER') {
                 if (!match.active) {
-                    content.innerHTML = `<div class="p-6 bg-white rounded-2xl shadow max-w-md mx-auto mt-4"><h2 class="font-black text-center mb-6 uppercase text-sky-500 italic">Match Start</h2><select id="lt1" class="w-full p-4 border rounded-xl mb-4 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><select id="lt2" class="w-full p-4 border rounded-xl mb-6 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><button onclick="pickLiveTeams()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Start Series</button></div>`;
+                    content.innerHTML = `<div class="p-6 bg-white rounded-2xl shadow max-w-md mx-auto mt-4"><h2 class="font-black text-center mb-6 uppercase text-sky-500">New Series</h2><select id="lt1" class="w-full p-4 border rounded-xl mb-4 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><select id="lt2" class="w-full p-4 border rounded-xl mb-6 font-bold">${state.roster[mode].map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`)}</select><button onclick="pickLiveTeams()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Start Match</button></div>`;
                 } else if (match.step === 'PLAYERS' || match.step === 'START_S') {
                     if(mode === 'SINGLES') {
                         content.innerHTML = `<div class="p-10 bg-white rounded-2xl text-center max-w-md mx-auto mt-4"><h2 class="text-3xl font-black mb-4 uppercase">GAME ${match.gameNum}</h2><button onclick="startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-2xl font-black uppercase">Begin</button></div>`;
@@ -300,30 +282,33 @@
                 const rows = state.roster[mode].map(t => {
                     const name = t.teamName || t.name; let w=0, l=0, ti=0; const teamG = hist.filter(h => mode==='DOUBLES' ? t.members.some(m => cleanN(m.name) === cleanN(h.player)) : cleanN(t.name) === cleanN(h.player)); const seenG = new Set(); teamG.forEach(g => { const k = `${g.sessionId}-${g.gameNum}`; if(!seenG.has(k)) { seenG.add(k); if(g.result==='W') w++; else if(g.result==='L') l++; else if(g.result==='T') ti++; } }); const mp = sess.filter(s => cleanN(s.matchWinner) === cleanN(name)).length; return { name, w, l, ti, mp, pts: (w*2)+ti+mp };
                 }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="name-col font-black">${d.name}</td><td>${d.w}</td><td>${d.l}</td><td>${d.ti}</td><td>${d.mp}</td><td class="bg-zinc-900 text-sky-400 font-black">${d.pts}</td></tr>`).join('');
-                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="exportData('STANDINGS')">CSV</button><button class="action-btn" onclick="printGeneric('Standings')">PDF</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Team</th><th>W</th><th>L</th><th>T</th><th>MP</th><th>Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="exportData('STANDINGS')">CSV</button><button class="action-btn" onclick="window.print()">PDF</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Team</th><th>W</th><th>L</th><th>T</th><th>MP</th><th>Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'STATS') {
                 const pNames = [...new Set(hist.map(h => h.player))];
                 const rows = pNames.map(pName => {
                     const g = hist.filter(h => h.player === pName); const avg = g.slice(-9).reduce((s,x)=>s+x.score,0) / (g.slice(-9).length || 1); const startAvg = (roster.find(p => cleanN(p.name) === cleanN(pName)) || {startAvg: 0}).startAvg; const hiG = Math.max(...g.map(x=>x.score), 0); return `<tr><td class="name-col font-black">${pName}</td><td>${avg.toFixed(1)}</td><td>${hiG}</td><td>${(hiG-avg).toFixed(1)}</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td class="${(avg-startAvg)>=0?'text-green-400':'text-red-400'}">${(avg-startAvg).toFixed(1)}</td></tr>`;
                 }).join('');
-                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="exportData('STATS')">CSV</button><button class="action-btn" onclick="printGeneric('Club Stats')">PDF</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Player</th><th>Avg</th><th>HiG</th><th>Hi vs Avg</th><th>Hi Rng</th><th>Imp</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="exportData('STATS')">CSV</button><button class="action-btn" onclick="window.print()">PDF</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="name-col">Player</th><th>Avg</th><th>HiG</th><th>Hi vs Avg</th><th>Hi Rng</th><th>Imp</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'NHPA') {
                 const pNames = [...new Set(hist.map(h => h.player))];
                 const rows = pNames.map(pName => {
-                    const g = hist.filter(h => h.player === pName); const p = roster.find(x => cleanN(x.name) === cleanN(pName)) || {}; const totP = g.reduce((s,x)=>s+x.score,0); const totS = g.length * shoes; const totR = g.reduce((s,x)=>s+x.ringers,0); const last = pName.includes(',') ? pName.split(',')[0] : (pName.split(' ')[1] || pName); const first = pName.includes(',') ? pName.split(',')[1] : (pName.split(' ')[0] || ''); return `<tr><td style="width:25%; text-align:left; padding-left:4px;">${last}, ${first}</td><td>${p.division||'-'}</td><td>${p.cardNo||'-'}</td><td>${totP}</td><td>${Math.max(...g.map(x=>x.score),0)}</td><td>${totS}</td><td>${totR}</td><td>${p.prevHighRinger||'0'}%</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td class="text-sky-400 font-black">${((totR/totS)*100||0).toFixed(1)}%</td></tr>`;
+                    const g = hist.filter(h => h.player === pName); const p = roster.find(x => cleanN(x.name) === cleanN(pName)) || {}; const totP = g.reduce((s,x)=>s+x.score,0); const totS = g.length * shoes; const totR = g.reduce((s,x)=>s+x.ringers,0); const last = pName.split(' ')[1] || pName; const first = pName.split(' ')[0] || ''; return `<tr><td style="width:25%; text-align:left; padding-left:4px;">${last}, ${first}</td><td>${p.division||'-'}</td><td>${p.cardNo||'-'}</td><td>${totP}</td><td>${Math.max(...g.map(x=>x.score),0)}</td><td>${totS}</td><td>${totR}</td><td>${p.prevHighRinger||'0'}%</td><td>${Math.max(...g.map(x=>(x.ringers/shoes)*100),0).toFixed(1)}%</td><td class="text-sky-400 font-black">${((totR/totS)*100||0).toFixed(1)}%</td></tr>`;
                 }).join('');
                 content.innerHTML = `<div class="action-bar"><button class="action-btn" onclick="printSanction()">OFFICIAL PDF</button></div><div class="bg-black p-1 rounded overflow-x-auto"><table class="std-table text-[0.5rem]"><thead><tr class="bg-zinc-800 text-sky-300"><th>Name</th><th>Div</th><th>Card</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'MANAGE') {
-                const rHTML = state.roster[mode].map((item, idx) => `<div class="bg-white p-3 rounded-xl shadow mb-2 flex justify-between"><div><p class="font-black text-xs uppercase">${item.teamName || item.name}</p></div><div class="flex gap-2"><button onclick="${mode==='SINGLES'?'editS':'editD'}(${idx})" class="text-sky-500 border px-2 rounded font-black text-[10px]">Edit</button><button onclick="delR(${idx})" class="text-red-500 border px-2 rounded font-black text-[10px]">Del</button></div></div>`).join('');
-                const sessHTML = state.sessions.filter(s => s.mode === mode).map(s => `<div class="bg-white p-2 rounded shadow mb-1 flex justify-between items-center text-[10px] font-bold"><span>${s.date} - ${s.name}</span><div class="flex gap-1"><button onclick='window.generateReport(${JSON.stringify(s)})' class="bg-sky-500 text-white px-2 py-0.5 rounded font-black">PDF</button><button onclick="state.sessions=state.sessions.filter(x=>x.id!==${s.id});save();" class="text-red-500">DEL</button></div></div>`).join('');
-                content.innerHTML = `<div class="p-4 space-y-4"><div class="bg-white p-6 rounded-2xl shadow border"><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Security</h3><div class="flex gap-2"><input type="password" id="newPin" class="flex-1 border p-2 rounded text-xs" placeholder="New PIN"><button onclick="state.managePin=document.getElementById('newPin').value;save();alert('PIN Set');" class="bg-black text-white px-4 py-2 rounded text-[10px] font-bold">SET PIN</button></div></div>
-                    <div class="bg-white p-6 rounded-2xl shadow border"><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-xl text-xs" placeholder="ID [Tab] Name [Tab] Avg..."></textarea><button onclick="importRoster()" class="w-full bg-black text-white p-4 rounded-xl font-black mt-2 uppercase">Sync Roster</button></div>
-                    <div class="bg-white p-6 rounded-2xl shadow border"><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Maintenance</h3><div class="flex gap-2"><button onclick="backupData()" class="flex-1 bg-zinc-800 text-white p-4 rounded-xl font-bold uppercase text-xs">Backup</button><label class="flex-1 bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-xl font-bold uppercase text-xs text-center cursor-pointer">Restore<input type="file" class="hidden" onchange="restoreData(event)"></label></div></div>
-                    <div><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Edit Roster</h3>${rHTML}</div><div><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Saved Reports</h3>${sessHTML}</div></div>`;
+                const rHTML = state.roster[mode].map((item, idx) => `<div class="bg-white p-3 rounded-xl shadow mb-2 flex justify-between"><div><p class="font-black text-xs uppercase">${item.teamName || item.name}</p></div><div class="flex gap-2"><button onclick="editPlayer(${idx})" class="text-sky-500 border px-2 rounded font-black text-[10px]">Edit</button><button onclick="delR(${idx})" class="text-red-500 border px-2 rounded font-black text-[10px]">Del</button></div></div>`).join('');
+                const sessHTML = state.sessions.filter(s => s.mode === mode).map(s => `<div class="bg-white p-2 rounded shadow mb-1 flex justify-between items-center text-[10px] font-bold"><span>${s.date} - ${s.name}</span><div class="flex gap-1"><button onclick='generateReport(${JSON.stringify(s)})' class="bg-sky-500 text-white px-2 py-0.5 rounded font-black">PDF</button><button onclick="deleteS(${s.id})" class="text-red-500">DEL</button></div></div>`).join('');
+                content.innerHTML = `<div class="p-4 space-y-4">
+                    <div class="bg-white p-6 rounded-2xl shadow border"><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">PIN LOCK</h3><div class="flex gap-2"><input type="password" id="newPin" class="flex-1 border p-2 rounded text-xs" placeholder="New PIN"><button onclick="updatePin()" class="bg-black text-white px-4 py-2 rounded text-[10px] font-black">SET</button></div></div>
+                    <div class="bg-white p-6 rounded-2xl shadow border"><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-xl text-xs" placeholder="ID [Tab] Name..."></textarea><button onclick="importRoster()" class="w-full bg-black text-white p-4 rounded-xl font-black mt-2 uppercase">Sync Cloud</button></div>
+                    <div class="bg-white p-6 rounded-2xl shadow border"><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">System</h3><div class="flex gap-2"><button onclick="backupData()" class="flex-1 bg-zinc-800 text-white p-4 rounded-xl font-black uppercase text-xs">Backup</button><label class="flex-1 bg-white border-2 border-zinc-800 p-4 rounded-xl font-black uppercase text-xs text-center cursor-pointer">Restore<input type="file" class="hidden" onchange="restoreData(event)"></label></div></div>
+                    <div><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">Edit Roster</h3>${rHTML}</div><div><h3 class="text-[10px] font-black uppercase mb-2 opacity-40">History</h3>${sessHTML}</div></div>`;
             }
         }
 
-        window.importRoster = function() {
+        // --- GLOBAL WRAPPERS FOR MODULE CONTEXT ---
+        window.updatePin = () => { state.managePin = document.getElementById('newPin').value; save(); };
+        window.importRoster = () => {
             const raw = document.getElementById('rosterInput').value; if(!raw) return;
             const lines = raw.split('\n').filter(l => l.trim().length > 0);
             let tempTeams = {}; let tempPlayers = [];
@@ -335,33 +320,20 @@
             });
             if(mode==='DOUBLES') {
                 state.roster.DOUBLES = Object.keys(tempTeams).map(id => {
-                    const firstNames = tempTeams[id].map(m => { const n = m.name; return n.includes(',') ? n.split(',')[1].trim().split(' ')[0] : n.trim().split(' ')[0]; }).join('/');
-                    return { teamName: firstNames, members: tempTeams[id] };
+                    const fNames = tempTeams[id].map(m => { const n = m.name; return n.includes(',') ? n.split(',')[1].trim().split(' ')[0] : n.trim().split(' ')[0]; }).join('/');
+                    return { teamName: fNames, members: tempTeams[id] };
                 });
             } else state.roster.SINGLES = tempPlayers;
-            save(); alert("Sync Complete!");
-        }
-
-        window.backupData = () => {
-            const blob = new Blob([JSON.stringify(state)], { type: 'application/json' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-            a.download = `LoonPond_Backup.json`; a.click();
+            save(); alert("Cloud Updated!");
         };
-        window.restoreData = (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader(); reader.onload = (x) => { state = JSON.parse(x.target.result); save(); location.reload(); };
-            reader.readAsText(file);
-        };
-
-        window.editS = (i) => { let p = state.roster.SINGLES[i]; p.name = prompt("Name:", p.name); p.startAvg = parseFloat(prompt("Avg:", p.startAvg)); save(); };
-        window.editD = (i) => { 
-            let t = state.roster.DOUBLES[i]; t.teamName = prompt("Team Name:", t.teamName); 
-            t.members.forEach((m, idx) => { m.name = prompt(`Player Name:`, m.name); m.startAvg = parseFloat(prompt(`Player Avg:`, m.startAvg)); });
-            save(); 
+        window.editPlayer = (i) => {
+            if(mode==='SINGLES'){ let p = state.roster.SINGLES[i]; p.name = prompt("Name:", p.name); p.startAvg = parseFloat(prompt("Avg:", p.startAvg)); }
+            else { let t = state.roster.DOUBLES[i]; t.teamName = prompt("Team Name:", t.teamName); t.members.forEach(m => { m.name = prompt("Player Name:", m.name); }); }
+            save();
         };
         window.delR = (i) => { if(confirm("Del?")) { state.roster[mode].splice(i,1); save(); } };
+        window.deleteS = (id) => { state.sessions = state.sessions.filter(x => x.id !== id); save(); };
 
-        render();
     </script>
 </body>
 </html>
