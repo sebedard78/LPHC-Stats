@@ -78,9 +78,10 @@
         </div>
     </div>
 
+    <!-- UI HEADER -->
     <header class="bg-black text-white p-4 shadow-2xl flex justify-between items-center border-b-4 border-sky-500 no-print">
         <div class="flex items-center gap-3">
-            <img src="logo.jpg" alt="Logo" class="w-10 h-10 object-contain brightness-0 invert">
+            <img src="logo.jpg" alt="Logo" class="w-10 h-10 object-contain">
             <h1 class="text-xl font-black italic uppercase tracking-tighter text-white">Loon Pond</h1>
         </div>
         <div class="flex gap-1 bg-zinc-900 p-1">
@@ -250,9 +251,10 @@
                 const [last, first] = pN.includes(',') ? pN.split(',').map(x=>x.trim()) : [pN, ""];
                 const elig = curSeasonHiPct > prevHiRinger ? "Y" : "";
                 
+                // Alignment logic fixed: Data rows map exactly to header structure
                 rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;">
-                    <td style="border:1px solid #000; padding:2px;">${last}</td>
-                    <td style="border:1px solid #000; padding:2px;">${first}</td>
+                    <td style="border:1px solid #000; padding-left:4px;">${last}</td>
+                    <td style="border:1px solid #000; padding-left:4px;">${first}</td>
                     <td style="border:1px solid #000; text-align:center;">${rRec.category||''}</td>
                     <td style="border:1px solid #000; text-align:center;">${rRec.cardNo||''}</td>
                     <td style="border:1px solid #000; text-align:center;">${totalPts}</td>
@@ -265,21 +267,25 @@
                     <td style="border:1px solid #000; text-align:center;">${elig}</td>
                 </tr>`;
             });
-            for(let i=pNames.length; i<28; i++) { rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;"><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>`; }
+            for(let i=pNames.length; i<25; i++) { 
+                rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;"><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>`; 
+            }
 
             const template = `
-            <div style="font-family: Arial, sans-serif; font-size: 11px; width: 8.2in; margin: auto; padding: 20px; color: black; line-height: 1.1; background: white;">
-                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:5px;">
-                    <div style="width:70px; height:90px; border:2px solid #000; display:flex; align-items:center; justify-content:center;"><img src="nhpa_logo.png" style="max-width:100%; max-height:100%; object-fit:contain;"></div>
+            <div style="font-family: Arial, sans-serif; font-size: 11px; width: 7.8in; margin: auto; padding: 20px; color: black; line-height: 1.2; background: white;">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div style="width:75px; height:90px; border:2px solid #000; display:flex; align-items:center; justify-content:center;">
+                        <img src="nhpa_logo.png" style="max-width:100%; object-fit:contain;">
+                    </div>
                     <div style="flex:1; text-align:center;">
                         <h1 style="font-size:22pt; font-weight:bold; margin:0;">National Horseshoe Pitchers Association</h1>
                         <h2 style="font-size:16pt; font-weight:bold; margin:2px 0;">Sanctioned Club/League Program - FINAL Stat Sheet</h2>
-                        <p style="font-size:10px; margin:4px 0;">This form should include all league members. Verify NATSTATS. scratch scores only.</p>
+                        <p style="font-size:10px; margin:4px 0;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p>
                         <p style="font-size:10px; font-weight:bold; margin:0;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH 44070 Bcarson848@gmail.com</p>
                     </div>
                 </div>
                 
-                <div style="margin-top:20px; border-top: 3px solid #000; padding-top:10px; font-size:11px; line-height:2.4;">
+                <div style="margin-top:20px; border-top: 3px solid #000; padding-top:10px; font-size:11px; line-height:2.2;">
                     <div style="display:flex; justify-content:space-between; width:100%;">
                         <span>Club/League Name: <span style="border-bottom: 1px solid #000; min-width:350px; display:inline-block; font-weight:bold;">${cfg.clubName||''}</span></span>
                         <span>Phone#: <span style="border-bottom: 1px solid #000; min-width:140px; display:inline-block; font-weight:bold;">${cfg.phone||''}</span></span>
@@ -294,27 +300,27 @@
                         <span>City: <span style="border-bottom: 1px solid #000; min-width:130px; display:inline-block; font-weight:bold;">${cfg.city||''}</span></span>
                     </div>
                     <div style="display:flex; justify-content:flex-start; gap:40px;">
-                        <span>League Dates: <span style="margin-left:30px;">Start</span> <span style="border-bottom: 1px solid #000; min-width:120px; display:inline-block; text-align:center; font-weight:bold;">${cfg.startDate||''}</span></span>
+                        <span>League Dates: <span style="margin-left:80px;">Start</span> <span style="border-bottom: 1px solid #000; min-width:120px; display:inline-block; text-align:center; font-weight:bold;">${cfg.startDate||''}</span></span>
                         <span>End <span style="border-bottom: 1px solid #000; min-width:120px; display:inline-block; text-align:center; font-weight:bold;">${cfg.endDate||''}</span></span>
                     </div>
                 </div>
 
-                <div style="border-top:2px solid #000; border-bottom:2px solid #000; padding: 10px 0; margin-top:10px; display:grid; grid-template-columns: 1fr 1fr 1fr; font-weight:bold; font-size:10px;">
+                <div style="border-top:2px solid #000; border-bottom:2px solid #000; padding: 10px 0; margin-top:10px; display:grid; grid-template-columns: 1fr 1fr 1fr; font-weight:bold; font-size:10px; line-height:1.5;">
                     <div><u>Column Number:</u><br>1. Total League Pts, No Handicap<br>2. High Game Points, No handicap )<br>3. Total League Shoes</div>
                     <div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div>
                     <div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div>
                 </div>
 
-                <table style="width:100%; border-collapse:collapse; border:3.5px solid #000; margin-top:10px; font-size:11px;">
+                <table style="width:100%; border-collapse:collapse; border:3px solid #000; margin-top:10px; font-size:11px;">
                     <thead>
                         <tr style="text-align:center; font-weight:bold;">
-                            <th colspan="2" style="border:1.5px solid #000;">Player Name</th><th rowspan="2" style="border:1.5px solid #000; width:45px;">Div.</th><th rowspan="2" style="border:1.5px solid #000; width:80px;">NHPA<br>Card No.</th><th style="border:1.5px solid #000; width:45px;">1</th><th style="border:1.5px solid #000; width:45px;">2</th><th style="border:1.5px solid #000; width:55px;">3</th><th style="border:1.5px solid #000; width:45px;">4</th><th style="border:1.5px solid #000; width:45px;">5</th><th style="border:1.5px solid #000; width:45px;">6</th><th style="border:1.5px solid #000; width:45px;">7</th><th rowspan="2" style="border:1.5px solid #000; width:35px;">Elig</th>
+                            <th colspan="2" style="border:1px solid #000;">Player Name</th><th rowspan="2" style="border:1px solid #000; width:45px;">Div.</th><th rowspan="2" style="border:1px solid #000; width:80px;">NHPA<br>Card No.</th><th style="border:1px solid #000; width:45px;">1</th><th style="border:1px solid #000; width:45px;">2</th><th style="border:1px solid #000; width:55px;">3</th><th style="border:1px solid #000; width:45px;">4</th><th style="border:1px solid #000; width:45px;">5</th><th style="border:1px solid #000; width:45px;">6</th><th style="border:1px solid #000; width:45px;">7</th><th rowspan="2" style="border:1px solid #000; width:35px;">Elig</th>
                         </tr>
-                        <tr style="text-align:center; font-weight:bold;"><th style="border:1.5px solid #000;">Last</th><th style="border:1.5px solid #000;">First</th><th colspan="7" style="border:1.5px solid #000; font-size:8px;">NHPA COLUMNS</th></tr>
+                        <tr style="text-align:center; font-weight:bold;"><th style="border:1px solid #000;">Last</th><th style="border:1px solid #000;">First</th><th colspan="7" style="border:1px solid #000; font-size:8px;">NHPA COLUMNS</th></tr>
                     </thead>
                     <tbody>${rowsHtml}</tbody>
                 </table>
-                <p style="margin-top:40px; font-size:11px;">" I certify that all information provided on this form is accurate and the above named league or club has complied with all NHPA rules and regulations pertaining to sanctioned league play."</p>
+                <p style="margin-top:30px; font-size:11px;">" I certify that all information provided on this form is accurate and the above named league or club has complied with all NHPA rules and regulations pertaining to sanctioned league play."</p>
                 <div style="text-align:right; margin-top:30px;">Signed <span style="border-bottom:2px solid #000; min-width:350px; display:inline-block;"></span><br><div style="font-size:10px; font-weight:bold; margin-right:60px; margin-top:5px;">Club Officer / League Director</div></div>
             </div>`;
             window.executePrint("NHPA Stat Sheet", template, true);
@@ -323,7 +329,7 @@
         window.pickLiveTeams = () => {
             match.t1Name = document.getElementById('lt1').value; match.t2Name = document.getElementById('lt2').value;
             if(!match.t1Name || !match.t2Name) return alert("Select teams");
-            match.active = true; match.gameNum = 1; match.games = []; match.seriesBuffer = []; match.sessionAgg = { t1: 0, t2: 0 }; match.fourDeadLog = {};
+            match.active = true; match.gameNum = 1; match.games = []; match.seriesBuffer = []; match.fourDeadLog = {};
             match.sessionId = Date.now();
             if (mode === 'SINGLES') { match.p1 = match.t1Name; match.p3 = match.t2Name; window.startTheLiveGame(); }
             else { match.step = 'PLAYERS'; render(); }
@@ -469,9 +475,12 @@
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
+            
             ['STANDINGS', 'STATS', 'SCORER', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { 
-                const el = document.getElementById('tab'+t); if(el) { el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; }
+                const el = document.getElementById('tab'+t); 
+                if(el) { el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; }
             });
+
             const content = document.getElementById('viewContent'), hList = (state.history || []).filter(h => h.mode === mode);
 
             if (view === 'SCORER') {
@@ -502,7 +511,7 @@
                     const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
                     const s1C = sc1 + match.h1 + match.h2 + d1 + d2 + Number(match.currF.p1||0) + Number(match.currF.p2||0); 
                     const s2C = sc2 + match.h3 + match.h4 + d3 + d4 + Number(match.currF.p3||0) + Number(match.currF.p4||0);
-                    content.innerHTML = `<div class="bg-black text-white p-3 flex justify-between px-6 text-[11px] font-black uppercase"><span>Agg: ${match.sessionAgg.t1+s1C}</span><span>G${match.gameNum}</span><span>Agg: ${match.sessionAgg.t2+s2C}</span></div><div class="grid grid-cols-2 gap-1 mb-2"><div class="p-6 bg-white text-center shadow-inner ${isT1Active?'pitching-team-card':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t1Name}</p><p class="text-7xl font-black tracking-tighter">${s1C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h1+match.h2} HC</p></div><div class="p-6 bg-white text-center shadow-inner ${isT2Active?'pitching-team-card':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t2Name}</p><p class="text-7xl font-black tracking-tighter">${s2C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h3+match.h4} HC</p></div></div><div class="flex items-stretch gap-1 mb-2"><div class="bg-sky-500 text-white p-3 flex-1 text-center text-[12px] font-black uppercase italic tracking-widest shadow-lg">UP: ${upP}</div><button onclick="window.openExitModal()" class="bg-red-600 text-white px-6 font-black text-[10px] uppercase rounded">Exit</button></div><div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div><div class="micro-container mt-4"><table class="micro-table"><thead>${mode==='SINGLES'?'<tr><th>SH</th><th>R</th><th>P</th><th>SC</th><th>R</th><th>P</th><th>SC</th></tr>':'<tr><th>SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T2</th></tr>'}</thead><tbody><tr class="curr-row"><td class="sh-cell">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td>` : `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p2, match.currF.p4)}</td><td>${match.currF.p2??''}</td><td></td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td><td>${getSym(match.currF.p4, match.currF.p2)}</td><td>${match.currF.p4??''}</td><td></td><td></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s+match.h1}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s+match.h3}</td></tr>`; return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s}</td><td>${getSym(f.p2,f.p4)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td>${p2s}</td><td>${p1s+p2s+match.h1+match.h2+d1+d2}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s}</td><td>${getSym(f.p4,f.p2)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td>${p4s}</td><td>${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
+                    content.innerHTML = `<div class="bg-black text-white p-3 flex justify-between px-6 text-[11px] font-black uppercase"><span>Agg: ${match.sessionAgg.t1+s1C}</span><span>G${match.gameNum}</span><span>Agg: ${match.sessionAgg.t2+s2C}</span></div><div class="grid grid-cols-2 gap-1 mb-2"><div class="p-6 bg-white text-center shadow-inner ${isT1Active?'pitching-team-card':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t1Name}</p><p class="text-7xl font-black tracking-tighter">${s1C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h1+match.h2} HC</p></div><div class="p-6 bg-white text-center shadow-inner ${isT2Active?'pitching-team-card':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t2Name}</p><p class="text-7xl font-black tracking-tighter">${s2C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h3+match.h4} HC</p></div></div><div class="flex items-stretch gap-1 mb-2"><div class="bg-sky-500 text-white p-3 flex-1 text-center text-[12px] font-black uppercase italic tracking-widest shadow-lg">UP: ${upP}</div><button onclick="window.openExitModal()" class="bg-red-600 text-white px-6 font-black text-[10px] uppercase rounded">Exit</button></div><div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div><div class="micro-container mt-4"><table class="micro-table"><thead>${mode==='SINGLES'?'<tr><th>SH</th><th>R</th><th>P</th><th>SC</th><th>R</th><th>P</th><th>SC</th></tr>':'<tr><th>SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T2</th></tr>'}</thead><tbody><tr class="curr-row"><td class="sh-cell">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td>` : `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p2, match.currF.p4)}</td><td>${match.currF.p2??''}</td><td></td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td><td>${getSym(match.currF.p4, match.currF.p2)}</td><td>${match.currF.p4??''}</td><td></td><td></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s+match.h1}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s+match.h3}</td></tr>`; return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s}</td><td>${getSym(f.p2,f.p4)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td>${p2s}</td><td>${p1s+p2s+match.h1+match.h2+d1+d2}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s}</td><td>${getSym(f.p4,f.p2)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td>${p2s}</td><td>${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
                 }
             } else if (view === 'STANDINGS') {
                 const rows = (state.roster[mode]||[]).map(t => { 
@@ -511,7 +520,7 @@
                     const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
                     return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
                 }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col text-white">${d.w}</td><td class="st-num-col text-white">${d.l}</td><td class="st-num-col text-white">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col text-white">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
-                content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'STATS') {
                 const shoes = mode === 'DOUBLES' ? 30 : 50, pNames = [...new Set(hList.map(h => h.player))];
                 const rows = pNames.map(pN => { 
