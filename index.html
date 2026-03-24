@@ -24,8 +24,8 @@
         .curr-row { background: #171717; outline: 1px solid #444; }
 
         /* PITCHING HIGHLIGHT */
-        .pitching-team-card { border: 5px solid #0ea5e9 !important; background: #f0f9ff !important; position: relative; }
-        .pitching-team-card::after { content: 'PITCHING'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: #0ea5e9; color: white; font-size: 10px; padding: 2px 12px; font-weight: 900; z-index: 60; }
+        .pitch-active { border: 5px solid #0ea5e9 !important; background: #f0f9ff !important; position: relative; }
+        .pitch-active::after { content: 'PITCHING'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: #0ea5e9; color: white; font-size: 10px; padding: 2px 12px; font-weight: 900; z-index: 60; }
 
         /* DATA TABLES */
         .std-table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #000; color: #fff; }
@@ -78,7 +78,6 @@
         </div>
     </div>
 
-    <!-- UI HEADER -->
     <header class="bg-black text-white p-4 shadow-2xl flex justify-between items-center border-b-4 border-sky-500 no-print">
         <div class="flex items-center gap-3">
             <img src="logo.jpg" alt="Logo" class="w-10 h-10 object-contain">
@@ -128,7 +127,8 @@
 
         onSnapshot(docRef, (snapshot) => { 
             if (snapshot.exists()) { 
-                state = snapshot.data(); 
+                const incoming = snapshot.data();
+                state = incoming;
                 if(!state.managePin) state.managePin = '1234';
                 if(!state.nhpa) state.nhpa = {SINGLES:{}, DOUBLES:{}};
                 if(!state.hcpLocked) state.hcpLocked = {SINGLES:true, DOUBLES:true};
@@ -136,7 +136,7 @@
                 if(!state.fourDeads) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
                 if(state.scorerEnabled === undefined) state.scorerEnabled = true;
                 render(); 
-            } else { save(); } 
+            } 
         });
 
         async function save() { await setDoc(docRef, state); }
@@ -154,7 +154,8 @@
             const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
             const p = rList.find(x => cleanN(x.name) === n);
             const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode).slice(-9);
-            return hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0);
+            const rawAvg = hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0);
+            return Math.round(rawAvg);
         }
 
         function getH(pName) {
@@ -218,19 +219,47 @@
         window.printHistoryEntry = (sId) => {
             const s = state.sessions.find(x => x.id === sId);
             if(!s) return;
+            const isSingles = (s.mode === 'SINGLES');
             let html = `<div style="font-family: Arial; color:black; background:white;">`;
+
+            const sessionPlayers = [...new Set(s.fullData.flatMap(g => [g.p1, g.p2, g.p3, g.p4]))].filter(p => p && !['BYE','DUMMY'].includes(cleanN(p).toUpperCase()));
+            html += `<div style="margin-bottom:30px;"><h3 style="text-transform:uppercase; font-size:14px; border-bottom:2px solid #000; margin-bottom:10px;">Series Summary</h3><table style="width:100%; border-collapse:collapse; text-align:center; border:1px solid #000; font-size:11px;"><thead><tr style="background:#eee;"><th>Player</th><th>G1 Score</th><th>G2 Score</th><th>G3 Score</th><th>Series Total</th><th>Series Avg</th></tr></thead><tbody>`;
+            sessionPlayers.forEach(p => {
+                let pScores = [0,0,0], pRingerArr = [0,0,0];
+                s.fullData.forEach((g, i) => {
+                    const key = ['p1','p2','p3','p4'].find(k => cleanN(g[k]) === cleanN(p));
+                    if(key) {
+                        pScores[i] = (g.frames || []).reduce((sum, f) => sum + Number(f[key]||0), 0) + (cleanN(g[key]) === 'dummy' ? 30 : 0);
+                        pRingerArr[i] = (g.frames || []).reduce((sum, f) => sum + getR(f[key]), 0);
+                    }
+                });
+                const total = pScores.reduce((a,b)=>a+b,0);
+                html += `<tr><td style="border:1px solid #ddd; font-weight:bold; text-align:left; padding-left:5px;">${p}</td><td>${pScores[0]} (${pRingerArr[0]})</td><td>${pScores[1]} (${pRingerArr[1]})</td><td>${pScores[2]} (${pRingerArr[2]})</td><td style="font-weight:bold;">${total}</td><td>${Math.round(total/3)}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
+
             s.fullData.forEach(g => {
                 html += `<div style="margin-bottom:50px; page-break-inside: avoid; border: 1px solid #000; padding: 10px;">`;
                 html += `<div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; text-transform:uppercase; font-size:14px;"><span>Game ${g.gameNum}</span><span>Score: ${g.s1} - ${g.s2}</span></div>`;
                 html += `<table style="width:100%; border-collapse:collapse; text-align:center; border:2px solid #000; font-size:11px;">`;
-                html += `<thead><tr style="background:#eee; border-bottom:1px solid #000;"><th rowspan="2" style="border-right:1px solid #000; width:35px;">SH</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p1}</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p2}</th><th rowspan="2" style="border-right:2px solid #000; width:45px; background:#f9f9f9;">T1</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p3}</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p4}</th><th rowspan="2" style="width:45px; background:#f9f9f9;">T2</th></tr><tr style="background:#eee; border-bottom:2px solid #000;"><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th></tr></thead><tbody>`;
-                let p1s=0, p2s=0, p3s=0, p4s=0;
-                g.frames.forEach(f => {
-                    p1s += Number(f.p1||0); p2s += Number(f.p2||0); p3s += Number(f.p3||0); p4s += Number(f.p4||0);
-                    html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1, f.p3)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${p1s}</td><td style="border:1px solid #ccc;">${getSym(f.p2, f.p4)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${p2s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${p1s+p2s+g.h1+g.h2}</td><td style="border:1px solid #ccc;">${getSym(f.p3, f.p1)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${p3s}</td><td style="border:1px solid #ccc;">${getSym(f.p4, f.p2)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${p4s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+p4s+g.h3+g.h4}</td></tr>`;
-                });
+                if(isSingles) {
+                    html += `<thead><tr style="background:#eee; border-bottom:1px solid #000;"><th rowspan="2" style="border-right:1px solid #000; width:40px;">SH</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p1}</th><th rowspan="2" style="border-right:2px solid #000; width:60px; background:#f9f9f9;">T1</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p3}</th><th rowspan="2" style="width:60px; background:#f9f9f9;">T2</th></tr><tr style="background:#eee; border-bottom:2px solid #000;"><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th></tr></thead><tbody>`;
+                    let p1s=0, p3s=0;
+                    g.frames.forEach(f => {
+                        p1s += Number(f.p1||0); p3s += Number(f.p3||0);
+                        html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1, f.p3)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${p1s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${p1s+g.h1}</td><td style="border:1px solid #ccc;">${getSym(f.p3, f.p1)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${p3s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+g.h3}</td></tr>`;
+                    });
+                } else {
+                    html += `<thead><tr style="background:#eee; border-bottom:1px solid #000;"><th rowspan="2" style="border-right:1px solid #000; width:30px;">SH</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p1}</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p2}</th><th rowspan="2" style="border-right:2px solid #000; width:45px; background:#f9f9f9;">T1</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p3}</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p4}</th><th rowspan="2" style="width:45px; background:#f9f9f9;">T2</th></tr><tr style="background:#eee; border-bottom:2px solid #000;"><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th></tr></thead><tbody>`;
+                    let p1s=0, p2s=0, p3s=0, p4s=0;
+                    g.frames.forEach(f => {
+                        p1s += Number(f.p1||0); p2s += Number(f.p2||0); p3s += Number(f.p3||0); p4s += Number(f.p4||0);
+                        html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1, f.p3)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${p1s}</td><td style="border:1px solid #ccc;">${getSym(f.p2, f.p4)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${p2s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${p1s+p2s+g.h1+g.h2}</td><td style="border:1px solid #ccc;">${getSym(f.p3, f.p1)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${p3s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+p4s+g.h3+g.h4}</td><td style="border:1px solid #ccc;">${getSym(f.p4, f.p2)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${p4s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+p4s+g.h3+g.h4}</td></tr>`;
+                    });
+                }
                 html += `</tbody></table></div>`;
             });
+
             html += `</div>`;
             window.executePrint("Session Score Sheets", html);
         };
@@ -245,91 +274,63 @@
                 const pHist = hList.filter(h => cleanN(h.player) === cleanN(pN));
                 const rRec = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members)).find(r => cleanN(r.name) === cleanN(pN)) || {};
                 const totalPts = pHist.reduce((s, h) => s + h.score, 0), highGame = pHist.length ? Math.max(...pHist.map(h => h.score)) : 0;
-                const totalShoes = pHist.length * shoesPerGame, totalRingers = pHist.reduce((s, h) => s + h.ringers, 0);
-                const prevHiRinger = Number(rRec.prevHighRinger || 0), curSeasonHiPct = pHist.length ? Math.max(...pHist.map(h => (h.ringers/shoesPerGame)*100)) : 0;
-                const finalRingerPct = totalShoes > 0 ? (totalRingers / totalShoes) * 100 : 0;
+                const totalRingers = pHist.reduce((s, h) => s + h.ringers, 0), prevHiRinger = Number(rRec.prevHighRinger || 0);
+                const curSeasonHiPct = pHist.length ? Math.max(...pHist.map(h => (h.ringers/shoesPerGame)*100)) : 0;
+                const finalRingerPct = (pHist.length * shoesPerGame) > 0 ? (totalRingers / (pHist.length * shoesPerGame)) * 100 : 0;
                 const [last, first] = pN.includes(',') ? pN.split(',').map(x=>x.trim()) : [pN, ""];
-                const elig = curSeasonHiPct > prevHiRinger ? "Y" : "";
-                
-                // Alignment logic fixed: Data rows map exactly to header structure
-                rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;">
-                    <td style="border:1px solid #000; padding-left:4px;">${last}</td>
-                    <td style="border:1px solid #000; padding-left:4px;">${first}</td>
-                    <td style="border:1px solid #000; text-align:center;">${rRec.category||''}</td>
-                    <td style="border:1px solid #000; text-align:center;">${rRec.cardNo||''}</td>
-                    <td style="border:1px solid #000; text-align:center;">${totalPts}</td>
-                    <td style="border:1px solid #000; text-align:center;">${highGame}</td>
-                    <td style="border:1px solid #000; text-align:center;">${totalShoes}</td>
-                    <td style="border:1px solid #000; text-align:center;">${totalRingers}</td>
-                    <td style="border:1px solid #000; text-align:center;">${prevHiRinger.toFixed(1)}</td>
-                    <td style="border:1px solid #000; text-align:center;">${curSeasonHiPct.toFixed(1)}</td>
-                    <td style="border:1px solid #000; text-align:center;">${finalRingerPct.toFixed(1)}</td>
-                    <td style="border:1px solid #000; text-align:center;">${elig}</td>
-                </tr>`;
+                rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;"><td style="border:1px solid #000; padding:2px;">${last}</td><td style="border:1px solid #000; padding:2px;">${first}</td><td style="border:1px solid #000; text-align:center;">${rRec.category||''}</td><td style="border:1px solid #000; text-align:center;">${rRec.cardNo||''}</td><td style="border:1px solid #000; text-align:center;">${totalPts}</td><td style="border:1px solid #000; text-align:center;">${highGame}</td><td style="border:1px solid #000; text-align:center;">${pHist.length * shoesPerGame}</td><td style="border:1px solid #000; text-align:center;">${totalRingers}</td><td style="border:1px solid #000; text-align:center;">${prevHiRinger.toFixed(1)}</td><td style="border:1px solid #000; text-align:center;">${curSeasonHiPct.toFixed(1)}</td><td style="border:1px solid #000; text-align:center;">${finalRingerPct.toFixed(1)}</td><td style="border:1px solid #000; text-align:center;">${curSeasonHiPct > prevHiRinger ? 'Y' : ''}</td></tr>`;
             });
-            for(let i=pNames.length; i<25; i++) { 
-                rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;"><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>`; 
-            }
+            for(let i=pNames.length; i<25; i++) { rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;"><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>`; }
 
             const template = `
-            <div style="font-family: Arial, sans-serif; font-size: 11px; width: 7.8in; margin: auto; padding: 20px; color: black; line-height: 1.2; background: white;">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div style="width:75px; height:90px; border:2px solid #000; display:flex; align-items:center; justify-content:center;">
-                        <img src="nhpa_logo.png" style="max-width:100%; object-fit:contain;">
-                    </div>
-                    <div style="flex:1; text-align:center;">
-                        <h1 style="font-size:22pt; font-weight:bold; margin:0;">National Horseshoe Pitchers Association</h1>
-                        <h2 style="font-size:16pt; font-weight:bold; margin:2px 0;">Sanctioned Club/League Program - FINAL Stat Sheet</h2>
-                        <p style="font-size:10px; margin:4px 0;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p>
-                        <p style="font-size:10px; font-weight:bold; margin:0;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH 44070 Bcarson848@gmail.com</p>
+            <div style="font-family: Arial, sans-serif; font-size: 11px; width: 8in; margin: auto; padding: 20px; color: black; line-height: 1.2; background: white;">
+                <div style="display: flex; align-items: start; margin-bottom: 5px;">
+                    <div style="width: 80px; height: 90px; border: 2px solid #000; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width:100%; object-fit:contain;"></div>
+                    <div style="flex: 1; text-align: center;">
+                        <h1 style="font-size: 22pt; font-weight: bold; font-style: italic; margin: 0;">National Horseshoe Pitchers Association</h1>
+                        <h2 style="font-size: 16pt; font-weight: bold; margin: 5px 0;">Sanctioned Club/League Program - FINAL Stat Sheet</h2>
+                        <p style="font-size: 10px; margin: 4px 0;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p>
+                        <p style="font-size: 10px; margin: 0; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH 44070 Bcarson848@gmail.com</p>
                     </div>
                 </div>
-                
-                <div style="margin-top:20px; border-top: 3px solid #000; padding-top:10px; font-size:11px; line-height:2.2;">
-                    <div style="display:flex; justify-content:space-between; width:100%;">
-                        <span>Club/League Name: <span style="border-bottom: 1px solid #000; min-width:350px; display:inline-block; font-weight:bold;">${cfg.clubName||''}</span></span>
-                        <span>Phone#: <span style="border-bottom: 1px solid #000; min-width:140px; display:inline-block; font-weight:bold;">${cfg.phone||''}</span></span>
+                <div style="margin-top: 15px; border-top: 3px solid #000; padding-top: 10px; font-size: 11px; line-height: 2;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Club Name: <span style="border-bottom: 1px solid #000; min-width: 380px; display: inline-block; font-weight:bold;">${cfg.clubName||''}</span></span>
+                        <span>Phone#: <span style="border-bottom: 1px solid #000; min-width: 140px; display: inline-block; font-weight:bold;">${cfg.phone||''}</span></span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; width:100%;">
-                        <span>Sanction Number: <span style="border-bottom: 1px solid #000; min-width:140px; display:inline-block; font-weight:bold;">${cfg.sanctionNum||''}</span></span>
-                        <span>Director: <span style="border-bottom: 1px solid #000; min-width:400px; display:inline-block; font-weight:bold;">${cfg.director||''}</span></span>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Sanction Number: <span style="border-bottom: 1px solid #000; min-width: 180px; display: inline-block; font-weight:bold;">${cfg.sanctionNum||''}</span></span>
+                        <span>Director: <span style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block; font-weight:bold;">${cfg.director||''}</span></span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; width:100%;">
-                        <span>State: <span style="border-bottom: 1px solid #000; min-width:140px; display:inline-block; font-weight:bold;">${cfg.state||''}</span></span>
-                        <span>Address: <span style="border-bottom: 1px solid #000; min-width:280px; display:inline-block; font-weight:bold;">${cfg.address||''}</span></span>
-                        <span>City: <span style="border-bottom: 1px solid #000; min-width:130px; display:inline-block; font-weight:bold;">${cfg.city||''}</span></span>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>State: <span style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block; font-weight:bold;">${cfg.state||''}</span></span>
+                        <span>Address: <span style="border-bottom: 1px solid #000; min-width: 300px; display: inline-block; font-weight:bold;">${cfg.address||''}</span></span>
+                        <span>City: <span style="border-bottom: 1px solid #000; min-width: 130px; display: inline-block; font-weight:bold;">${cfg.city||''}</span></span>
                     </div>
-                    <div style="display:flex; justify-content:flex-start; gap:40px;">
-                        <span>League Dates: <span style="margin-left:80px;">Start</span> <span style="border-bottom: 1px solid #000; min-width:120px; display:inline-block; text-align:center; font-weight:bold;">${cfg.startDate||''}</span></span>
-                        <span>End <span style="border-bottom: 1px solid #000; min-width:120px; display:inline-block; text-align:center; font-weight:bold;">${cfg.endDate||''}</span></span>
+                    <div style="display: flex; justify-content: flex-start; gap: 40px;">
+                        <span>Dates: Start <span style="border-bottom: 1px solid #000; min-width: 120px; display: inline-block; text-align:center; font-weight:bold;">${cfg.startDate||''}</span></span>
+                        <span>End <span style="border-bottom: 1px solid #000; min-width: 120px; display: inline-block; text-align:center; font-weight:bold;">${cfg.endDate||''}</span></span>
                     </div>
                 </div>
-
-                <div style="border-top:2px solid #000; border-bottom:2px solid #000; padding: 10px 0; margin-top:10px; display:grid; grid-template-columns: 1fr 1fr 1fr; font-weight:bold; font-size:10px; line-height:1.5;">
+                <div style="border-top:2px solid #000; border-bottom:2px solid #000; padding: 8px 0; margin-top:10px; display:grid; grid-template-columns: 1fr 1fr 1fr; font-weight:bold; font-size: 10px;">
                     <div><u>Column Number:</u><br>1. Total League Pts, No Handicap<br>2. High Game Points, No handicap )<br>3. Total League Shoes</div>
                     <div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div>
                     <div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div>
                 </div>
-
-                <table style="width:100%; border-collapse:collapse; border:3px solid #000; margin-top:10px; font-size:11px;">
-                    <thead>
-                        <tr style="text-align:center; font-weight:bold;">
-                            <th colspan="2" style="border:1px solid #000;">Player Name</th><th rowspan="2" style="border:1px solid #000; width:45px;">Div.</th><th rowspan="2" style="border:1px solid #000; width:80px;">NHPA<br>Card No.</th><th style="border:1px solid #000; width:45px;">1</th><th style="border:1px solid #000; width:45px;">2</th><th style="border:1px solid #000; width:55px;">3</th><th style="border:1px solid #000; width:45px;">4</th><th style="border:1px solid #000; width:45px;">5</th><th style="border:1px solid #000; width:45px;">6</th><th style="border:1px solid #000; width:45px;">7</th><th rowspan="2" style="border:1px solid #000; width:35px;">Elig</th>
-                        </tr>
-                        <tr style="text-align:center; font-weight:bold;"><th style="border:1px solid #000;">Last</th><th style="border:1px solid #000;">First</th><th colspan="7" style="border:1px solid #000; font-size:8px;">NHPA COLUMNS</th></tr>
-                    </thead>
+                <table style="width: 100%; border-collapse: collapse; border: 3px solid #000; margin-top: 5px; font-size: 11px;">
+                    <thead><tr style="text-align: center; font-weight: bold; background:#eee;"><th colspan="2" style="border: 1px solid #000;">Player Name</th><th rowspan="2" style="border: 1px solid #000; width: 45px;">Div.</th><th rowspan="2" style="border: 1px solid #000; width: 90px;">NHPA<br>Card No.</th><th style="border: 1px solid #000; width: 45px;">1</th><th style="border: 1px solid #000; width: 45px;">2</th><th style="border: 1px solid #000; width: 55px;">3</th><th style="border: 1px solid #000; width: 45px;">4</th><th style="border: 1px solid #000; width: 45px;">5</th><th style="border: 1px solid #000; width: 45px;">6</th><th style="border: 1px solid #000; width: 45px;">7</th><th rowspan="2" style="border: 1px solid #000; width: 35px;">Elig</th></tr><tr style="text-align: center; font-weight: bold; background:#eee;"><th style="border: 1px solid #000;">Last</th><th style="border: 1px solid #000;">First</th><th colspan="7" style="border: 1px solid #000; font-size: 8px;">NHPA COLUMNS</th></tr></thead>
                     <tbody>${rowsHtml}</tbody>
                 </table>
-                <p style="margin-top:30px; font-size:11px;">" I certify that all information provided on this form is accurate and the above named league or club has complied with all NHPA rules and regulations pertaining to sanctioned league play."</p>
-                <div style="text-align:right; margin-top:30px;">Signed <span style="border-bottom:2px solid #000; min-width:350px; display:inline-block;"></span><br><div style="font-size:10px; font-weight:bold; margin-right:60px; margin-top:5px;">Club Officer / League Director</div></div>
+                <div style="text-align:right; margin-top:20px; font-size:11px;">Signed <span style="border-bottom: 2px solid #000; display: inline-block; min-width: 350px;"></span><br><div style="font-size:10px; font-weight: bold; margin-right: 60px; margin-top: 5px;">Club Officer / League Director</div></div>
             </div>`;
             window.executePrint("NHPA Stat Sheet", template, true);
         };
 
         window.pickLiveTeams = () => {
-            match.t1Name = document.getElementById('lt1').value; match.t2Name = document.getElementById('lt2').value;
-            if(!match.t1Name || !match.t2Name) return alert("Select teams");
-            match.active = true; match.gameNum = 1; match.games = []; match.seriesBuffer = []; match.fourDeadLog = {};
+            const t1 = document.getElementById('lt1').value, t2 = document.getElementById('lt2').value;
+            if(!t1 || !t2) return alert("Select teams");
+            match.active = true; match.step = 'TEAMS'; match.t1Name = t1; match.t2Name = t2;
+            match.gameNum = 1; match.games = []; match.seriesBuffer = []; match.sessionAgg = { t1: 0, t2: 0 }; match.fourDeadLog = {};
             match.sessionId = Date.now();
             if (mode === 'SINGLES') { match.p1 = match.t1Name; match.p3 = match.t2Name; window.startTheLiveGame(); }
             else { match.step = 'PLAYERS'; render(); }
@@ -404,15 +405,21 @@
 
         window.finalizeFullSeries = () => {
             const mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie'), today = new Date().toLocaleDateString();
-            let bestSessionHoa = -999, sessionHoaPlayer = '';
-            match.seriesBuffer.forEach(entry => {
-                const playerAvg = getPlyrAvg(entry.player), hoaVal = Number((entry.score - playerAvg).toFixed(1));
-                if (hoaVal > bestSessionHoa) { bestSessionHoa = hoaVal; sessionHoaPlayer = entry.player; }
-            });
-            const existingIdx = state.weeklyHoa[mode].findIndex(x => x.date === today);
-            if (existingIdx !== -1) { if (bestSessionHoa > state.weeklyHoa[mode][existingIdx].hoa) { state.weeklyHoa[mode][existingIdx] = { date: today, player: sessionHoaPlayer, hoa: bestSessionHoa }; } } 
-            else { state.weeklyHoa[mode].push({ date: today, player: sessionHoaPlayer, hoa: bestSessionHoa }); }
             state.history.push(...match.seriesBuffer);
+            
+            match.seriesBuffer.forEach(entry => {
+                const playerAvg = getPlyrAvg(entry.player);
+                const currentHoa = entry.score - playerAvg;
+                const existingIdx = state.weeklyHoa[mode].findIndex(x => x.date === today);
+                if (existingIdx !== -1) {
+                    if (currentHoa > state.weeklyHoa[mode][existingIdx].hoa) {
+                        state.weeklyHoa[mode][existingIdx] = { date: today, player: entry.player, hoa: currentHoa };
+                    }
+                } else {
+                    state.weeklyHoa[mode].push({ date: today, player: entry.player, hoa: currentHoa });
+                }
+            });
+
             state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now() });
             Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
             match.active = false; view = 'STANDINGS'; save();
@@ -455,13 +462,15 @@
             const raw = document.getElementById('rosterInput').value; if(!raw) return; 
             const lines = raw.split('\n').filter(l => l.trim().length > 0); 
             let tempT = {}, tempP = [];
-            const getFirst = (n) => n.includes(',') ? n.split(',')[1].trim().split(' ')[0] : n.trim().split(' ')[0];
             lines.forEach(line => { 
                 const p = line.split(/\t| {2,}/).map(x => x.trim()); if(p.length < 7) return; 
                 const obj = { name: p[1], startAvg: parseFloat(p[2])||0, category: p[3], cardNo: p[4], prevHighRinger: parseFloat(p[5])||0, currentHcp: Number(p[6]||0) }; 
                 if(mode==='DOUBLES'){ if(!tempT[p[0]]) tempT[p[0]] = []; tempT[p[0]].push(obj); } else tempP.push(obj); 
             }); 
-            if(mode==='DOUBLES') state.roster.DOUBLES = Object.keys(tempT).map(id => ({ teamName: tempT[id].map(m => getFirst(m.name)).join('/'), members: tempT[id] })); else state.roster.SINGLES = tempP; 
+            if(mode==='DOUBLES') state.roster.DOUBLES = Object.keys(tempT).map(id => {
+                const getFirst = (n) => n.includes(',') ? n.split(',')[1].trim().split(' ')[0] : n.trim().split(' ')[0];
+                return { teamName: tempT[id].map(m => getFirst(m.name)).join('/'), members: tempT[id] };
+            }); else state.roster.SINGLES = tempP; 
             save(); alert("Cloud Updated"); 
         };
 
@@ -475,12 +484,9 @@
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
-            
             ['STANDINGS', 'STATS', 'SCORER', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { 
-                const el = document.getElementById('tab'+t); 
-                if(el) { el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; }
+                const el = document.getElementById('tab'+t); if(el) { el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; }
             });
-
             const content = document.getElementById('viewContent'), hList = (state.history || []).filter(h => h.mode === mode);
 
             if (view === 'SCORER') {
@@ -503,7 +509,7 @@
                         let pGames = []; for(let gN=1; gN<=match.gameNum; gN++) { const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); pGames.push(h ? `${h.score}(${h.ringers})` : '-'); }
                         while(pGames.length < 3) pGames.push('-');
                         const sTot = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p)).reduce((s,x)=>s+x.score, 0), statAvg = getPlyrAvg(p);
-                        tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pGames[0]}</td><td>${pGames[1]}</td><td>${pGames[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black text-black">${statAvg.toFixed(1)}</td></tr>`; 
+                        tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pGames[0]}</td><td>${pGames[1]}</td><td>${pGames[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black text-black">${statAvg}</td></tr>`; 
                     });
                     content.innerHTML = `<div class="p-4 bg-white shadow-2xl max-w-xl mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase">${isMatch ? 'Series Final' : 'Game Summary'}</h2><p class="text-4xl font-black my-4">${match.games[match.gameNum-1].s1} - ${match.games[match.gameNum-1].s2}</p>${tableHtml}<button onclick="${isMatch ? 'window.finalizeFullSeries()' : 'window.nextGame()'}" class="w-full bg-sky-500 text-black p-5 rounded-2xl font-black uppercase shadow-lg mt-6">${isMatch ? 'Save & Close' : 'Next Game'}</button></div>`;
                 } else {
@@ -511,7 +517,7 @@
                     const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
                     const s1C = sc1 + match.h1 + match.h2 + d1 + d2 + Number(match.currF.p1||0) + Number(match.currF.p2||0); 
                     const s2C = sc2 + match.h3 + match.h4 + d3 + d4 + Number(match.currF.p3||0) + Number(match.currF.p4||0);
-                    content.innerHTML = `<div class="bg-black text-white p-3 flex justify-between px-6 text-[11px] font-black uppercase"><span>Agg: ${match.sessionAgg.t1+s1C}</span><span>G${match.gameNum}</span><span>Agg: ${match.sessionAgg.t2+s2C}</span></div><div class="grid grid-cols-2 gap-1 mb-2"><div class="p-6 bg-white text-center shadow-inner ${isT1Active?'pitching-team-card':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t1Name}</p><p class="text-7xl font-black tracking-tighter">${s1C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h1+match.h2} HC</p></div><div class="p-6 bg-white text-center shadow-inner ${isT2Active?'pitching-team-card':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t2Name}</p><p class="text-7xl font-black tracking-tighter">${s2C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h3+match.h4} HC</p></div></div><div class="flex items-stretch gap-1 mb-2"><div class="bg-sky-500 text-white p-3 flex-1 text-center text-[12px] font-black uppercase italic tracking-widest shadow-lg">UP: ${upP}</div><button onclick="window.openExitModal()" class="bg-red-600 text-white px-6 font-black text-[10px] uppercase rounded">Exit</button></div><div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div><div class="micro-container mt-4"><table class="micro-table"><thead>${mode==='SINGLES'?'<tr><th>SH</th><th>R</th><th>P</th><th>SC</th><th>R</th><th>P</th><th>SC</th></tr>':'<tr><th>SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T2</th></tr>'}</thead><tbody><tr class="curr-row"><td class="sh-cell">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td>` : `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p2, match.currF.p4)}</td><td>${match.currF.p2??''}</td><td></td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td><td>${getSym(match.currF.p4, match.currF.p2)}</td><td>${match.currF.p4??''}</td><td></td><td></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s+match.h1}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s+match.h3}</td></tr>`; return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s}</td><td>${getSym(f.p2,f.p4)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td>${p2s}</td><td>${p1s+p2s+match.h1+match.h2+d1+d2}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s}</td><td>${getSym(f.p4,f.p2)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td>${p2s}</td><td>${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
+                    content.innerHTML = `<div class="bg-black text-white p-3 flex justify-between px-6 text-[11px] font-black uppercase"><span>Agg: ${match.sessionAgg.t1+s1C}</span><span>G${match.gameNum}</span><span>Agg: ${match.sessionAgg.t2+s2C}</span></div><div class="grid grid-cols-2 gap-1 mb-2"><div class="p-6 bg-white text-center shadow-inner ${isT1Active?'pitch-active':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t1Name}</p><p class="text-7xl font-black tracking-tighter">${s1C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h1+match.h2} HC</p></div><div class="p-6 bg-white text-center shadow-inner ${isT2Active?'pitch-active':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t2Name}</p><p class="text-7xl font-black tracking-tighter">${s2C}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">+${match.h3+match.h4} HC</p></div></div><div class="flex items-stretch gap-1 mb-2"><div class="bg-sky-500 text-white p-3 flex-1 text-center text-[12px] font-black uppercase italic tracking-widest shadow-lg">UP: ${upP}</div><button onclick="window.openExitModal()" class="bg-red-600 text-white px-6 font-black text-[10px] uppercase rounded">Exit</button></div><div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div><div class="micro-container mt-4"><table class="micro-table"><thead>${mode==='SINGLES'?'<tr><th>SH</th><th>R</th><th>P</th><th>SC</th><th>R</th><th>P</th><th>SC</th></tr>':'<tr><th>SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T2</th></tr>'}</thead><tbody><tr class="curr-row"><td class="sh-cell">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td>` : `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p2, match.currF.p4)}</td><td>${match.currF.p2??''}</td><td></td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td><td>${getSym(match.currF.p4, match.currF.p2)}</td><td>${match.currF.p4??''}</td><td></td><td></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s+match.h1}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s+match.h3}</td></tr>`; return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s}</td><td>${getSym(f.p2,f.p4)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td>${p2s}</td><td>${p1s+p2s+match.h1+match.h2+d1+d2}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s}</td><td>${getSym(f.p4,f.p2)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td>${p4s}</td><td>${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
                 }
             } else if (view === 'STANDINGS') {
                 const rows = (state.roster[mode]||[]).map(t => { 
@@ -520,19 +526,23 @@
                     const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
                     return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
                 }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col text-white">${d.w}</td><td class="st-num-col text-white">${d.l}</td><td class="st-num-col text-white">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col text-white">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
-                content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'STATS') {
                 const shoes = mode === 'DOUBLES' ? 30 : 50, pNames = [...new Set(hList.map(h => h.player))];
                 const rows = pNames.map(pN => { 
                     const g = hList.filter(h => cleanN(h.player) === cleanN(pN)), playerAvg = getPlyrAvg(pN), totP = g.reduce((s,x)=>s+x.score,0), totR = g.reduce((s,x)=>s+x.ringers,0);
-                    const rPct = g.length ? (totR / (g.length * shoes)) * 100 : 0, hiR = g.length ? Math.max(...g.map(x => (x.ringers / shoes) * 100)) : 0, rRec = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members)).find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0};
-                    const scPct = g.length ? ((10/3) * (totP - (2 * totR))) / g.length : 0, hiOA = g.length ? Math.max(...g.map(x => x.score - playerAvg)) : 0, imp = (playerAvg - rRec.startAvg);
-                    return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td>${getH(pN)}</td><td class="text-white">${playerAvg.toFixed(1)}</td><td>${rPct.toFixed(1)}%</td><td>${hiR.toFixed(1)}%</td><td style="font-size:9px;">${scPct.toFixed(1)}%</td><td>${totP}</td><td style="color:#fb923c;">${hiOA.toFixed(1)}</td><td>${rRec.startAvg}</td><td class="pts-col" style="color:${imp>=0?'#4ade80':'#f87171'}">${imp >= 0 ? '+' : ''}${imp.toFixed(1)}</td></tr>`; 
+                    const rRec = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members)).find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0};
+                    const scPct = g.length ? (((totP - (2 * totR)) / (g.length * shoes)) * 100) : 0;
+                    const imp = Math.round(playerAvg - rRec.startAvg);
+                    const highGame = g.length ? Math.max(...g.map(x => x.score)) : 0;
+                    const hiOA = g.length ? (highGame - playerAvg) : 0;
+                    
+                    return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td>${getH(pN)}</td><td class="text-white">${playerAvg}</td><td>${((totR/(g.length*shoes))*100).toFixed(1)}%</td><td>${(Math.max(...g.map(x=>(x.ringers/shoes)*100))).toFixed(1)}%</td><td style="font-size:9px;">${scPct.toFixed(1)}%</td><td>${totP}</td><td>${highGame}</td><td style="color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td>${rRec.startAvg}</td><td class="pts-col" style="color:${imp>=0?'#4ade80':'#f87171'}">${imp >= 0 ? '+' : ''}${imp}</td></tr>`; 
                 }).sort((a,b)=>b.totP-a.totP).join('');
-                const hoaRows = (state.weeklyHoa[mode] || []).map(h => `<tr><td style="color:#7dd3fc; border-right: 1px solid #333; width:80px;">${h.date}</td><td class="font-black uppercase">${h.player}</td><td class="val-col">${h.hoa}</td></tr>`).reverse().join('');
+                const hoaRows = (state.weeklyHoa[mode] || []).map(h => `<tr><td style="color:#7dd3fc; border-right: 1px solid #333; width:80px;">${h.date}</td><td class="font-black uppercase">${h.player}</td><td class="val-col">${h.hoa >= 0 ? '+' : ''}${Math.round(h.hoa)}</td></tr>`).reverse().join('');
                 const deadsData = Object.keys(state.fourDeads[mode] || {}).map(p => ({ n: p, c: state.fourDeads[mode][p] })).sort((a,b) => b.c - a.c);
                 const deadsRows = deadsData.map(d => `<tr><td class="font-black uppercase">${d.n}</td><td class="val-col" style="color:white;">${d.c}</td></tr>`).join('');
-                content.innerHTML = `<div class="action-bar flex justify-end pt-2 no-print"><button onclick="window.printActive('Club Stats')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Stats</button></div><div class="relative shadow-2xl rounded-none border border-zinc-800 bg-black overflow-x-auto mt-2"><table class="std-table w-full" style="min-width: 1100px; table-layout: auto;"><thead><tr class="bg-zinc-900"><th class="stats-name-col">Player</th><th>Hcp</th><th>Avg</th><th>R%</th><th>Hi R%</th><th>Scr %</th><th>Tot P</th><th>HOA</th><th>S.Avg</th><th class="pts-col">Imp</th></tr></thead><tbody>${rows}</tbody></table></div><div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10"><div><h2 class="text-sky-500 font-black italic uppercase mb-2 tracking-tighter">Weekly High Game Over Average</h2><table class="sum-stats-table"><thead><tr><th style="width:80px;">Date</th><th>Player</th><th class="val-col">HOA</th></tr></thead><tbody>${hoaRows}</tbody></table></div><div><h2 class="text-sky-500 font-black italic uppercase mb-2 tracking-tighter">Four Deads</h2><table class="sum-stats-table"><thead><tr><th>Player</th><th class="val-col">Total</th></tr></thead><tbody>${deadsRows}</tbody></table></div></div>`;
+                content.innerHTML = `<div class="action-bar flex justify-end pt-2 no-print"><button onclick="window.printActive('Club Stats')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Stats</button></div><div class="relative shadow-2xl rounded-none border border-zinc-800 bg-black overflow-x-auto mt-2"><table class="std-table w-full" style="min-width: 1100px; table-layout: auto;"><thead><tr class="bg-zinc-900"><th class="stats-name-col">Player</th><th>Hcp</th><th>Avg</th><th>R%</th><th>Hi R%</th><th>Scr %</th><th>Tot P</th><th>Hi G</th><th>HOA</th><th>S.Avg</th><th class="pts-col">Imp</th></tr></thead><tbody>${rows}</tbody></table></div><div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10"><div><h2 class="text-sky-500 font-black italic uppercase mb-2 tracking-tighter">Weekly High Game Over Average</h2><table class="sum-stats-table"><thead><tr><th style="width:80px;">Date</th><th>Player</th><th class="val-col">HOA</th></tr></thead><tbody>${hoaRows}</tbody></table></div><div><h2 class="text-sky-500 font-black italic uppercase mb-2 tracking-tighter">Four Deads</h2><table class="sum-stats-table"><thead><tr><th>Player</th><th class="val-col">Total</th></tr></thead><tbody>${deadsRows}</tbody></table></div></div>`;
             } else if (view === 'HISTORY') {
                 const sessionHtml = (state.sessions || []).filter(s => s.mode === mode).reverse().map(s => {
                     let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
