@@ -61,11 +61,41 @@
         .sum-row-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10px; }
         .sum-row-table th { color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding: 5px; font-size: 8px; text-align: center; }
         .sum-row-table td { padding: 10px 2px; border-bottom: 1px solid #f1f5f9; font-weight: 900; text-align: center; vertical-align: middle; }
+
+        /* TOURNAMENT SPECIFIC CSS */
+        .t-btn-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; background: #000; }
+        .t-btn-score { background: #1e293b; border-radius: 16px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-bottom: 5px solid #0f172a; }
+        .t-btn-score .num { font-size: 3.2rem; font-weight: 900; line-height: 1; color: white; }
+        .t-btn-score .sym { font-size: 0.8rem; color: #38bdf8; font-weight: 900; margin-top: 4px; }
+        .t-micro-container { width: 100vw; background: #000; overflow-x: auto; border-top: 1px solid #1e293b; }
+        .t-micro-table { width: 950px; table-layout: fixed; border-collapse: collapse; font-family: 'Roboto Condensed', sans-serif; }
+        .t-micro-table th { font-size: 0.45rem; padding: 6px 0; color: #7dd3fc; background: #0f172a; border: 0.1px solid #1e293b; text-transform: uppercase; }
+        .t-micro-table td { font-size: 0.9rem; padding: 22px 0; text-align: center; border: 0.1px solid #0f172a; color: #fff; line-height: 1; }
+        .c-sh { width: 35px !important; font-weight: 900; color: #0ea5e9 !important; border-right: 1.5px solid #0ea5e9 !important; background: #000; position: sticky; left: 0; z-index: 10; }
+        .c-r { width: 38px; color: #38bdf8; font-weight: bold; } 
+        .c-p { width: 35px; font-weight: bold; color: #facc15; } 
+        .c-t { width: 65px; background: #0c4a6e; font-weight: 900; }
+        .c-t2 { width: 65px; background: #1e293b; font-weight: 900; color: #0ea5e9 !important; }
+        .active-team-card { background-color: #0ea5e9 !important; color: #000 !important; }
+        .active-team-card p { color: #000 !important; opacity: 1 !important; font-weight: 900; }
+        .active-team-card .score-val { color: #000 !important; }
+        .bracket-scroll { display: flex; gap: 25px; padding: 20px; overflow-x: auto; align-items: flex-start; min-height: 85vh; background: #020617; }
+        .round-col { display: flex; flex-direction: column; gap: 20px; min-width: 180px; }
+        .round-title { font-size: 9px; font-weight: 900; color: #64748b; text-transform: uppercase; text-align: center; border-bottom: 1px solid #1e293b; margin-bottom: 8px; }
+        .match-card { background: #111827; border: 1.5px solid #1e293b; border-radius: 12px; overflow: hidden; }
+        .team-line { display: flex; justify-content: space-between; padding: 12px; font-size: 11px; font-weight: 800; border-bottom: 1px solid #020617; color: white; }
+        .team-line.win { background: #083344; color: #22d3ee; }
+        .score-box { background: #000; color: #fff; padding: 4px 8px; border-radius: 6px; min-width: 30px; text-align: center; }
+        .t-select { background: #1e293b; border: 2px solid #334155; padding: 18px; border-radius: 12px; width: 100%; color: white; font-weight: 900; font-size: 18px; margin-top: 6px; }
+        .rot-btn { flex: 1; background: #1e293b; padding: 20px; border-radius: 12px; font-weight: 900; border: 2px solid transparent; color: white; }
+        .rot-active { background: #0ea5e9; color: black; }
+        #modal { display: none; position: fixed; inset: 0; background: #020617; z-index: 1000; overflow-y: auto; color: white; }
     </style>
 </head>
 <body class="min-h-screen pb-40">
 
     <div id="printZone"></div>
+    <div id="modal"></div>
 
     <div id="exitModal" class="fixed inset-0 bg-black/95 z-[999] items-center justify-center p-6 text-white no-print" style="display:none;">
         <div class="bg-zinc-900 border-2 border-zinc-700 w-[90%] max-w-md p-8 shadow-2xl text-center">
@@ -83,7 +113,7 @@
             <img src="logo.jpg" alt="Logo" class="w-10 h-10 object-contain">
             <h1 class="text-xl font-black italic uppercase tracking-tighter text-white">Loon Pond</h1>
         </div>
-        <div class="flex gap-1 bg-zinc-900 p-1">
+        <div id="leagueModes" class="flex gap-1 bg-zinc-900 p-1">
             <button id="modeS" onclick="window.setMode('SINGLES')" class="text-[10px] px-4 py-2 transition font-bold uppercase">Singles</button>
             <button id="modeD" onclick="window.setMode('DOUBLES')" class="text-[10px] px-4 py-2 transition font-bold uppercase">Doubles</button>
         </div>
@@ -93,6 +123,7 @@
         <button onclick="window.setTab('STANDINGS')" id="tabSTANDINGS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Standings</button>
         <button onclick="window.setTab('STATS')" id="tabSTATS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Club Stats</button>
         <button onclick="window.setTab('SCORER')" id="tabSCORER" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-red-500 text-nowrap">Scorer</button>
+        <button onclick="window.setTab('TOURNAMENT')" id="tabTOURNAMENT" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-sky-500 text-nowrap" style="display:none;">Tournament</button>
         <button onclick="window.setTab('HISTORY')" id="tabHISTORY" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">History</button>
         <button onclick="window.setTab('NHPA')" id="tabNHPA" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">NHPA</button>
         <button onclick="window.setTab('MANAGE')" id="tabMANAGE" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Manage</button>
@@ -117,11 +148,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "league", "masterData");
+        const docRefTourney = doc(db, "tournament_final_v1", "data");
 
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, scorerEnabled: true };
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, scorerEnabled: true, tournamentEnabled: false };
         let mode = 'DOUBLES';
         let view = 'STANDINGS';
         let isUnlocked = false;
+
+        let tState = { roster: [], bracket: null, bracketHistory: {} };
+        let tView = 'BRACKET';
+        let scoring = { active: false, mid: null, t1: null, t2: null, p1n:'', p2n:'', p3n:'', p4n:'', h1:0, h2:0, rotation: 'T1_FIRST', frames: [], currF: {p1:null, p2:null, p3:null, p4:null}, pitcherIdx: 0 };
 
         let match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1:'', p2:'', p3:'', p4:'', h1:0, h2:0, h3:0, h4:0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1:null, p2:null, p3:null, p4:null }, seriesBuffer: [], fourDeadLog: {} };
 
@@ -135,11 +171,15 @@
                 if(!state.weeklyHoa) state.weeklyHoa = { SINGLES: [], DOUBLES: [] };
                 if(!state.fourDeads) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
                 if(state.scorerEnabled === undefined) state.scorerEnabled = true;
+                if(state.tournamentEnabled === undefined) state.tournamentEnabled = false;
                 render(); 
             } 
         });
 
+        onSnapshot(docRefTourney, (snap) => { if (snap.exists()) { tState = snap.data(); render(); } });
+
         async function save() { await setDoc(docRef, state); }
+        async function tSave() { await setDoc(docRefTourney, tState); }
 
         const cleanN = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
         const getSym = (pts, oppPts = 0) => { 
@@ -191,6 +231,12 @@
             if(!state.scorerEnabled && view === 'SCORER') view = 'STANDINGS';
             await save(); render();
         };
+
+        window.toggleTournament = async () => {
+            state.tournamentEnabled = !state.tournamentEnabled;
+            if(!state.tournamentEnabled && view === 'TOURNAMENT') view = 'STANDINGS';
+            await save(); render();
+        }
 
         window.executePrint = (title, html, isNhpa = false) => {
             const zone = document.getElementById('printZone');
@@ -476,16 +522,97 @@
 
         window.backupData = () => { const blob = new Blob([JSON.stringify(state)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'LoonPond_Backup.json'; a.click(); };
         window.handleRestore = (e) => { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async (ev) => { try { state = JSON.parse(ev.target.result); await save(); location.reload(); } catch(err) { alert("Invalid file."); } }; reader.readAsText(file); };
-        window.resetSystem = async () => { const p = prompt("PIN to WIPE DATA:"); if(p === state.managePin) { if(confirm("Confirm Wipe?")) { state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, scorerEnabled: true }; await save(); location.reload(); } } };
+        window.resetSystem = async () => { const p = prompt("PIN to WIPE DATA:"); if(p === state.managePin) { if(confirm("Confirm Wipe?")) { state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, scorerEnabled: true, tournamentEnabled: false }; await save(); location.reload(); } } };
         window.updatePin = async () => { const newPin = prompt("Enter New PIN:"); if(newPin) { state.managePin = newPin; await save(); alert("PIN Updated"); } };
         window.saveNhpaForm = () => { const f = ['clubName','phone','sanctionNum','director','state','address','city','startDate','endDate','dateSubmitted','cancellation','countAll']; if(!state.nhpa[mode]) state.nhpa[mode] = {}; f.forEach(k => state.nhpa[mode][k] = document.getElementById('f-'+k).value); save(); alert("Saved"); };
         window.resetDeads = () => { if(confirm("Clear Four Deads for this mode?")) { state.fourDeads[mode] = {}; save(); render(); } };
 
+        /* TOURNAMENT LOGIC FUNCTIONS */
+        window.wipeTournament = async () => { if(!confirm("ERASE ALL DATA? This cannot be undone.")) return; const emptyState = { roster: [], bracket: null, bracketHistory: {} }; await setDoc(docRefTourney, emptyState); location.reload(); };
+        window.importTFromStandings = () => {
+            const list = state.roster[mode] || [];
+            tState.roster = list.map((item, idx) => {
+                if(mode === 'DOUBLES') {
+                    return { id: idx+1, name: item.teamName, members: item.members.map(m => ({ name: m.name.split(',')[0], hcp: m.currentHcp })) };
+                } else {
+                    return { id: idx+1, name: item.name, members: [{ name: item.name.split(',')[0], hcp: item.currentHcp }] };
+                }
+            });
+            tSave(); render();
+        };
+        window.tImportRoster = () => {
+            const raw = document.getElementById('rosIn').value; if(!raw.trim()) return;
+            const teams = {};
+            raw.split('\n').filter(l => l.trim()).forEach(line => {
+                const cols = line.split(/\t|\|/).map(c => c.trim()); if(cols.length < 3) return;
+                const teamID = cols[0]; const first = (cols[1].includes(',') ? cols[1].split(',')[1] : cols[1]).trim().toUpperCase(); const hcp = parseInt(cols[2]) || 0;
+                if(!teams[teamID]) teams[teamID] = { members: [] };
+                teams[teamID].members.push({ name: first, hcp: hcp });
+            });
+            tState.roster = Object.keys(teams).map(id => ({ id, name: teams[id].members.map(m => m.name).join('/'), members: teams[id].members }));
+            tSave(); alert("Teams Sync'd");
+        };
+        window.tDelTeam = (idx) => { if(confirm("Delete?")) { tState.roster.splice(idx,1); tSave(); } };
+        window.initBracket = () => {
+            if(tState.roster.length < 2) return alert("Add teams first");
+            const teams = [...tState.roster]; const size = Math.pow(2, Math.ceil(Math.log2(teams.length)));
+            while(teams.length < size) teams.push({ name: 'BYE', isBye: true, members: [{name:'BYE', hcp:0}, {name:'BYE', hcp:0}] });
+            const getSeedOrder = (n) => { let order = [0, 1]; for (let i = 2; i < n; i <<= 1) { let nextOrder = []; for (let j = 0; j < order.length; j++) { nextOrder.push(order[j]); nextOrder.push(i * 2 - 1 - order[j]); } order = nextOrder; } return order; };
+            const seeded = getSeedOrder(size).map(idx => teams[idx]);
+            tState.bracket = { winners: [], losers: [] };
+            for (let i = 0; i < seeded.length; i += 2) tState.bracket.winners.push({ id: 'W1-M'+(i/2+1), t1: seeded[i], t2: seeded[i+1], win: null, s1: 0, s2: 0 });
+            for (let r = 2; r <= Math.log2(size); r++) { let count = size / Math.pow(2, r); for (let m = 1; m <= count; m++) tState.bracket.winners.push({ id: `W${r}-M${m}`, t1: null, t2: null, win: null, s1: 0, s2: 0 }); }
+            for (let m = 1; m <= size/2; m++) tState.bracket.losers.push({ id: `L1-M${m}`, t1: null, t2: null, win: null, s1: 0, s2: 0 });
+            tState.bracket.winners.filter(m => m.id.startsWith('W1')).forEach(m => {
+                if (m.t2?.isBye) { m.win = m.t1.name; m.s1 = 'BYE'; tAdvance(m.id, m.t1, null); }
+                else if (m.t1?.isBye) { m.win = m.t2.name; m.s2 = 'BYE'; tAdvance(m.id, m.t2, null); }
+            });
+            tSave();
+        };
+        window.openMatch = (id) => {
+            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); if(!m || !m.t1 || !m.t2 || m.t1.isBye || m.t2.isBye) return;
+            if(m.win) { showSummary(id); return; }
+            const mod = document.getElementById('modal'); mod.style.display = 'block';
+            const ops = (team) => team.members.map(mem => `<option value="${mem.name}" data-hcp="${mem.hcp}">${mem.name} (${mem.hcp})</option>`).join('');
+            mod.innerHTML = `<div class="p-8"><h2 class="text-2xl font-black text-sky-400 uppercase italic mb-8">Lineup: ${id}</h2><div class="space-y-8"><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t1.name}</p><select id="selP1" class="t-select">${ops(m.t1)}</select><select id="selP2" class="t-select">${ops(m.t1)}</select></div><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t2.name}</p><select id="selP3" class="t-select">${ops(m.t2)}</select><select id="selP4" class="t-select">${ops(m.t2)}</select></div><div class="flex gap-4"><button id="rotT1" onclick="window.selRot='T1_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT2').classList.remove('rot-active');" class="rot-btn rot-active">${m.t1.id || 'T1'} Starts</button><button id="rotT2" onclick="window.selRot='T2_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT1').classList.remove('rot-active');" class="rot-btn">Opponent Starts</button></div></div><button onclick="startScoring('${id}')" class="w-full bg-sky-500 text-black p-6 mt-10 rounded-2xl font-black uppercase text-lg">Start Match</button><button onclick="document.getElementById('modal').style.display='none'" class="w-full p-6 mt-2 text-zinc-500 font-bold uppercase text-xs">Back</button></div>`;
+            window.selRot = 'T1_FIRST'; if(m.t1.members.length > 1) document.getElementById('selP2').selectedIndex = 1; if(m.t2.members.length > 1) document.getElementById('selP4').selectedIndex = 1;
+        };
+        window.startScoring = (id) => {
+            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); const getD = (id) => { const el = document.getElementById(id); return { n: el.value, h: parseInt(el.options[el.selectedIndex].dataset.hcp) }; };
+            const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
+            scoring = { active: true, mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h, h2: p3.h+p4.h, rotation: window.selRot, frames: [], currF: {p1:null, p2:null, p3:null, p4:null}, pitcherIdx: 0 };
+            renderScorer();
+        };
+        window.tAddScore = (pts) => {
+            const fNum = scoring.frames.length + 1; let turn = (scoring.rotation === 'T1_FIRST') ? (fNum % 2 !== 0 ? ['p1', 'p3', 'p2', 'p4'] : ['p3', 'p1', 'p4', 'p2']) : (fNum % 2 !== 0 ? ['p3', 'p1', 'p4', 'p2'] : ['p1', 'p3', 'p2', 'p4']);
+            scoring.currF[turn[scoring.pitcherIdx]] = pts; scoring.pitcherIdx++;
+            if(scoring.pitcherIdx > 3) { scoring.frames.push({ ...scoring.currF, sh: fNum * 2 }); scoring.currF = {p1:null, p2:null, p3:null, p4:null}; scoring.pitcherIdx = 0; const t1s = scoring.frames.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1; const t2s = scoring.frames.reduce((a,b)=>a+(b.p3||0)+(b.p4||0),0) + scoring.h2; if(scoring.frames.length >= 15 && t1s !== t2s) finalizeTMatch(); }
+            renderScorer();
+        };
+        window.tEditCell = (idx, p) => { const v = prompt("Correct points (0,1,2,3,4,6):", scoring.frames[idx][p]); if([0,1,2,3,4,6].includes(parseInt(v))) { scoring.frames[idx][p] = parseInt(v); renderScorer(); } };
+        function finalizeTMatch() {
+            const f = scoring.frames; const s1 = f.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1; const s2 = f.reduce((a,b)=>a+(b.p3||0)+(b.p4||0),0) + scoring.h2;
+            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === scoring.mid); const winT = s1 > s2 ? scoring.t1 : scoring.t2; const loseT = s1 > s2 ? scoring.t2 : scoring.t1;
+            m.win = winT.name; m.s1 = s1; m.s2 = s2; tState.bracketHistory[scoring.mid] = { ...scoring, s1, s2 }; tAdvance(scoring.mid, winT, loseT); document.getElementById('modal').style.display = 'none'; tSave();
+        }
+        function tAdvance(mid, winner, loser) {
+            const b = tState.bracket; const r = parseInt(mid.split('-')[0].substring(1)); const mIdx = parseInt(mid.split('-')[1].substring(1));
+            if(mid.startsWith('W')){
+                const nW = b.winners.find(x => x.id === `W${r+1}-M${Math.ceil(mIdx/2)}`); if(nW) { if(mIdx % 2 !== 0) nW.t1 = winner; else nW.t2 = winner; }
+                const nL = b.losers.find(x => x.id === `L1-M${mIdx}`); if(nL && loser && !loser.isBye) { nL.t1 = loser; }
+            } else { const nL = b.losers.find(x => x.id === `L${r+1}-M${Math.ceil(mIdx/2)}`); if(nL) { if(mIdx % 2 !== 0) nL.t1 = winner; else nL.t2 = winner; } }
+        }
+        window.setTView = (v) => { tView = v; render(); };
+
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
-            ['STANDINGS', 'STATS', 'SCORER', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { 
-                const el = document.getElementById('tab'+t); if(el) { el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; }
+            ['STANDINGS', 'STATS', 'SCORER', 'TOURNAMENT', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { 
+                const el = document.getElementById('tab'+t); if(el) { 
+                    el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; 
+                    if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none';
+                    if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled ? 'block' : 'none';
+                }
             });
             const content = document.getElementById('viewContent'), hList = (state.history || []).filter(h => h.mode === mode);
 
@@ -554,8 +681,65 @@
                 content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div></div><div class="mt-6 flex gap-2"><button onclick="window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button></div></div></div>`;
             } else if (view === 'MANAGE') {
                 const rH = (state.roster[mode]||[]).map((t, i) => `<div class="bg-white p-3 shadow mb-2 flex justify-between items-center text-xs font-bold uppercase"><span>${t.teamName||t.name}</span><div class="flex gap-2"><button onclick="window.editRosterItem(${i})" class="text-sky-500 font-black">EDIT</button><button onclick="window.delR(${i})" class="text-red-500 font-black">DEL</button></div></div>`).join('');
-                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div><div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-2 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-xs shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Manual Locked' : 'HCP: Rolling Auto'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-xs shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorekeeper: ${state.scorerEnabled ? 'ON' : 'OFF'}</button></div><button onclick="window.resetDeads()" class="w-full bg-red-900 text-white p-4 text-[10px] font-black uppercase">Clear Four Deads (${mode})</button><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
+                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div><div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-3 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button></div><button onclick="window.resetDeads()" class="w-full bg-red-900 text-white p-4 text-[10px] font-black uppercase">Clear Four Deads (${mode})</button><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
+            } else if (view === 'TOURNAMENT') {
+                let navHtml = `<nav class="flex bg-zinc-950 border-b border-zinc-900 sticky top-0 z-50 mb-4"><button onclick="setTView('BRACKET')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView==='BRACKET'?'text-sky-500 border-b-2 border-sky-500':'text-zinc-500'}">Bracket</button><button onclick="setTView('ROSTER')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView==='ROSTER'?'text-sky-500 border-b-2 border-sky-500':'text-zinc-500'}">Roster</button><button onclick="setTView('MANAGE')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView==='MANAGE'?'text-sky-500 border-b-2 border-sky-500':'text-zinc-500'}">Manage</button></nav>`;
+                if (tView === 'ROSTER') {
+                    content.innerHTML = navHtml + `<div class="p-4"><button onclick="importTFromStandings()" class="w-full bg-sky-700 text-white p-4 mb-4 font-black uppercase text-xs rounded-xl">Import From Standings</button><textarea id="rosIn" class="w-full h-40 bg-zinc-900 border-2 border-zinc-800 p-4 text-xs text-white rounded-2xl" placeholder="TeamID | Last, First | HCP"></textarea><button onclick="tImportRoster()" class="w-full bg-sky-500 text-black p-5 mt-4 font-black uppercase text-sm rounded-2xl">Sync Roster</button><div class="mt-8 space-y-2">${tState.roster.map((t,i)=>`<div class="p-4 bg-zinc-900 rounded-xl flex justify-between items-center border border-zinc-800 text-white font-bold"><b>${t.name}</b><button onclick="tDelTeam(${i})" class="text-red-500 font-black uppercase text-[12px]">Del</button></div>`).join('')}</div></div>`;
+                } else if (tView === 'BRACKET') {
+                    if(!tState.bracket) content.innerHTML = navHtml + `<div class="mt-20 text-center"><button onclick="initBracket()" class="bg-sky-500 text-black px-12 py-5 rounded-2xl font-black text-sm uppercase">Initialize Bracket</button></div>`;
+                    else content.innerHTML = navHtml + `<div class="bracket-scroll"><div class="round-col"><div class="round-title">Winners R1</div>${tState.bracket.winners.filter(x=>x.id.startsWith('W1')).map(m=>renderCard(m)).join('')}</div><div class="round-col"><div class="round-title">Winners R2</div>${tState.bracket.winners.filter(x=>x.id.startsWith('W2')).map(m=>renderCard(m)).join('')}</div><div class="round-col"><div class="round-title">Losers R1</div>${tState.bracket.losers.map(m=>renderCard(m)).join('')}</div></div>`;
+                } else if (tView === 'MANAGE') { 
+                    content.innerHTML = navHtml + `<div class="p-10"><button onclick="wipeTournament()" class="w-full bg-red-600 p-8 rounded-2xl font-black uppercase text-lg shadow-2xl text-white">Wipe All Tournament Data</button></div>`; 
+                }
             }
+        }
+
+        function renderCard(m) { return `<div class="match-card" onclick="openMatch('${m.id}')"><div class="team-line ${m.win===m.t1?.name?'win':(m.win?'loss':'')}"><span>${m.t1?.name||'?'}</span><span class="score-box">${m.s1}</span></div><div class="team-line ${m.win===m.t2?.name?'win':(m.win?'loss':'')}"><span>${m.t2?.name||'?'}</span><span class="score-box">${m.s2}</span></div></div>`; }
+
+        function renderScorer() {
+            const mod = document.getElementById('modal'); mod.style.display = 'block';
+            const fNum = scoring.frames.length + 1;
+            let turn = (scoring.rotation === 'T1_FIRST') ? (fNum % 2 !== 0 ? ['p1', 'p3', 'p2', 'p4'] : ['p3', 'p1', 'p4', 'p2']) : (fNum % 2 !== 0 ? ['p3', 'p1', 'p4', 'p2'] : ['p1', 'p3', 'p2', 'p4']);
+            const upKey = turn[scoring.pitcherIdx];
+            const isT1Turn = ['p1','p2'].includes(upKey);
+            const t1s = scoring.frames.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1;
+            const t2s = scoring.frames.reduce((a,b)=>a+(b.p3||0)+(b.p4||0),0) + scoring.h2;
+
+            mod.innerHTML = `
+                <div class="bg-black p-3 flex justify-between items-center border-b border-zinc-800 sticky top-0 z-[100]"><button onclick="document.getElementById('modal').style.display='none'" class="text-[10px] font-black uppercase text-zinc-500">Back</button><span class="text-sky-400 font-black text-xs uppercase">Frame ${fNum} ${fNum>15?'(Tie-Break)':''}</span><div class="w-8"></div></div>
+                <div class="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800">
+                    <div class="p-12 text-center transition-colors duration-300 ${isT1Turn ? 'active-team-card' : ''}">
+                        <p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t1.name}</p>
+                        <p class="text-6xl font-black score-val">${t1s}</p>
+                    </div>
+                    <div class="p-12 text-center transition-colors duration-300 ${!isT1Turn ? 'active-team-card' : ''}">
+                        <p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t2.name}</p>
+                        <p class="text-6xl font-black score-val">${t2s}</p>
+                    </div>
+                </div>
+                <div class="bg-sky-500 text-black text-center p-4 font-black uppercase text-[14px] italic">UP: ${upKey==='p1'?scoring.p1n : upKey==='p2'?scoring.p2n : upKey==='p3'?scoring.p3n : scoring.p4n}</div>
+                <div class="t-btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="tAddScore(${s})" class="t-btn-score"><span class="num">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div>
+                <div class="t-micro-container"><table class="t-micro-table">
+                    <thead><tr><th class="c-sh">SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t">T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t2">T2</th></tr></thead>
+                    <tbody>
+                    <tr class="bg-zinc-950"><td class="c-sh">${fNum*2}</td><td class="c-r">${getSym(scoring.currF.p1)}</td><td>${scoring.currF.p1??''}</td><td></td><td class="c-r">${getSym(scoring.currF.p2)}</td><td>${scoring.currF.p2??''}</td><td></td><td></td><td class="c-r">${getSym(scoring.currF.p3)}</td><td>${scoring.currF.p3??''}</td><td></td><td class="c-r">${getSym(scoring.currF.p4)}</td><td>${scoring.currF.p4??''}</td><td></td><td></td></tr>
+                    ${scoring.frames.map((f,i)=>{
+                        const sl = scoring.frames.slice(0,i+1);
+                        const s1=sl.reduce((a,b)=>a+(b.p1||0),0); const s2=sl.reduce((a,b)=>a+(b.p2||0),0);
+                        const s3=sl.reduce((a,b)=>a+(b.p3||0),0); const s4=sl.reduce((a,b)=>a+(b.p4||0),0);
+                        return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSym(f.p1)}</td><td class="edit-cell" onclick="tEditCell(${i},'p1')">${f.p1}</td><td class="c-s">${s1}</td><td class="c-r">${getSym(f.p2)}</td><td class="edit-cell" onclick="tEditCell(${i},'p2')">${f.p2}</td><td class="c-s">${s2}</td><td class="c-t">${s1+s2+scoring.h1}</td><td class="c-r">${getSym(f.p3)}</td><td class="edit-cell" onclick="tEditCell(${i},'p3')">${f.p3}</td><td class="c-s">${s3}</td><td class="c-r">${getSym(f.p4)}</td><td class="edit-cell" onclick="tEditCell(${i},'p4')">${f.p4}</td><td class="c-s">${s4}</td><td class="c-t2">${s3+s4+scoring.h2}</td></tr>`;
+                    }).reverse().join('')}</tbody></table></div>`;
+        }
+
+        window.showSummary = (id) => {
+            const h = tState.bracketHistory[id]; const mod = document.getElementById('modal'); mod.style.display = 'block';
+            const calc = (k) => ({ pts: h.frames.reduce((a,b)=>a+(b[k]||0),0), rng: h.frames.reduce((a,b)=>a+getR(b[k]),0) });
+            const s1=calc('p1'), s2=calc('p2'), s3=calc('p3'), s4=calc('p4');
+            mod.innerHTML = `<div class="p-8 text-center"><h2 class="text-2xl font-black text-sky-400 uppercase mb-8">Summary</h2>
+                <div class="flex justify-between text-xl font-black border-zinc-800 border-b pb-4 mb-8 text-white"><span>${h.t1.name}: ${h.s1}</span><span>${h.t2.name}: ${h.s2}</span></div>
+                <div class="space-y-3 mb-10 text-left">${[[h.p1n,s1],[h.p2n,s2],[h.p3n,s3],[h.p4n,s4]].map(x=>`<div class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 flex justify-between text-[11px] text-white"><b>${x[0]}</b><span>Pts: ${x[1].pts} | Ringers: ${x[1].rng}</span></div>`).join('')}</div>
+                <button onclick="document.getElementById('modal').style.display='none'" class="w-full bg-zinc-800 text-white p-6 rounded-2xl font-black uppercase text-xs">Close</button></div>`;
         }
     </script>
 </body>
