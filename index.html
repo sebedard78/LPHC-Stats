@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loon Pond Master Cloud</title>
+    <title>Loon Pond Stat Master Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto+Condensed:wght@400;700&display=swap');
@@ -135,7 +135,7 @@
         <button onclick="window.setTab('NEWS')" id="tabNEWS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">News</button>
         <button onclick="window.setTab('STANDINGS')" id="tabSTANDINGS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Standings</button>
         <button onclick="window.setTab('STATS')" id="tabSTATS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Club Stats</button>
-        <button onclick="window.setTab('SCORER')" id="tabSCORER" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-red-500 text-nowrap">Scorer</button>
+        <button onclick="window.setTab('SCORER')" id="tabSCORER" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap text-red-500">Scorer</button>
         <button onclick="window.setTab('TOURNAMENT')" id="tabTOURNAMENT" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-sky-500 text-nowrap" style="display:none;">Tournament</button>
         <button onclick="window.setTab('HISTORY')" id="tabHISTORY" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">History</button>
         <button onclick="window.setTab('NHPA')" id="tabNHPA" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">NHPA</button>
@@ -163,12 +163,12 @@
         const docRef = doc(db, "league", "masterData");
         const docRefTourney = doc(db, "tournament_final_v1", "data");
 
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, scorerEnabled: true, tournamentEnabled: false, news: '' };
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, activeMatches: [] };
         let mode = 'DOUBLES';
         let view = 'NEWS';
         let isUnlocked = false;
 
-        let tState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [] };
+        let tState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] };
         let tView = 'BRACKET';
         let scoring = { active: false, mid: null, t1: null, t2: null, p1n: '', p2n: '', p3n: '', p4n: '', h1: 0, h2: 0, rotation: 'T1_FIRST', frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0 };
         let bScale = 1.0;
@@ -195,6 +195,7 @@
                 if(state.news === undefined) state.news = '';
                 if(state.scorerEnabled === undefined) state.scorerEnabled = true;
                 if(state.tournamentEnabled === undefined) state.tournamentEnabled = false;
+                if(!state.activeMatches) state.activeMatches = [];
                 render(); 
             } 
         });
@@ -203,6 +204,7 @@
             if (snap.exists()) { 
                 tState = snap.data(); 
                 if(!tState.matchHistory) tState.matchHistory = [];
+                if(!tState.tActiveMatches) tState.tActiveMatches = [];
                 render(); 
             } 
         });
@@ -248,7 +250,19 @@
             render();
         };
 
-        window.confirmExit = (choice) => { window.closeExitModal(); if (choice === 'SUBMIT') finalizeFullSeries(); else { match.active = false; match.seriesBuffer = []; match.fourDeadLog = {}; render(); } };
+        window.confirmExit = (choice) => { 
+            window.closeExitModal(); 
+            if (choice === 'SUBMIT') {
+                finalizeFullSeries(); 
+            } else { 
+                state.activeMatches = state.activeMatches.filter(x => x.sessionId !== match.sessionId);
+                match.active = false; 
+                match.seriesBuffer = []; 
+                match.fourDeadLog = {}; 
+                save();
+                render(); 
+            } 
+        };
         window.closeExitModal = () => { document.getElementById('exitModal').style.display = 'none'; };
         window.openExitModal = () => { document.getElementById('exitModal').style.display = 'flex'; };
         window.setMode = (m) => { mode = m; render(); };
@@ -345,7 +359,7 @@
                     let p1s=0, p2s=0, p3s=0, p4s=0;
                     g.frames.forEach(f => {
                         p1s += Number(f.p1||0); p2s += Number(f.p2||0); p3s += Number(f.p3||0); p4s += Number(f.p4||0);
-                        html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1, f.p3)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${p1s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold; display:none;">${p1s+p2s+g.h1+g.h2+d1+d2}</td><td style="border:1px solid #ccc;">${getSym(f.p2, f.p4)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${p2s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${p1s+p2s+g.h1+g.h2+d1+d2}</td><td style="border:1px solid #ccc;">${getSym(f.p3, f.p1)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${p3s}</td><td style="border-left:1px solid #000; border-right:1px solid #000; background:#f9f9f9; font-weight:bold; display:none;">${p3s+p4s+g.h3+g.h4+d3+d4}</td><td style="border:1px solid #ccc;">${getSym(f.p4, f.p2)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${p4s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+p4s+g.h3+g.h4+d3+d4}</td></tr>`;
+                        html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1, f.p3)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${p1s}</td><td style="border:1px solid #ccc;">${getSym(f.p2, f.p4)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${p2s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${p1s+p2s+g.h1+g.h2+d1+d2}</td><td style="border:1px solid #ccc;">${getSym(f.p3, f.p1)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${p3s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold; display:none;">${p3s+p4s+g.h3+g.h4+d3+d4}</td><td style="border:1px solid #ccc;">${getSym(f.p4, f.p2)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${p4s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+p4s+g.h3+g.h4+d3+d4}</td></tr>`;
                     });
                 }
                 html += `</tbody></table></div>`;
@@ -385,7 +399,7 @@
             let fsc1=0, fsc2=0, fsc3=0, fsc4=0;
             h.frames.forEach(f => {
                 fsc1 += Number(f.p1||0); fsc2 += Number(f.p2||0); fsc3 += Number(f.p3||0); fsc4 += Number(f.p4||0);
-                html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${fsc1}</td><td style="border:1px solid #ccc;">${getSym(f.p2)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${fsc2}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${fsc1+fsc2+h.h1}</td><td style="border:1px solid #ccc;">${getSym(f.p3)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${fsc3}</td><td style="border-left:1px solid #000; border-right:1px solid #1000; background:#f9f9f9; font-weight:bold; display:none;">${fsc3+fsc4+h.h2}</td><td style="border:1px solid #ccc;">${getSym(f.p4)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${fsc4}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${fsc3+fsc4+h.h2}</td></tr>`;
+                html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${fsc1}</td><td style="border:1px solid #ccc;">${getSym(f.p2)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${fsc2}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${fsc1+fsc2+h.h1}</td><td style="border:1px solid #ccc;">${getSym(f.p3)}</td><td style="border:1px solid #ccc;">${fsc3}</td><td style="border-left:1px solid #000; border-right:1px solid #1000; background:#f9f9f9; font-weight:bold; display:none;">${fsc3+fsc4+h.h2}</td><td style="border:1px solid #ccc;">${getSym(f.p4)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${fsc4}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${fsc3+fsc4+h.h2}</td></tr>`;
             });
             html += `</tbody></table></div></div>`;
             window.executePrint("Tournament Score Sheet", html);
@@ -460,18 +474,42 @@
         window.pickLiveTeams = () => {
             const t1 = document.getElementById('lt1').value, t2 = document.getElementById('lt2').value;
             if(!t1 || !t2) return alert("Select teams");
-            match.active = true; match.step = 'TEAMS'; match.t1Name = t1; match.t2Name = t2;
-            match.gameNum = 1; match.games = []; match.seriesBuffer = []; match.sessionAgg = { t1: 0, t2: 0 }; match.fourDeadLog = {};
-            match.sessionId = Date.now();
+            match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode };
+            
+            state.activeMatches.push(match);
+            save();
+
             if (mode === 'SINGLES') { match.p1 = match.t1Name; match.p3 = match.t2Name; window.startTheLiveGame(); }
             else { match.step = 'PLAYERS'; render(); }
         };
 
+        window.resumeLeagueMatch = (sessId) => {
+            const found = state.activeMatches.find(m => m.sessionId === sessId);
+            if(found) {
+                match = JSON.parse(JSON.stringify(found));
+                render();
+            }
+        };
+
+        window.deleteLeagueMatch = (sessId) => {
+            if(confirm("Delete this in-progress game?")) {
+                state.activeMatches = state.activeMatches.filter(m => m.sessionId !== sessId);
+                save();
+            }
+        };
+
         window.startTheLiveGame = () => {
-            if (mode === 'DOUBLES') { match.p1 = document.getElementById('sp1').value; match.p2 = document.getElementById('sp2').value; match.p3 = document.getElementById('sp3').value; match.p4 = document.getElementById('sp4').value;
-            } else { match.p1 = match.t1Name; match.p2 = 'BYE'; match.p3 = match.t2Name; match.p4 = 'BYE'; }
+            if (mode === 'DOUBLES') { 
+                match.p1 = document.getElementById('sp1').value; 
+                match.p2 = document.getElementById('sp2').value; 
+                match.p3 = document.getElementById('sp3').value; 
+                match.p4 = document.getElementById('sp4').value;
+            } else { 
+                match.p1 = match.t1Name; match.p2 = 'BYE'; match.p3 = match.t2Name; match.p4 = 'BYE'; 
+            }
             match.h1 = Number(getH(match.p1)); match.h2 = Number(getH(match.p2)); match.h3 = Number(getH(match.p3)); match.h4 = Number(getH(match.p4));
             match.step = 'LIVE'; match.pitcherIdx = 0; match.currGameFrames = []; match.currF = { p1: null, p2: null, p3: null, p4: null };
+            updateActiveMatchRef();
             render();
         };
 
@@ -480,12 +518,26 @@
             if (p === match.p1) match.currF.p1 = Number(pts); else if (p === match.p2) match.currF.p2 = Number(pts); else if (p === match.p3) match.currF.p3 = Number(pts); else if (p === match.p4) match.currF.p4 = Number(pts);
             match.pitcherIdx++; const limit = mode === 'DOUBLES' ? 4 : 2;
             if (match.pitcherIdx >= limit) finalizeFrame();
+            
+            updateActiveMatchRef();
             render();
         };
 
+        function updateActiveMatchRef() {
+            const idx = state.activeMatches.findIndex(m => m.sessionId === match.sessionId);
+            if(idx !== -1) {
+                state.activeMatches[idx] = JSON.parse(JSON.stringify(match));
+                save();
+            }
+        }
+
         window.editLiveScoreCell = (idx, pNum) => {
             const val = prompt("New Score:", match.currGameFrames[idx]['p'+pNum]);
-            if(val !== null && [0,1,2,3,4,6].includes(Number(val))) { match.currGameFrames[idx]['p'+pNum] = Number(val); render(); }
+            if(val !== null && [0,1,2,3,4,6].includes(Number(val))) { 
+                match.currGameFrames[idx]['p'+pNum] = Number(val); 
+                updateActiveMatchRef();
+                render(); 
+            }
         };
 
         window.nextGame = () => { match.gameNum++; if (mode === 'SINGLES') window.startTheLiveGame(); else { match.step = 'PLAYERS'; render(); } };
@@ -544,6 +596,7 @@
             plrs.forEach(pl => { if(pl.n && !['bye','dummy'].includes(cleanN(pl.n))) { match.seriesBuffer.push({ player: pl.n, score: match.currGameFrames.reduce((s,f)=>s+Number(f[pl.p]||0), 0) + pl.d, ringers: match.currGameFrames.reduce((s,f)=>s+getR(f[pl.p]), 0), result: pl.r, sessionId: match.sessionId, gameNum: match.gameNum, mode, date: new Date().toLocaleDateString(), timestamp: Date.now() }); } });
             match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, s1: g1, s2: g2, frames: [...match.currGameFrames] });
             match.step = (match.gameNum >= 3) ? 'MATCH_SUMMARY' : 'GAME_SUMMARY';
+            updateActiveMatchRef();
             render();
         }
 
@@ -580,15 +633,21 @@
 
             state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now() });
             Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
-            match.active = false; view = 'STANDINGS'; save();
+            
+            state.activeMatches = state.activeMatches.filter(m => m.sessionId !== match.sessionId);
+            match.active = false; view = 'STANDINGS'; 
+            save();
         };
 
+        // UPDATED: EDIT PAST GAME NOW SHOWS PLAYER NAME
         window.editPastGame = (sId, gIdx) => {
             const sess = state.sessions.find(x => x.id === sId); if(!sess) return;
             const g = sess.fullData[gIdx];
             const editP = (pName, curS, curR, curH) => {
                 if(!pName || ['bye','dummy'].includes(cleanN(pName))) return {s:0, r:0, h:curH};
-                const ns = Number(prompt(`Points:`, curS)), nr = Number(prompt(`Ringers:`, curR)), nh = Number(prompt(`HCP:`, curH));
+                const ns = Number(prompt(`Points for ${pName}:`, curS)), 
+                      nr = Number(prompt(`Ringers for ${pName}:`, curR)), 
+                      nh = Number(prompt(`Handicap for ${pName}:`, curH));
                 const hRec = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pName));
                 if(hRec) { hRec.score = ns; hRec.ringers = nr; }
                 return {s: ns, r: nr, h: nh};
@@ -598,14 +657,39 @@
             const d3 = editP(g.p3, g.frames.reduce((s,f)=>s+Number(f.p3||0),0), g.frames.reduce((s,f)=>s+getR(f.p3),0), g.h3);
             const d4 = (mode==='DOUBLES') ? editP(g.p4, g.frames.reduce((s,f)=>s+Number(f.p4||0),0), g.frames.reduce((s,f)=>s+getR(f.p4),0), g.h4) : {s:0, r:0, h:0};
             g.h1=d1.h; g.h2=d2.h; g.h3=d3.h; g.h4=d4.h;
-            g.s1 = (cleanN(g.p1)==='dummy'?30:d1.s) + (cleanN(g.p2)==='dummy'?30:d2.s) + g.h1 + g.h2;
-            g.s2 = (cleanN(g.p3)==='dummy'?30:d3.s) + (cleanN(g.p4)==='dummy'?30:d4.s) + g.h3 + g.h4;
+
+            let s1raw = (cleanN(g.p1)==='dummy'?30:d1.s) + (cleanN(g.p2)==='dummy'?30:d2.s) + g.h1 + g.h2;
+            let s2raw = (cleanN(g.p3)==='dummy'?30:d3.s) + (cleanN(g.p4)==='dummy'?30:d4.s) + g.h3 + g.h4;
+
+            const [t1n, t2n] = sess.name.split(' vs ');
+            const target = sess.mode === 'SINGLES' ? 135 : 162;
+
+            if (cleanN(t2n) === 'bye') {
+                g.s1 = s1raw;
+                g.s2 = (s1raw >= target) ? target - 1 : target;
+            } else if (cleanN(t1n) === 'bye') {
+                g.s2 = s2raw;
+                g.s1 = (s2raw >= target) ? target - 1 : target;
+            } else {
+                g.s1 = s1raw;
+                g.s2 = s2raw;
+            }
+
             const res1 = g.s1 > g.s2 ? 'W' : (g.s1 < g.s2 ? 'L' : 'T'), res2 = g.s2 > g.s1 ? 'W' : (g.s2 < g.s1 ? 'L' : 'T');
             const updH = (pN, res) => { const hR = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pN)); if(hR) hR.result = res; };
             updH(g.p1, res1); updH(g.p2, res1); updH(g.p3, res2); updH(g.p4, res2);
             sess.agg1 = sess.fullData.reduce((s, gm)=> s + gm.s1, 0); sess.agg2 = sess.fullData.reduce((s, gm)=> s + gm.s2, 0);
-            const [t1, t2] = sess.name.split(' vs ');
-            sess.matchWinner = sess.agg1 > sess.agg2 ? t1 : (sess.agg1 < sess.agg2 ? t2 : 'Tie');
+            
+            if (cleanN(t2n) === 'bye') {
+                const wins = sess.fullData.filter(gm => gm.s1 >= target).length;
+                sess.matchWinner = wins > 0 ? t1n : 'BYE';
+            } else if (cleanN(t1n) === 'bye') {
+                const wins = sess.fullData.filter(gm => gm.s2 >= target).length;
+                sess.matchWinner = wins > 0 ? t2n : 'BYE';
+            } else {
+                sess.matchWinner = sess.agg1 > sess.agg2 ? t1n : (sess.agg1 < sess.agg2 ? t2n : 'Tie');
+            }
+            
             save(); render();
         };
 
@@ -634,13 +718,13 @@
 
         window.backupData = () => { const blob = new Blob([JSON.stringify(state)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'LoonPond_Backup.json'; a.click(); };
         window.handleRestore = (e) => { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async (ev) => { try { state = JSON.parse(ev.target.result); await save(); location.reload(); } catch(err) { alert("Invalid file."); } }; reader.readAsText(file); };
-        window.resetSystem = async () => { const p = prompt("PIN to WIPE DATA:"); if(p === state.managePin) { if(confirm("Confirm Wipe?")) { state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false }; await save(); location.reload(); } } };
+        window.resetSystem = async () => { const p = prompt("PIN to WIPE DATA:"); if(p === state.managePin) { if(confirm("Confirm Wipe?")) { state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, activeMatches: [] }; await save(); location.reload(); } } };
         window.updatePin = async () => { const newPin = prompt("Enter New PIN:"); if(newPin) { state.managePin = newPin; await save(); alert("PIN Updated"); } };
         window.saveNhpaForm = () => { const f = ['clubName','phone','sanctionNum','director','state','address','city','startDate','endDate','dateSubmitted','cancellation','countAll']; if(!state.nhpa[mode]) state.nhpa[mode] = {}; f.forEach(k => state.nhpa[mode][k] = document.getElementById('f-'+k).value); save(); alert("Saved"); };
         window.resetDeads = () => { if(confirm("Clear Four Deads for this mode?")) { state.fourDeads[mode] = {}; save(); render(); } };
 
         /* TOURNAMENT LOGIC FUNCTIONS */
-        window.wipeTournament = async () => { if(!confirm("ERASE ALL DATA? This cannot be undone.")) return; const emptyState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [] }; await setDoc(docRefTourney, emptyState); location.reload(); };
+        window.wipeTournament = async () => { if(!confirm("ERASE ALL DATA? This cannot be undone.")) return; const emptyState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] }; await setDoc(docRefTourney, emptyState); location.reload(); };
         window.importTFromStandings = () => {
             const hList = (state.history || []).filter(h => h.mode === mode);
             const rankings = (state.roster[mode]||[]).map(t => { 
@@ -730,9 +814,30 @@
         window.startScoring = (id) => {
             const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); const getD = (id) => { const el = document.getElementById(id); return { n: el.value, h: parseInt(el.options[el.selectedIndex].dataset.hcp) }; };
             const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
-            scoring = { active: true, mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h, h2: p3.h+p4.h, rotation: window.selRot, frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0 };
+            scoring = { active: true, mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h, h2: p3.h+p4.h, rotation: window.selRot, frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0, sessionId: Date.now() };
+            
+            tState.tActiveMatches.push(scoring);
+            tSave();
+
             renderScorer();
         };
+
+        window.resumeTMatch = (sessId) => {
+            const found = tState.tActiveMatches.find(m => m.sessionId === sessId);
+            if(found) {
+                scoring = JSON.parse(JSON.stringify(found));
+                renderScorer();
+            }
+        };
+
+        window.deleteTMatch = (sessId) => {
+            if(confirm("Delete this in-progress game?")) {
+                tState.tActiveMatches = tState.tActiveMatches.filter(m => m.sessionId !== sessId);
+                tSave();
+                render();
+            }
+        };
+
         window.tAddScore = (pts) => {
             const fNum = scoring.frames.length + 1; let turn = (scoring.rotation === 'T1_FIRST') ? (fNum % 2 !== 0 ? ['p1', 'p3', 'p2', 'p4'] : ['p3', 'p1', 'p4', 'p2']) : (fNum % 2 !== 0 ? ['p3', 'p1', 'p4', 'p2'] : ['p1', 'p3', 'p2', 'p4']);
             scoring.currF[turn[scoring.pitcherIdx]] = pts; scoring.pitcherIdx++;
@@ -749,6 +854,13 @@
                     return;
                 }
             }
+
+            const idx = tState.tActiveMatches.findIndex(m => m.sessionId === scoring.sessionId);
+            if(idx !== -1) {
+                tState.tActiveMatches[idx] = JSON.parse(JSON.stringify(scoring));
+                tSave();
+            }
+
             renderScorer();
         };
         window.tEditCell = (idx, p) => { const v = prompt("Correct points (0,1,2,3,4,6):", scoring.frames[idx][p]); if([0,1,2,3,4,6].includes(parseInt(v))) { scoring.frames[idx][p] = parseInt(v); renderScorer(); } };
@@ -773,7 +885,6 @@
             if(!tState.matchHistory) tState.matchHistory = [];
             tState.matchHistory.push(historyEntry);
 
-            // LOG TO CLUB STATS
             const tourneySessionId = Date.now();
             const playerList = [
                 {n: scoring.p1n, p: 'p1'}, {n: scoring.p2n, p: 'p2'},
@@ -800,6 +911,8 @@
             });
 
             tAdvance(scoring.mid, winT, loseT);
+
+            tState.tActiveMatches = tState.tActiveMatches.filter(m => m.sessionId !== scoring.sessionId);
             scoring.active = false;
             showSummary(scoring.mid); 
             save(); 
@@ -908,8 +1021,28 @@
                 const isT2Active = match.active && match.step === 'LIVE' && (upP === match.p3 || upP === match.p4);
 
                 if (!match.active) {
+                    const activeMatchHtml = state.activeMatches.filter(m => m.mode === mode).map(m => `
+                        <div class="bg-amber-50 border-2 border-amber-200 p-3 mb-2 flex justify-between items-center">
+                            <div class="text-left">
+                                <p class="text-[10px] font-black uppercase text-amber-600">Game in Progress</p>
+                                <p class="text-sm font-black uppercase">${m.t1Name} vs ${m.t2Name}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="resumeLeagueMatch(${m.sessionId})" class="bg-amber-500 text-white px-3 py-2 text-[10px] font-black uppercase">Resume</button>
+                                <button onclick="deleteLeagueMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase">Del</button>
+                            </div>
+                        </div>
+                    `).join('');
+
                     const opts = [...(state.roster[mode]||[]).map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`), `<option value="BYE">BYE</option>`];
-                    content.innerHTML = `<div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center"><h2 class="font-black uppercase text-sky-500 italic mb-6">Series Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm">${opts}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm">${opts}</select><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button></div>`;
+                    content.innerHTML = `
+                        <div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">
+                            ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}
+                            <h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2>
+                            <select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm">${opts}</select>
+                            <select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm">${opts}</select>
+                            <button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button>
+                        </div>`;
                 } else if (match.step === 'PLAYERS') {
                     const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = state.roster.DOUBLES.find(x => x.teamName === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
                     const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
@@ -918,10 +1051,10 @@
                     const isMatch = match.step === 'MATCH_SUMMARY', players = [match.p1, match.p2, match.p3, match.p4].filter(x => x && !['BYE','DUMMY'].includes(cleanN(x).toUpperCase()));
                     let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
                     players.forEach(p => { 
-                        let pGames = []; for(let gN=1; gN<=match.gameNum; gN++) { const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); pGames.push(h ? `${h.score}(${h.ringers})` : '-'); }
-                        while(pGames.length < 3) pGames.push('-');
+                        let pScores = []; for(let gN=1; gN<=match.gameNum; gN++) { const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); pScores.push(h ? `${h.score}(${h.ringers})` : '-'); }
+                        while(pScores.length < 3) pScores.push('-');
                         const sTot = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p)).reduce((s,x)=>s+x.score, 0), statAvg = getPlyrAvg(p);
-                        tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pGames[0]}</td><td>${pGames[1]}</td><td>${pGames[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black text-black">${statAvg}</td></tr>`; 
+                        tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pScores[0]}</td><td>${pScores[1]}</td><td>${pScores[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black text-black">${statAvg}</td></tr>`; 
                     });
                     content.innerHTML = `<div class="p-4 bg-white shadow-2xl max-w-xl mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase">${isMatch ? 'Series Final' : 'Game Summary'}</h2><p class="text-4xl font-black my-4">${match.games[match.gameNum-1].s1} - ${match.games[match.gameNum-1].s2}</p>${tableHtml}<button onclick="${isMatch ? 'window.finalizeFullSeries()' : 'window.nextGame()'}" class="w-full bg-sky-500 text-black p-5 rounded-2xl font-black uppercase shadow-lg mt-6">${isMatch ? 'Save & Close' : 'Next Game'}</button></div>`;
                 } else {
@@ -930,7 +1063,6 @@
                     const s1C = sc1 + match.h1 + match.h2 + d1 + d2 + Number(match.currF.p1||0) + Number(match.currF.p2||0); 
                     const s2C = sc2 + match.h3 + match.h4 + d3 + d4 + Number(match.currF.p3||0) + Number(match.currF.p4||0);
 
-                    // DISPLAY TARGETS IF PLAYING BYE
                     const byeTarget = mode === 'SINGLES' ? 135 : 162;
                     const displayS1 = cleanN(match.t1Name) === 'bye' ? byeTarget : s1C;
                     const displayS2 = cleanN(match.t2Name) === 'bye' ? byeTarget : s2C;
@@ -1025,12 +1157,27 @@
                 if (tView === 'ROSTER') {
                     content.innerHTML = navHtml + `<div class="p-4"><button onclick="importTFromStandings()" class="w-full bg-sky-700 text-white p-4 mb-4 font-black uppercase text-xs rounded-xl">Import & Seed From Standings</button><textarea id="rosIn" class="w-full h-40 bg-zinc-900 border-2 border-zinc-800 p-4 text-xs text-white rounded-2xl" placeholder="TeamID | Last, First | HCP"></textarea><button onclick="tImportRoster()" class="w-full bg-sky-500 text-black p-5 mt-4 font-black uppercase text-sm rounded-2xl">Sync Roster</button><div class="mt-8 space-y-2 text-white">${tState.roster.map((t, i) => `<div class="p-4 bg-zinc-900 rounded-xl flex justify-between items-center border border-zinc-800"><b>Seed ${i + 1}: ${t.name}</b><button onclick="tDelTeam(${i})" class="text-red-500 font-black uppercase text-[12px]">Del</button></div>`).join('')}</div></div>`;
                 } else if (tView === 'BRACKET') {
+                    const activeMatchHtml = tState.tActiveMatches.map(m => `
+                        <div class="bg-sky-900/50 border-2 border-sky-500/50 p-3 mb-2 flex justify-between items-center rounded-xl">
+                            <div class="text-left">
+                                <p class="text-[10px] font-black uppercase text-sky-400">Match in Progress</p>
+                                <p class="text-sm font-black uppercase text-white">${m.t1.name} vs ${m.t2.name}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="resumeTMatch(${m.sessionId})" class="bg-sky-500 text-black px-3 py-2 text-[10px] font-black uppercase rounded-lg">Resume</button>
+                                <button onclick="deleteTMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase rounded-lg">Del</button>
+                            </div>
+                        </div>
+                    `).join('');
+
                     if (!tState.bracket) { content.innerHTML = navHtml + `<div class="mt-20 text-center"><button onclick="initBracket()" class="bg-sky-500 text-black px-12 py-5 rounded-2xl font-black text-sm uppercase">Initialize Bracket</button></div>`; }
                     else {
                         const size = Math.pow(2, Math.ceil(Math.log2(tState.roster.length)));
                         const wRounds = Math.log2(size);
                         
-                        let bracketHtml = `<div class="bracket-outer"><div class="bracket-scale-layer" style="transform: scale(${bScale});">`;
+                        let bracketHtml = `<div class="bracket-outer">`;
+                        if(activeMatchHtml) { bracketHtml += `<div class="p-4 max-w-lg mx-auto no-print">${activeMatchHtml}</div><div class="h-px bg-zinc-800 mb-4"></div>`; }
+                        bracketHtml += `<div class="bracket-scale-layer" style="transform: scale(${bScale});">`;
                         bracketHtml += `<div class="bracket-scroll">`;
                         
                         for (let r = 1; r <= wRounds; r++) { bracketHtml += `<div class="round-col"><div class="round-title">Winners R${r}</div>${tState.bracket.winners.filter(x => x.id.startsWith('W' + r)).map(m => renderCard(m)).join('')}</div>`; }
@@ -1103,7 +1250,7 @@
                     }).reverse().join('')}</tbody></table></div>`;
         }
 
-        window.showSummary = (id) => {
+        function showSummary(id) {
             const h = tState.bracketHistory[id] || tState.matchHistory.find(x => x.id === id); 
             if(!h) return;
             const mod = document.getElementById('modal'); mod.style.display = 'block';
