@@ -736,10 +736,21 @@
 
             tState.roster = rankings.map((r, idx) => {
                 const item = r.team;
-                return { id: idx+1, name: item.teamName || item.name, members: mode === 'DOUBLES' ? item.members.map(m => ({ name: m.name, hcp: m.currentHcp })) : [{ name: item.name, hcp: item.currentHcp }] };
+                const targetScore = (mode === 'DOUBLES' ? 90 : 150);
+                // This calculates the handicap LIVE based on current averages, bypassing the 'Locked' check
+                const getLiveHcp = (pName) => Math.max(0, Math.floor((targetScore - getPlyrAvg(pName)) * 0.9));
+
+                return { 
+                    id: idx+1, 
+                    name: item.teamName || item.name, 
+                    members: mode === 'DOUBLES' 
+                        ? item.members.map(m => ({ name: m.name, hcp: getLiveHcp(m.name) })) 
+                        : [{ name: item.name, hcp: getLiveHcp(item.name) }] 
+                };
             });
             tSave(); render();
         };
+        
         window.tImportRoster = () => {
             const raw = document.getElementById('rosIn').value; if(!raw.trim()) return;
             const teams = {};
@@ -811,16 +822,45 @@
             mod.innerHTML = `<div class="p-8"><h2 class="text-2xl font-black text-sky-400 uppercase italic mb-8">Lineup: ${id}</h2><div class="space-y-8"><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t1.name}</p><select id="selP1" class="t-select">${ops(m.t1)}</select><select id="selP2" class="t-select">${ops(m.t1)}</select></div><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t2.name}</p><select id="selP3" class="t-select">${ops(m.t2)}</select><select id="selP4" class="t-select">${ops(m.t2)}</select></div><div class="flex gap-4"><button id="rotT1" onclick="window.selRot='T1_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT2').classList.remove('rot-active');" class="rot-btn rot-active">${m.t1.id || 'T1'} Starts</button><button id="rotT2" onclick="window.selRot='T2_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT1').classList.remove('rot-active');" class="rot-btn">Opponent Starts</button></div></div><button onclick="startScoring('${id}')" class="w-full bg-sky-500 text-black p-6 mt-10 rounded-2xl font-black uppercase text-lg">Start Match</button><button onclick="document.getElementById('modal').style.display='none'" class="w-full p-6 mt-2 text-zinc-500 font-bold uppercase text-xs">Back</button></div>`;
             window.selRot = 'T1_FIRST'; if(m.t1.members.length > 1) document.getElementById('selP2').selectedIndex = 1; if(m.t2.members.length > 1) document.getElementById('selP4').selectedIndex = 1;
         };
-        window.startScoring = (id) => {
-            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); const getD = (id) => { const el = document.getElementById(id); return { n: el.value, h: parseInt(el.options[el.selectedIndex].dataset.hcp) }; };
-            const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
-            scoring = { active: true, mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h, h2: p3.h+p4.h, rotation: window.selRot, frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0, sessionId: Date.now() };
-            
-            tState.tActiveMatches.push(scoring);
-            tSave();
+        // Locate the window.startScoring function inside your <script> tag and replace it with this:
 
-            renderScorer();
-        };
+window.startScoring = (id) => {
+    const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); 
+    const getD = (id) => { 
+        const el = document.getElementById(id); 
+        return { n: el.value, h: parseInt(el.options[el.selectedIndex].dataset.hcp) }; 
+    };
+    const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
+    
+    // --- SEED ADVANTAGE LOGIC ---
+    // Seed #1 gets 10 points, Seed #2 gets 5 points
+    let bonus1 = (m.t1.id === 1) ? 10 : (m.t1.id === 2 ? 5 : 0);
+    let bonus2 = (m.t2.id === 1) ? 10 : (m.t2.id === 2 ? 5 : 0);
+    // ----------------------------
+
+    scoring = { 
+        active: true, 
+        mid: id, 
+        t1: m.t1, 
+        t2: m.t2, 
+        p1n: p1.n, 
+        p2n: p2.n, 
+        p3n: p3.n, 
+        p4n: p4.n, 
+        h1: p1.h + p2.h + bonus1, // Base HCP + Player HCP + Seed Bonus
+        h2: p3.h + p4.h + bonus2, // Base HCP + Player HCP + Seed Bonus
+        rotation: window.selRot, 
+        frames: [], 
+        currF: { p1: null, p2: null, p3: null, p4: null }, 
+        pitcherIdx: 0, 
+        sessionId: Date.now() 
+    };
+    
+    tState.tActiveMatches.push(scoring);
+    tSave();
+
+    renderScorer();
+};
 
         window.resumeTMatch = (sessId) => {
             const found = tState.tActiveMatches.find(m => m.sessionId === sessId);
