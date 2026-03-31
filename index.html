@@ -905,7 +905,7 @@ window.startScoring = (id) => {
         };
         window.tEditCell = (idx, p) => { const v = prompt("Correct points (0,1,2,3,4,6):", scoring.frames[idx][p]); if([0,1,2,3,4,6].includes(parseInt(v))) { scoring.frames[idx][p] = parseInt(v); renderScorer(); } };
         
-        function finalizeTMatch() {
+        async function finalizeTMatch() {
             const f = scoring.frames; 
             const s1 = f.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1; 
             const s2 = f.reduce((a,b)=>a+(b.p3||0)+(b.p4||0),0) + scoring.h2;
@@ -914,6 +914,49 @@ window.startScoring = (id) => {
             const loseT = s1 > s2 ? scoring.t2 : scoring.t1;
             m.win = winT.name; m.s1 = s1; m.s2 = s2; 
             tState.bracketHistory[scoring.mid] = { ...scoring, s1, s2 }; 
+            
+            const historyEntry = { 
+                id: scoring.mid, date: new Date().toLocaleDateString(), timestamp: Date.now(), 
+                t1Name: scoring.t1.name, t2Name: scoring.t2.name, s1: s1, s2: s2, 
+                frames: JSON.parse(JSON.stringify(scoring.frames)),
+                p1n: scoring.p1n, p2n: scoring.p2n, p3n: scoring.p3n, p4n: scoring.p4n,
+                h1: scoring.h1, h2: scoring.h2
+            };
+            if(!tState.matchHistory) tState.matchHistory = [];
+            tState.matchHistory.push(historyEntry);
+
+            // LOG TO CLUB STATS
+            const tourneySessionId = Date.now();
+            const playerList = [{n: scoring.p1n, p: 'p1'}, {n: scoring.p2n, p: 'p2'}, {n: scoring.p3n, p: 'p3'}, {n: scoring.p4n, p: 'p4'}];
+            playerList.forEach(pl => {
+                if(pl.n && !['BYE','DUMMY'].includes(cleanN(pl.n).toUpperCase())) {
+                    const pScore = scoring.frames.reduce((a, b) => a + (Number(b[pl.p]) || 0), 0);
+                    const pRingers = scoring.frames.reduce((a, b) => a + getR(b[pl.p]), 0);
+                    state.history.push({ player: pl.n, score: pScore, ringers: pRingers, result: null, mode: mode, date: new Date().toLocaleDateString(), sessionId: tourneySessionId, gameNum: 1, timestamp: Date.now() });
+                }
+            });
+
+            tAdvance(scoring.mid, winT, loseT);
+
+            // --- NEW: DELAYED REMOVAL FOR TOURNAMENT MATCH ---
+            const finalId = scoring.sessionId;
+            const activeIdx = tState.tActiveMatches.findIndex(am => am.sessionId === finalId);
+            if (activeIdx !== -1) {
+                tState.tActiveMatches[activeIdx].isFinal = true; // Mark it!
+            }
+
+            scoring.active = false;
+            showSummary(scoring.mid); 
+            
+            await save(); 
+            await tSave();
+
+            // Remove from live feed after 60 seconds
+            setTimeout(async () => {
+                tState.tActiveMatches = tState.tActiveMatches.filter(am => am.sessionId !== finalId);
+                await tSave();
+            }, 90000);
+        }; 
             
             const historyEntry = { 
                 id: scoring.mid, date: new Date().toLocaleDateString(), timestamp: Date.now(), 
