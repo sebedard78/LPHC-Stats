@@ -191,4 +191,1133 @@
                 if(!state.nhpa) state.nhpa = {SINGLES:{}, DOUBLES:{}};
                 if(!state.hcpLocked) state.hcpLocked = {SINGLES:true, DOUBLES:true};
                 if(!state.weeklyHoa) state.weeklyHoa = { SINGLES: [], DOUBLES: [] };
-                if(!state.f
+                if(!state.fourDeads) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
+                if(state.news === undefined) state.news = '';
+                if(state.scorerEnabled === undefined) state.scorerEnabled = true;
+                if(state.tournamentEnabled === undefined) state.tournamentEnabled = false;
+                if(!state.activeMatches) state.activeMatches = [];
+                render(); 
+            } 
+        });
+
+        onSnapshot(docRefTourney, (snap) => { 
+            if (snap.exists()) { 
+                tState = snap.data(); 
+                if(!tState.matchHistory) tState.matchHistory = [];
+                if(!tState.tActiveMatches) tState.tActiveMatches = [];
+                render(); 
+            } 
+        });
+
+        async function save() { await setDoc(docRef, state); }
+        async function tSave() { await setDoc(docRefTourney, tState); }
+
+        const cleanN = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
+        const getSym = (pts, oppPts = 0) => { 
+            if(pts===null||pts===undefined) return '--'; 
+            if(Number(pts) === 6 && Number(oppPts) === 6) return 'XX';
+            if(pts>=6) return 'OO'; if(pts===4) return "O'"; if(pts===3) return 'O'; return '--'; 
+        };
+        const getR = (pts) => pts>=6?2:(pts>=3?1:0);
+
+        const getFirst = (n) => {
+            if(!n) return '---';
+            if(n.includes(',')) return n.split(',')[1].trim().split(' ')[0];
+            return n.split(' ')[0];
+        };
+
+        function getPlyrAvg(pName) {
+            const n = cleanN(pName); if(!pName || ['bye','dummy'].includes(n)) return 0;
+            const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
+            const p = rList.find(x => cleanN(x.name) === n);
+            const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode).slice(-9);
+            const rawAvg = hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0);
+            return Math.round(rawAvg);
+        }
+
+        function getH(pName) {
+            const n = cleanN(pName); if(!pName || n === 'bye') return 0; if(n === 'dummy') return 54;
+            const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
+            const p = rList.find(x => cleanN(x.name) === n);
+            if (state.hcpLocked && state.hcpLocked[mode]) return Number(p ? (p.currentHcp || 0) : 0);
+            const avg = getPlyrAvg(pName);
+            return Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
+        }
+
+        window.zoomB = (delta) => {
+            if (delta === 'reset') bScale = 1.0;
+            else bScale = Math.max(0.1, Math.min(2.0, bScale + delta));
+            render();
+        };
+
+        window.confirmExit = (choice) => { 
+            window.closeExitModal(); 
+            if (choice === 'SUBMIT') {
+                finalizeFullSeries(); 
+            } else { 
+                state.activeMatches = state.activeMatches.filter(x => x.sessionId !== match.sessionId);
+                match.active = false; 
+                match.seriesBuffer = []; 
+                match.fourDeadLog = {}; 
+                save();
+                render(); 
+            } 
+        };
+        window.closeExitModal = () => { document.getElementById('exitModal').style.display = 'none'; };
+        window.openExitModal = () => { document.getElementById('exitModal').style.display = 'flex'; };
+        window.setMode = (m) => { mode = m; render(); };
+        window.setTab = (t) => { 
+            const lockedTabs = ['MANAGE', 'HISTORY', 'NHPA'];
+            if (lockedTabs.includes(t) && !isUnlocked) {
+                const pinInput = prompt("Enter PIN:");
+                if (pinInput === state.managePin) { isUnlocked = true; view = t; render(); }
+                else alert("Incorrect PIN");
+            } else { view = t; render(); }
+        };
+
+        window.toggleHcpLock = async () => {
+            if(!state.hcpLocked) state.hcpLocked = {SINGLES:true, DOUBLES:true};
+            state.hcpLocked[mode] = !state.hcpLocked[mode];
+            await save(); render();
+        };
+
+        window.toggleScorer = async () => {
+            state.scorerEnabled = !state.scorerEnabled;
+            if(!state.scorerEnabled && view === 'SCORER') view = 'STANDINGS';
+            await save(); render();
+        };
+
+        window.toggleTournament = async () => {
+            state.tournamentEnabled = !state.tournamentEnabled;
+            if(!state.tournamentEnabled && view === 'TOURNAMENT') view = 'STANDINGS';
+            await save(); render();
+        }
+
+        window.executePrint = (title, html, isNhpa = false) => {
+            const zone = document.getElementById('printZone');
+            const clubHeader = isNhpa ? "" : `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #000; padding-bottom:10px; margin-bottom:20px; font-family:Arial;">
+                    <div style="width:70px; height:70px; border:2px solid #000; display:flex; align-items:center; justify-content:center;">
+                        <img src="logo.jpg" style="width:60px; height:60px; object-fit:contain;">
+                    </div>
+                    <div style="text-align:center;">
+                        <h1 style="font-size:22pt; font-weight:900; margin:0; letter-spacing:-1px;">LOON POND HORSESHOE CLUB</h1>
+                        <h2 style="font-size:14pt; margin:0; text-transform:uppercase; color:#555;">${title}</h2>
+                    </div>
+                    <div style="text-align:right; font-size:10pt; font-weight:bold;">DATE: ${new Date().toLocaleDateString()}<br>MODE: ${mode}</div>
+                </div>
+            `;
+            zone.innerHTML = clubHeader + html;
+            setTimeout(() => { window.print(); }, 1200);
+        };
+
+        window.printActive = (t) => {
+            const el = document.getElementById('viewContent').cloneNode(true);
+            el.querySelectorAll('button, .no-print, .action-bar, select, textarea').forEach(x => x.remove());
+            window.executePrint(t, el.innerHTML);
+        };
+
+        window.printHistoryEntry = (sId) => {
+            const s = state.sessions.find(x => x.id === sId);
+            if(!s) return;
+            const isSingles = (s.mode === 'SINGLES');
+            let html = `<div style="font-family: Arial; color:black; background:white;">`;
+
+            const sessionPlayers = [...new Set(s.fullData.flatMap(g => [g.p1, g.p2, g.p3, g.p4]))].filter(p => p && !['BYE','DUMMY'].includes(cleanN(p).toUpperCase()));
+            html += `<div style="margin-bottom:30px;"><h3 style="text-transform:uppercase; font-size:14px; border-bottom:2px solid #000; margin-bottom:10px;">Series Summary</h3><table style="width:100%; border-collapse:collapse; text-align:center; border:1px solid #000; font-size:11px;"><thead><tr style="background:#eee;"><th>Player</th><th>G1 Score</th><th>G2 Score</th><th>G3 Score</th><th>Series Total</th><th>Series Avg</th></tr></thead><tbody>`;
+            sessionPlayers.forEach(p => {
+                let pScores = [0,0,0], pRingerArr = [0,0,0];
+                s.fullData.forEach((g, i) => {
+                    const key = ['p1','p2','p3','p4'].find(k => cleanN(g[k]) === cleanN(p));
+                    if(key) {
+                        pScores[i] = (g.frames || []).reduce((sum, f) => sum + Number(f[key]||0), 0) + (cleanN(g[key]) === 'dummy' ? 30 : 0);
+                        pRingerArr[i] = (g.frames || []).reduce((sum, f) => sum + getR(f[key]), 0);
+                    }
+                });
+                const total = pScores.reduce((a,b)=>a+b,0);
+                html += `<tr><td style="border:1px solid #ddd; font-weight:bold; text-align:left; padding-left:5px;">${p}</td><td>${pScores[0]} (${pRingerArr[0]})</td><td>${pScores[1]} (${pRingerArr[1]})</td><td>${pScores[2]} (${pRingerArr[2]})</td><td style="font-weight:bold;">${total}</td><td>${Math.round(total/3)}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
+
+            s.fullData.forEach(g => {
+                html += `<div style="margin-bottom:50px; page-break-inside: avoid; border: 1px solid #000; padding: 10px;">`;
+                html += `<div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; text-transform:uppercase; font-size:14px;"><span>Game ${g.gameNum}</span><span>Score: ${g.s1} - ${g.s2}</span></div>`;
+                html += `<table style="width:100%; border-collapse:collapse; text-align:center; border:2px solid #000; font-size:11px;">`;
+
+                const d1 = cleanN(g.p1) === 'dummy' ? 30 : 0, d2 = cleanN(g.p2) === 'dummy' ? 30 : 0;
+                const d3 = cleanN(g.p3) === 'dummy' ? 30 : 0, d4 = cleanN(g.p4) === 'dummy' ? 30 : 0;
+
+                if(isSingles) {
+                    html += `<thead><tr style="background:#eee; border-bottom:1px solid #000;"><th rowspan="2" style="border-right:1px solid #000; width:40px;">SH</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p1}</th><th rowspan="2" style="border-right:2px solid #000; width:60px; background:#f9f9f9;">T1</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p3}</th><th rowspan="2" style="width:60px; background:#f9f9f9;">T2</th></tr><tr style="background:#eee; border-bottom:2px solid #000;"><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th></tr></thead><tbody>`;
+                    let p1s=0, p3s=0;
+                    g.frames.forEach(f => {
+                        p1s += Number(f.p1||0); p3s += Number(f.p3||0);
+                        html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1, f.p3)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${p1s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${p1s+g.h1+d1}</td><td style="border:1px solid #ccc;">${getSym(f.p3, f.p1)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${p3s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+g.h3+d3}</td></tr>`;
+                    });
+                } else {
+                    html += `<thead><tr style="background:#eee; border-bottom:1px solid #000;"><th rowspan="2" style="border-right:1px solid #000; width:30px;">SH</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p1}</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p2}</th><th rowspan="2" style="border-right:2px solid #000; width:45px; background:#f9f9f9;">T1</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p3}</th><th colspan="3" style="border-right:1px solid #000; text-transform:uppercase;">${g.p4}</th><th rowspan="2" style="width:45px; background:#f9f9f9;">T2</th></tr><tr style="background:#eee; border-bottom:2px solid #000;"><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th><th style="border-right:1px solid #000;">R</th><th style="border-right:1px solid #000;">P</th><th style="border-right:1px solid #000;">S</th></tr></thead><tbody>`;
+                    let p1s=0, p2s=0, p3s=0, p4s=0;
+                    g.frames.forEach(f => {
+                        p1s += Number(f.p1||0); p2s += Number(f.p2||0); p3s += Number(f.p3||0); p4s += Number(f.p4||0);
+                        html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1, f.p3)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${p1s}</td><td style="border:1px solid #ccc;">${getSym(f.p2, f.p4)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${p2s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${p1s+p2s+g.h1+g.h2+d1+d2}</td><td style="border:1px solid #ccc;">${getSym(f.p3, f.p1)}</td><td style="border:1px solid #ccc;">${f.p3||0}</td><td style="border:1px solid #ccc;">${p3s}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold; display:none;">${p3s+p4s+g.h3+g.h4+d3+d4}</td><td style="border:1px solid #ccc;">${getSym(f.p4, f.p2)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${p4s}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${p3s+p4s+g.h3+g.h4+d3+d4}</td></tr>`;
+                    });
+                }
+                html += `</tbody></table></div>`;
+            });
+
+            html += `</div>`;
+            window.executePrint("Session Score Sheets", html);
+        };
+
+        /* TOURNAMENT PRINTING */
+        window.printTournamentScoreSheet = (ts) => {
+            const h = tState.matchHistory.find(x => x.timestamp == ts);
+            if(!h) return;
+            const totalShoes = h.frames.length * 2;
+            const calc = (pKey) => ({
+                pts: h.frames.reduce((a, b) => a + (Number(b[pKey]) || 0), 0),
+                rng: h.frames.reduce((a, b) => a + getR(b[pKey]), 0)
+            });
+            const s1=calc('p1'), s2=calc('p2'), s3=calc('p3'), s4=calc('p4');
+
+            let html = `<div style="font-family: Arial; color:black; background:white;">`;
+
+            // MATCH SUMMARY TABLE (Using global getFirst)
+            html += `<div style="margin-bottom:20px;"><h3 style="text-transform:uppercase; font-size:14px; border-bottom:2px solid #000; margin-bottom:10px;">Match Summary</h3><table style="width:100%; border-collapse:collapse; text-align:center; border:1px solid #000; font-size:11px;"><thead><tr style="background:#eee;"><th style="text-align:left; padding-left:5px;">Player</th><th>Total Points</th><th>Total Ringers</th><th>Shoes Thrown</th></tr></thead><tbody>`;
+            [ {n:getFirst(h.p1n), s:s1}, {n:getFirst(h.p2n), s:s2}, {n:getFirst(h.p3n), s:s3}, {n:getFirst(h.p4n), s:s4} ].forEach(p => {
+                html += `<tr><td style="border:1px solid #ddd; font-weight:bold; text-align:left; padding-left:5px;">${p.n}</td><td>${p.s.pts}</td><td>${p.s.rng}</td><td>${totalShoes}</td></tr>`;
+            });
+            html += `</tbody></table></div>`;
+
+            // SCORE SHEET TABLE
+            html += `<div style="margin-bottom:30px; border: 1px solid #000; padding: 10px;">`;
+            html += `<div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; text-transform:uppercase; font-size:14px;"><span>Tournament Match: ${h.id}</span><span>Score: ${h.s1} - ${h.s2}</span></div>`;
+            html += `<table style="width:100%; border-collapse:collapse; text-align:center; border:2px solid #000; font-size:10px;">`;
+            html += `<thead><tr style="background:#eee;"><th rowspan="2" style="border:1px solid #000; width:30px;">SH</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p1n}</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p2n}</th><th rowspan="2" style="border-right:2px solid #000; width:45px; background:#f9f9f9;">T1</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p3n}</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p4n}</th><th rowspan="2" style="width:45px; background:#f9f9f9;">T2</th></tr>`;
+            html += `<tr style="background:#eee; border-bottom:2px solid #000;"><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th></tr></thead><tbody>`;
+
+            let fsc1=0, fsc2=0, fsc3=0, fsc4=0;
+            h.frames.forEach(f => {
+                fsc1 += Number(f.p1||0); fsc2 += Number(f.p2||0); fsc3 += Number(f.p3||0); fsc4 += Number(f.p4||0);
+                html += `<tr><td style="border:1px solid #000; font-weight:bold;">${f.sh}</td><td style="border:1px solid #ccc;">${getSym(f.p1)}</td><td style="border:1px solid #ccc;">${f.p1||0}</td><td style="border:1px solid #ccc;">${fsc1}</td><td style="border:1px solid #ccc;">${getSym(f.p2)}</td><td style="border:1px solid #ccc;">${f.p2||0}</td><td style="border:1px solid #ccc;">${fsc2}</td><td style="border-left:1px solid #000; border-right:2px solid #000; background:#f9f9f9; font-weight:bold;">${fsc1+fsc2+h.h1}</td><td style="border:1px solid #ccc;">${getSym(f.p3)}</td><td style="border:1px solid #ccc;">${fsc3}</td><td style="border-left:1px solid #000; border-right:1px solid #1000; background:#f9f9f9; font-weight:bold; display:none;">${fsc3+fsc4+h.h2}</td><td style="border:1px solid #ccc;">${getSym(f.p4)}</td><td style="border:1px solid #ccc;">${f.p4||0}</td><td style="border:1px solid #ccc;">${fsc4}</td><td style="border-left:1px solid #000; background:#f9f9f9; font-weight:bold;">${fsc3+fsc4+h.h2}</td></tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+            window.executePrint("Tournament Score Sheet", html);
+        };
+
+        window.printSanctionSheet = () => {
+            const cfg = state.nhpa[mode] || {};
+            const shoesPerGame = Number(cfg.shoesPerGame) || (mode === 'DOUBLES' ? 30 : 50);
+            const hList = state.history.filter(h => h.mode === mode);
+            const pNames = [...new Set(hList.map(h => h.player))];
+            let rowsHtml = "";
+            pNames.forEach(pN => {
+                const pHist = hList.filter(h => cleanN(h.player) === cleanN(pN));
+                const rRec = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members)).find(r => cleanN(r.name) === cleanN(pN)) || {};
+                const totalPts = pHist.reduce((s, h) => s + h.score, 0), highGame = pHist.length ? Math.max(...pHist.map(h => h.score)) : 0;
+                const totalRingers = pHist.reduce((s, h) => s + h.ringers, 0), prevHiRinger = Number(rRec.prevHighRinger || 0);
+                const curSeasonHiPct = pHist.length ? Math.max(...pHist.map(h => (h.ringers/shoesPerGame)*100)) : 0;
+                const finalRingerPct = (pHist.length * shoesPerGame) > 0 ? (totalRingers / (pHist.length * shoesPerGame)) * 100 : 0;
+
+                const nextFactorOf10 = Math.floor((prevHiRinger / 10) + 1) * 10;
+                const eligY = curSeasonHiPct >= nextFactorOf10 ? 'Y' : '';
+
+                const [last, first] = pN.includes(',') ? pN.split(',').map(x=>x.trim()) : [pN, ""];
+                rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;"><td style="border:1px solid #000; padding:2px;">${last}</td><td style="border:1px solid #000; padding:2px;">${first}</td><td style="border:1px solid #000; text-align:center;">${rRec.category||''}</td><td style="border:1px solid #000; text-align:center;">${rRec.cardNo||''}</td><td style="border:1px solid #000; text-align:center;">${totalPts}</td><td style="border:1px solid #000; text-align:center;">${highGame}</td><td style="border:1px solid #000; text-align:center;">${pHist.length * shoesPerGame}</td><td style="border:1px solid #000; text-align:center;">${totalRingers}</td><td style="border:1px solid #000; text-align:center;">${prevHiRinger.toFixed(1)}</td><td style="border:1px solid #000; text-align:center;">${curSeasonHiPct.toFixed(1)}</td><td style="border:1px solid #000; text-align:center;">${finalRingerPct.toFixed(1)}</td><td style="border:1px solid #000; text-align:center;">${eligY}</td></tr>`;
+            });
+            for(let i=pNames.length; i<25; i++) { rowsHtml += `<tr style="height:25px; border-bottom:1px solid #000;"><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>`; }
+
+            const template = `
+            <div style="font-family: Arial, sans-serif; font-size: 11px; width: 8in; margin: auto; padding: 20px; color: black; line-height: 1.2; background: white;">
+                <div style="display: flex; align-items: start; margin-bottom: 5px;">
+                    <div style="width: 80px; height: 90px; border: 2px solid #000; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width:100%; object-fit:contain;"></div>
+                    <div style="flex: 1; text-align: center;">
+                        <h1 style="font-size: 22pt; font-weight: bold; font-style: italic; margin: 0;">National Horseshoe Pitchers Association</h1>
+                        <h2 style="font-size: 16pt; font-weight: bold; margin: 5px 0;">Sanctioned Club/League Program - FINAL Stat Sheet</h2>
+                        <p style="font-size: 10px; margin: 4px 0;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p>
+                        <p style="font-size: 10px; margin: 0; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH 44070 Bcarson848@gmail.com</p>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; border-top: 3px solid #000; padding-top: 10px; font-size: 11px; line-height: 2;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Club Name: <span style="border-bottom: 1px solid #000; min-width: 380px; display: inline-block; font-weight:bold;">${cfg.clubName||''}</span></span>
+                        <span>Phone#: <span style="border-bottom: 1px solid #000; min-width: 140px; display: inline-block; font-weight:bold;">${cfg.phone||''}</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Sanction Number: <span style="border-bottom: 1px solid #000; min-width: 180px; display: inline-block; font-weight:bold;">${cfg.sanctionNum||''}</span></span>
+                        <span>Director: <span style="border-bottom: 1px solid #000; min-width: 400px; display: inline-block; font-weight:bold;">${cfg.director||''}</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>State: <span style="border-bottom: 1px solid #000; min-width: 150px; display: inline-block; font-weight:bold;">${cfg.state||''}</span></span>
+                        <span>Address: <span style="border-bottom: 1px solid #000; min-width: 300px; display: inline-block; font-weight:bold;">${cfg.address||''}</span></span>
+                        <span>City: <span style="border-bottom: 1px solid #000; min-width: 130px; display: inline-block; font-weight:bold;">${cfg.city||''}</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: flex-start; gap: 40px;">
+                        <span>Dates: Start <span style="border-bottom: 1px solid #000; min-width: 120px; display: inline-block; text-align:center; font-weight:bold;">${cfg.startDate||''}</span></span>
+                        <span>End <span style="border-bottom: 1px solid #000; min-width: 120px; display: inline-block; text-align:center; font-weight:bold;">${cfg.endDate||''}</span></span>
+                    </div>
+                </div>
+                <div style="border-top:2px solid #000; border-bottom:2px solid #000; padding: 8px 0; margin-top:10px; display:grid; grid-template-columns: 1fr 1fr 1fr; font-weight:bold; font-size: 10px;">
+                    <div><u>Column Number:</u><br>1. Total League Pts, No Handicap<br>2. High Game Points, No handicap )<br>3. Total League Shoes</div>
+                    <div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div>
+                    <div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; border: 3px solid #000; margin-top: 5px; font-size: 11px;">
+                    <thead><tr style="text-align: center; font-weight: bold; background:#eee;"><th colspan="2" style="border: 1px solid #000;">Player Name</th><th rowspan="2" style="border: 1px solid #000; width: 45px;">Div.</th><th rowspan="2" style="border: 1px solid #000; width: 90px;">NHPA<br>Card No.</th><th style="border: 1px solid #000; width: 45px;">1</th><th style="border: 1px solid #000; width: 45px;">2</th><th style="border: 1px solid #000; width: 55px;">3</th><th style="border: 1px solid #000; width: 45px;">4</th><th style="border: 1px solid #000; width: 45px;">5</th><th style="border: 1px solid #000; width: 45px;">6</th><th style="border: 1px solid #000; width: 45px;">7</th><th rowspan="2" style="border: 1px solid #000; width: 35px;">Elig</th></tr><tr style="text-align: center; font-weight: bold; background:#eee;"><th style="border: 1px solid #000;">Last</th><th style="border: 1px solid #000;">First</th><th colspan="7" style="border: 1px solid #000; font-size: 8px;">NHPA COLUMNS</th></tr></thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+                <div style="text-align:right; margin-top:20px; font-size:11px;">Signed <span style="border-bottom: 2px solid #000; display: inline-block; min-width: 350px;"></span><br><div style="font-size:10px; font-weight: bold; margin-right: 60px; margin-top: 5px;">Club Officer / League Director</div></div>
+            </div>`;
+            window.executePrint("NHPA Stat Sheet", template, true);
+        };
+
+        window.pickLiveTeams = () => {
+            const t1 = document.getElementById('lt1').value, t2 = document.getElementById('lt2').value;
+            if(!t1 || !t2) return alert("Select teams");
+            match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode };
+
+            state.activeMatches.push(match);
+            save();
+
+            if (mode === 'SINGLES') { match.p1 = match.t1Name; match.p3 = match.t2Name; window.startTheLiveGame(); }
+            else { match.step = 'PLAYERS'; render(); }
+        };
+
+        window.resumeLeagueMatch = (sessId) => {
+            const found = state.activeMatches.find(m => m.sessionId === sessId);
+            if(found) {
+                match = JSON.parse(JSON.stringify(found));
+                render();
+            }
+        };
+
+        window.deleteLeagueMatch = (sessId) => {
+            if(confirm("Delete this in-progress game?")) {
+                state.activeMatches = state.activeMatches.filter(m => m.sessionId !== sessId);
+                save();
+            }
+        };
+
+        window.startTheLiveGame = () => {
+            if (mode === 'DOUBLES') { 
+                match.p1 = document.getElementById('sp1').value; 
+                match.p2 = document.getElementById('sp2').value; 
+                match.p3 = document.getElementById('sp3').value; 
+                match.p4 = document.getElementById('sp4').value;
+            } else { 
+                match.p1 = match.t1Name; match.p2 = 'BYE'; match.p3 = match.t2Name; match.p4 = 'BYE'; 
+            }
+            match.h1 = Number(getH(match.p1)); match.h2 = Number(getH(match.p2)); match.h3 = Number(getH(match.p3)); match.h4 = Number(getH(match.p4));
+            match.step = 'LIVE'; match.pitcherIdx = 0; match.currGameFrames = []; match.currF = { p1: null, p2: null, p3: null, p4: null };
+            updateActiveMatchRef();
+            render();
+        };
+
+        window.addScore = (pts) => {
+            const p = getPitcher(); if (p === 'END') return;
+            if (p === match.p1) match.currF.p1 = Number(pts); else if (p === match.p2) match.currF.p2 = Number(pts); else if (p === match.p3) match.currF.p3 = Number(pts); else if (p === match.p4) match.currF.p4 = Number(pts);
+            match.pitcherIdx++; const limit = mode === 'DOUBLES' ? 4 : 2;
+            if (match.pitcherIdx >= limit) finalizeFrame();
+
+            updateActiveMatchRef();
+            render();
+        };
+
+        function updateActiveMatchRef() {
+            const idx = state.activeMatches.findIndex(m => m.sessionId === match.sessionId);
+            if(idx !== -1) {
+                state.activeMatches[idx] = JSON.parse(JSON.stringify(match));
+                save();
+            }
+        }
+
+        window.editLiveScoreCell = (idx, pNum) => {
+            const val = prompt("New Score:", match.currGameFrames[idx]['p'+pNum]);
+            if(val !== null && [0,1,2,3,4,6].includes(Number(val))) { 
+                match.currGameFrames[idx]['p'+pNum] = Number(val); 
+                updateActiveMatchRef();
+                render(); 
+            }
+        };
+
+        window.nextGame = () => { match.gameNum++; if (mode === 'SINGLES') window.startTheLiveGame(); else { match.step = 'PLAYERS'; render(); } };
+
+        function finalizeFrame() {
+            const isFourDead = (pA, pB) => {
+                if(!pA || !pB || ['bye','dummy'].includes(cleanN(pA)) || ['bye','dummy'].includes(cleanN(pB))) return false;
+                return (match.currF['p'+pA] === 6 && match.currF['p'+pB] === 6);
+            };
+            if (mode === 'SINGLES') { if (isFourDead('1', '3')) { match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; } }
+            else {
+                if (isFourDead('1', '3')) { match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; }
+                if (isFourDead('2', '4')) { match.fourDeadLog[match.p2] = (match.fourDeadLog[match.p2] || 0) + 1; match.fourDeadLog[match.p4] = (match.fourDeadLog[match.p4] || 0) + 1; }
+            }
+            match.currGameFrames.push({ ...match.currF, sh: (match.currGameFrames.length + 1) * 2 });
+            match.currF = { p1: null, p2: null, p3: null, p4: null }; match.pitcherIdx = 0;
+            if (match.currGameFrames.length >= (mode === 'DOUBLES' ? 15 : 25)) showInterSummary();
+        }
+
+        function getPitcher() {
+            if (!match.active || match.step !== 'LIVE') return '---';
+            const fNum = match.currGameFrames.length + 1;
+            let t1Lead = (fNum % 2 !== 0);
+            if (match.gameNum === 2) t1Lead = !t1Lead;
+            const turn = t1Lead ? (mode === 'SINGLES' ? [match.p1, match.p3] : [match.p1, match.p3, match.p2, match.p4]) : (mode === 'SINGLES' ? [match.p3, match.p1] : [match.p3, match.p1, match.p4, match.p2]);
+            let s = 0; while (s < 10) {
+                let p = turn[match.pitcherIdx];
+                if (!p || cleanN(p) === 'bye' || cleanN(p) === 'dummy') {
+                    match.pitcherIdx++; const limit = mode === 'DOUBLES' ? 4 : 2;
+                    if (match.pitcherIdx >= limit) { finalizeFrame(); if (match.currGameFrames.length >= (mode === 'DOUBLES' ? 15 : 25)) return 'END'; return getPitcher(); }
+                    s++; continue;
+                } return p;
+            } return 'END';
+        }
+
+        function showInterSummary() {
+            const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
+            const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
+            const g1 = sc1 + d1 + d2 + match.h1 + match.h2, g2 = sc2 + d3 + d4 + match.h3 + match.h4;
+
+            const byeTarget = mode === 'SINGLES' ? 135 : 162;
+            let res1, res2;
+            if (cleanN(match.t2Name) === 'bye') {
+                res1 = g1 >= byeTarget ? 'W' : 'L';
+                res2 = res1 === 'W' ? 'L' : 'W';
+            } else if (cleanN(match.t1Name) === 'bye') {
+                res2 = g2 >= byeTarget ? 'W' : 'L';
+                res1 = res2 === 'W' ? 'L' : 'W';
+            } else {
+                res1 = g1 > g2 ? 'W' : (g1 < g2 ? 'L' : 'T');
+                res2 = g2 > g1 ? 'W' : (g2 < g1 ? 'L' : 'T');
+            }
+
+            match.sessionAgg.t1 += g1; match.sessionAgg.t2 += g2;
+            const plrs = [{n:match.p1,p:'p1',r:res1,d:d1},{n:match.p2,p:'p2',r:res1,d:d2},{n:match.p3,p:'p3',r:res2,d:d3},{n:match.p4,p:'p4',r:res2,d:d4}];
+            plrs.forEach(pl => { if(pl.n && !['bye','dummy'].includes(cleanN(pl.n))) { match.seriesBuffer.push({ player: pl.n, score: match.currGameFrames.reduce((s,f)=>s+Number(f[pl.p]||0), 0) + pl.d, ringers: match.currGameFrames.reduce((s,f)=>s+getR(f[pl.p]), 0), result: pl.r, sessionId: match.sessionId, gameNum: match.gameNum, mode, date: new Date().toLocaleDateString(), timestamp: Date.now() }); } });
+            match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, s1: g1, s2: g2, frames: [...match.currGameFrames] });
+            match.step = (match.gameNum >= 3) ? 'MATCH_SUMMARY' : 'GAME_SUMMARY';
+            updateActiveMatchRef();
+            render();
+        }
+
+        window.finalizeFullSeries = () => {
+            let mW;
+            const isT1Bye = cleanN(match.t1Name) === 'bye', isT2Bye = cleanN(match.t2Name) === 'bye';
+            const byeTarget = mode === 'SINGLES' ? 135 : 162;
+
+            if (isT2Bye) {
+                const gameWins = match.games.filter(g => g.s1 >= byeTarget).length;
+                mW = gameWins > 0 ? match.t1Name : 'BYE';
+            } else if (isT1Bye) {
+                const gameWins = match.games.filter(g => g.s2 >= byeTarget).length;
+                mW = gameWins > 0 ? match.t2Name : 'BYE';
+            } else {
+                mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie');
+            }
+
+            const today = new Date().toLocaleDateString();
+            state.history.push(...match.seriesBuffer);
+
+            match.seriesBuffer.forEach(entry => {
+                const playerAvg = getPlyrAvg(entry.player);
+                const currentHoa = entry.score - playerAvg;
+                const existingIdx = state.weeklyHoa[mode].findIndex(x => x.date === today);
+                if (existingIdx !== -1) {
+                    if (currentHoa > state.weeklyHoa[mode][existingIdx].hoa) {
+                        state.weeklyHoa[mode][existingIdx] = { date: today, player: entry.player, hoa: currentHoa };
+                    }
+                } else {
+                    state.weeklyHoa[mode].push({ date: today, player: entry.player, hoa: currentHoa });
+                }
+            });
+
+            state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now() });
+            Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
+
+            state.activeMatches = state.activeMatches.filter(m => m.sessionId !== match.sessionId);
+            match.active = false; view = 'STANDINGS'; 
+            save();
+        };
+
+        // UPDATED: EDIT PAST GAME NOW SHOWS PLAYER NAME
+        window.editPastGame = (sId, gIdx) => {
+            const sess = state.sessions.find(x => x.id === sId); if(!sess) return;
+            const g = sess.fullData[gIdx];
+            const editP = (pName, curS, curR, curH) => {
+                if(!pName || ['bye','dummy'].includes(cleanN(pName))) return {s:0, r:0, h:curH};
+                const ns = Number(prompt(`Points for ${pName}:`, curS)), 
+                      nr = Number(prompt(`Ringers for ${pName}:`, curR)), 
+                      nh = Number(prompt(`Handicap for ${pName}:`, curH));
+                const hRec = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pName));
+                if(hRec) { hRec.score = ns; hRec.ringers = nr; }
+                return {s: ns, r: nr, h: nh};
+            };
+            const d1 = editP(g.p1, g.frames.reduce((s,f)=>s+Number(f.p1||0),0), g.frames.reduce((s,f)=>s+getR(f.p1),0), g.h1);
+            const d2 = (mode==='DOUBLES') ? editP(g.p2, g.frames.reduce((s,f)=>s+Number(f.p2||0),0), g.frames.reduce((s,f)=>s+getR(f.p2),0), g.h2) : {s:0, r:0, h:0};
+            const d3 = editP(g.p3, g.frames.reduce((s,f)=>s+Number(f.p3||0),0), g.frames.reduce((s,f)=>s+getR(f.p3),0), g.h3);
+            const d4 = (mode==='DOUBLES') ? editP(g.p4, g.frames.reduce((s,f)=>s+Number(f.p4||0),0), g.frames.reduce((s,f)=>s+getR(f.p4),0), g.h4) : {s:0, r:0, h:0};
+            g.h1=d1.h; g.h2=d2.h; g.h3=d3.h; g.h4=d4.h;
+
+            let s1raw = (cleanN(g.p1)==='dummy'?30:d1.s) + (cleanN(g.p2)==='dummy'?30:d2.s) + g.h1 + g.h2;
+            let s2raw = (cleanN(g.p3)==='dummy'?30:d3.s) + (cleanN(g.p4)==='dummy'?30:d4.s) + g.h3 + g.h4;
+
+            const [t1n, t2n] = sess.name.split(' vs ');
+            const target = sess.mode === 'SINGLES' ? 135 : 162;
+
+            if (cleanN(t2n) === 'bye') {
+                g.s1 = s1raw;
+                g.s2 = (s1raw >= target) ? target - 1 : target;
+            } else if (cleanN(t1n) === 'bye') {
+                g.s2 = s2raw;
+                g.s1 = (s2raw >= target) ? target - 1 : target;
+            } else {
+                g.s1 = s1raw;
+                g.s2 = s2raw;
+            }
+
+            const res1 = g.s1 > g.s2 ? 'W' : (g.s1 < g.s2 ? 'L' : 'T'), res2 = g.s2 > g.s1 ? 'W' : (g.s2 < g.s1 ? 'L' : 'T');
+            const updH = (pN, res) => { const hR = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pN)); if(hR) hR.result = res; };
+            updH(g.p1, res1); updH(g.p2, res1); updH(g.p3, res2); updH(g.p4, res2);
+            sess.agg1 = sess.fullData.reduce((s, gm)=> s + gm.s1, 0); sess.agg2 = sess.fullData.reduce((s, gm)=> s + gm.s2, 0);
+
+            if (cleanN(t2n) === 'bye') {
+                const wins = sess.fullData.filter(gm => gm.s1 >= target).length;
+                sess.matchWinner = wins > 0 ? t1n : 'BYE';
+            } else if (cleanN(t1n) === 'bye') {
+                const wins = sess.fullData.filter(gm => gm.s2 >= target).length;
+                sess.matchWinner = wins > 0 ? t2n : 'BYE';
+            } else {
+                sess.matchWinner = sess.agg1 > sess.agg2 ? t1n : (sess.agg1 < sess.agg2 ? t2n : 'Tie');
+            }
+
+            save(); render();
+        };
+
+        window.delR = (idx) => { if(confirm("Del?")) { state.roster[mode].splice(idx,1); save(); render(); } };
+        window.editRosterItem = (idx) => { 
+            if (mode === 'SINGLES') { let p = state.roster.SINGLES[idx]; p.name = prompt("Name:", p.name); p.startAvg = Number(prompt("Avg:", p.startAvg)); p.currentHcp = Number(prompt("HCP:", p.currentHcp)); } 
+            else { let t = state.roster.DOUBLES[idx]; t.teamName = prompt("Team Name:", t.teamName); t.members.forEach((m, i) => { m.name = prompt(`Member ${i+1}:`, m.name); m.currentHcp = Number(prompt(`HCP ${i+1}:`, m.currentHcp)); }); } 
+            save(); render(); 
+        };
+
+        window.importRoster = () => { 
+            const raw = document.getElementById('rosterInput').value; if(!raw) return; 
+            const lines = raw.split('\n').filter(l => l.trim().length > 0); 
+            let tempT = {}, tempP = [];
+            lines.forEach(line => { 
+                const p = line.split(/\t| {2,}/).map(x => x.trim()); if(p.length < 7) return; 
+                const obj = { name: p[1], startAvg: parseFloat(p[2])||0, category: p[3], cardNo: p[4], prevHighRinger: parseFloat(p[5])||0, currentHcp: Number(p[6]||0) }; 
+                if(mode==='DOUBLES'){ if(!tempT[p[0]]) tempT[p[0]] = []; tempT[p[0]].push(obj); } else tempP.push(obj); 
+            }); 
+            if(mode==='DOUBLES') state.roster.DOUBLES = Object.keys(tempT).map(id => {
+                const getFirst = (n) => n.includes(',') ? n.split(',')[1].trim().split(' ')[0] : n.trim().split(' ')[0];
+                return { teamName: tempT[id].map(m => getFirst(m.name)).join('/'), members: tempT[id] };
+            }); else state.roster.SINGLES = tempP; 
+            save(); alert("Cloud Updated"); 
+        };
+
+        window.backupData = () => { const blob = new Blob([JSON.stringify(state)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'LoonPond_Backup.json'; a.click(); };
+        window.handleRestore = (e) => { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = async (ev) => { try { state = JSON.parse(ev.target.result); await save(); location.reload(); } catch(err) { alert("Invalid file."); } }; reader.readAsText(file); };
+        window.resetSystem = async () => { const p = prompt("PIN to WIPE DATA:"); if(p === state.managePin) { if(confirm("Confirm Wipe?")) { state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, activeMatches: [] }; await save(); location.reload(); } } };
+        window.updatePin = async () => { const newPin = prompt("Enter New PIN:"); if(newPin) { state.managePin = newPin; await save(); alert("PIN Updated"); } };
+        window.saveNhpaForm = () => { const f = ['clubName','phone','sanctionNum','director','state','address','city','startDate','endDate','dateSubmitted','cancellation','countAll']; if(!state.nhpa[mode]) state.nhpa[mode] = {}; f.forEach(k => state.nhpa[mode][k] = document.getElementById('f-'+k).value); save(); alert("Saved"); };
+        window.resetDeads = () => { if(confirm("Clear Four Deads for this mode?")) { state.fourDeads[mode] = {}; save(); render(); } };
+
+        /* TOURNAMENT LOGIC FUNCTIONS */
+        window.wipeTournament = async () => { if(!confirm("ERASE ALL DATA? This cannot be undone.")) return; const emptyState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] }; await setDoc(docRefTourney, emptyState); location.reload(); };
+        window.importTFromStandings = () => {
+            const hList = (state.history || []).filter(h => h.mode === mode);
+            const rankings = (state.roster[mode]||[]).map(t => { 
+                const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0; 
+                hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; } } }); 
+                const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
+                return { team: t, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
+            }).sort((a,b) => b.pts - a.pts);
+
+            tState.roster = rankings.map((r, idx) => {
+                const item = r.team;
+                return { id: idx+1, name: item.teamName || item.name, members: mode === 'DOUBLES' ? item.members.map(m => ({ name: m.name, hcp: m.currentHcp })) : [{ name: item.name, hcp: item.currentHcp }] };
+                const targetScore = (mode === 'DOUBLES' ? 90 : 150);
+                // This calculates the handicap LIVE based on current averages, bypassing the 'Locked' check
+                const getLiveHcp = (pName) => Math.max(0, Math.floor((targetScore - getPlyrAvg(pName)) * 0.9));
+
+                return { 
+                    id: idx+1, 
+                    name: item.teamName || item.name, 
+                    members: mode === 'DOUBLES' 
+                        ? item.members.map(m => ({ name: m.name, hcp: getLiveHcp(m.name) })) 
+                        : [{ name: item.name, hcp: getLiveHcp(item.name) }] 
+                };
+            });
+            tSave(); render();
+        };
+        
+        window.tImportRoster = () => {
+            const raw = document.getElementById('rosIn').value; if(!raw.trim()) return;
+            const teams = {};
+            raw.split('\n').filter(l => l.trim()).forEach(line => {
+                const cols = line.split(/\t|\|/).map(c => c.trim()); if(cols.length < 3) return;
+                const teamID = cols[0]; const name = cols[1]; const hcp = parseInt(cols[2]) || 0;
+                if(!teams[teamID]) teams[teamID] = { members: [] };
+                teams[teamID].members.push({ name: name, hcp: hcp });
+            });
+            tState.roster = Object.keys(teams).map((id, idx) => ({ id: idx+1, name: teams[id].members.map(m => m.name).join('/'), members: teams[id].members }));
+            tSave(); alert("Teams Sync'd");
+        };
+        window.tDelTeam = (idx) => { if(confirm("Delete?")) { tState.roster.splice(idx,1); tSave(); } };
+        window.initBracket = () => {
+            if(tState.roster.length < 2) return alert("Add teams first");
+            const teams = [...tState.roster];
+            const size = Math.pow(2, Math.ceil(Math.log2(teams.length)));
+
+            const getSeedOrder = (n) => { 
+                let order = [0, 1]; 
+                for (let i = 2; i < n; i <<= 1) { 
+                    let nextOrder = []; 
+                    for (let j = 0; j < order.length; j++) { 
+                        nextOrder.push(order[j]); 
+                        nextOrder.push(i * 2 - 1 - order[j]); 
+                    } 
+                    order = nextOrder; 
+                } 
+                return order; 
+            };
+
+            const seedSequence = getSeedOrder(size);
+            const seeded = seedSequence.map(idx => teams[idx] || { name: 'BYE', isBye: true, id: idx+1, members: [{name:'BYE', hcp:0}, {name:'BYE', hcp:0}] });
+
+            tState.bracket = { winners: [], losers: [] };
+            const wRounds = Math.log2(size);
+
+            // Winners Bracket Generation
+            for (let i = 0; i < seeded.length; i += 2) tState.bracket.winners.push({ id: 'W1-M'+(i/2+1), t1: seeded[i], t2: seeded[i+1], win: null, s1: 0, s2: 0 });
+            for (let r = 2; r <= wRounds; r++) { 
+                let count = size / Math.pow(2, r); 
+                for (let m = 1; m <= count; m++) tState.bracket.winners.push({ id: `W${r}-M${m}`, t1: null, t2: null, win: null, s1: 0, s2: 0 }); 
+            }
+
+            // Losers Bracket Generation
+            let lMatchesInRound = size / 4;
+            for (let r = 1; r <= (wRounds - 1) * 2; r++) {
+                for (let m = 1; m <= lMatchesInRound; m++) {
+                    tState.bracket.losers.push({ id: `L${r}-M${m}`, t1: null, t2: null, win: null, s1: 0, s2: 0 });
+                }
+                if (r % 2 === 0) lMatchesInRound /= 2;
+            }
+
+            // Grand Final
+            tState.bracket.winners.push({ id: `GF-M1`, t1: null, t2: null, win: null, s1: 0, s2: 0 });
+
+            tState.bracket.winners.filter(m => m.id.startsWith('W1')).forEach(m => {
+                if (m.t2?.isBye) { m.win = m.t1.name; m.s2 = 'BYE'; tAdvance(m.id, m.t1, {isBye:true, name:'BYE'}); }
+                else if (m.t1?.isBye) { m.win = m.t2.name; m.s1 = 'BYE'; tAdvance(m.id, m.t2, {isBye:true, name:'BYE'}); }
+            });
+            tSave();
+        };
+
+        window.openMatch = (id) => {
+            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); if(!m || !m.t1 || !m.t2 || m.t1.isBye || m.t2.isBye) return;
+            if(m.win) { showSummary(id); return; }
+            const mod = document.getElementById('modal'); mod.style.display = 'block';
+            const ops = (team) => team.members.map(mem => `<option value="${mem.name}" data-hcp="${mem.hcp}">${mem.name} (${mem.hcp})</option>`).join('');
+            mod.innerHTML = `<div class="p-8"><h2 class="text-2xl font-black text-sky-400 uppercase italic mb-8">Lineup: ${id}</h2><div class="space-y-8"><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t1.name}</p><select id="selP1" class="t-select">${ops(m.t1)}</select><select id="selP2" class="t-select">${ops(m.t1)}</select></div><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t2.name}</p><select id="selP3" class="t-select">${ops(m.t2)}</select><select id="selP4" class="t-select">${ops(m.t2)}</select></div><div class="flex gap-4"><button id="rotT1" onclick="window.selRot='T1_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT2').classList.remove('rot-active');" class="rot-btn rot-active">${m.t1.id || 'T1'} Starts</button><button id="rotT2" onclick="window.selRot='T2_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT1').classList.remove('rot-active');" class="rot-btn">Opponent Starts</button></div></div><button onclick="startScoring('${id}')" class="w-full bg-sky-500 text-black p-6 mt-10 rounded-2xl font-black uppercase text-lg">Start Match</button><button onclick="document.getElementById('modal').style.display='none'" class="w-full p-6 mt-2 text-zinc-500 font-bold uppercase text-xs">Back</button></div>`;
+            window.selRot = 'T1_FIRST'; if(m.t1.members.length > 1) document.getElementById('selP2').selectedIndex = 1; if(m.t2.members.length > 1) document.getElementById('selP4').selectedIndex = 1;
+        };
+        window.startScoring = (id) => {
+            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); const getD = (id) => { const el = document.getElementById(id); return { n: el.value, h: parseInt(el.options[el.selectedIndex].dataset.hcp) }; };
+            const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
+            scoring = { active: true, mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h, h2: p3.h+p4.h, rotation: window.selRot, frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0, sessionId: Date.now() };
+            
+            tState.tActiveMatches.push(scoring);
+            tSave();
+
+            renderScorer();
+        };
+        // Locate the window.startScoring function inside your <script> tag and replace it with this:
+
+window.startScoring = (id) => {
+    const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); 
+    const getD = (id) => { 
+        const el = document.getElementById(id); 
+        return { n: el.value, h: parseInt(el.options[el.selectedIndex].dataset.hcp) }; 
+    };
+    const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
+    
+    // --- SEED ADVANTAGE LOGIC ---
+    // Seed #1 gets 10 points, Seed #2 gets 5 points
+    let bonus1 = (m.t1.id === 1) ? 10 : (m.t1.id === 2 ? 5 : 0);
+    let bonus2 = (m.t2.id === 1) ? 10 : (m.t2.id === 2 ? 5 : 0);
+    // ----------------------------
+
+    scoring = { 
+        active: true, 
+        mid: id, 
+        t1: m.t1, 
+        t2: m.t2, 
+        p1n: p1.n, 
+        p2n: p2.n, 
+        p3n: p3.n, 
+        p4n: p4.n, 
+        h1: p1.h + p2.h + bonus1, // Base HCP + Player HCP + Seed Bonus
+        h2: p3.h + p4.h + bonus2, // Base HCP + Player HCP + Seed Bonus
+        rotation: window.selRot, 
+        frames: [], 
+        currF: { p1: null, p2: null, p3: null, p4: null }, 
+        pitcherIdx: 0, 
+        sessionId: Date.now() 
+    };
+    
+    tState.tActiveMatches.push(scoring);
+    tSave();
+
+    renderScorer();
+};
+
+        window.resumeTMatch = (sessId) => {
+            const found = tState.tActiveMatches.find(m => m.sessionId === sessId);
+            if(found) {
+                scoring = JSON.parse(JSON.stringify(found));
+                renderScorer();
+            }
+        };
+
+        window.deleteTMatch = (sessId) => {
+            if(confirm("Delete this in-progress game?")) {
+                tState.tActiveMatches = tState.tActiveMatches.filter(m => m.sessionId !== sessId);
+                tSave();
+                render();
+            }
+        };
+
+        window.tAddScore = (pts) => {
+            const fNum = scoring.frames.length + 1; let turn = (scoring.rotation === 'T1_FIRST') ? (fNum % 2 !== 0 ? ['p1', 'p3', 'p2', 'p4'] : ['p3', 'p1', 'p4', 'p2']) : (fNum % 2 !== 0 ? ['p3', 'p1', 'p4', 'p2'] : ['p1', 'p3', 'p2', 'p4']);
+            scoring.currF[turn[scoring.pitcherIdx]] = pts; scoring.pitcherIdx++;
+            if(scoring.pitcherIdx > 3) { 
+                scoring.frames.push({ ...scoring.currF, sh: fNum * 2 }); 
+                scoring.currF = { p1: null, p2: null, p3: null, p4: null }; 
+                scoring.pitcherIdx = 0; 
+                const t1s = scoring.frames.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1; 
+                const t2s = scoring.frames.reduce((a,b)=>a+(b.p3||0)+(b.p4||0),0) + scoring.h2; 
+
+                const frameCount = scoring.frames.length;
+                if(frameCount >= 15 && (frameCount === 15 || (frameCount - 15) % 2 === 0) && t1s !== t2s) {
+                    finalizeTMatch(); 
+                    return;
+                }
+            }
+
+            const idx = tState.tActiveMatches.findIndex(m => m.sessionId === scoring.sessionId);
+            if(idx !== -1) {
+                tState.tActiveMatches[idx] = JSON.parse(JSON.stringify(scoring));
+                tSave();
+            }
+
+            renderScorer();
+        };
+        window.tEditCell = (idx, p) => { const v = prompt("Correct points (0,1,2,3,4,6):", scoring.frames[idx][p]); if([0,1,2,3,4,6].includes(parseInt(v))) { scoring.frames[idx][p] = parseInt(v); renderScorer(); } };
+
+        function finalizeTMatch() {
+            const f = scoring.frames; 
+            const s1 = f.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1; 
+            const s2 = f.reduce((a,b)=>a+(b.p3||0)+(b.p4||0),0) + scoring.h2;
+            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === scoring.mid); 
+            const winT = s1 > s2 ? scoring.t1 : scoring.t2; 
+            const loseT = s1 > s2 ? scoring.t2 : scoring.t1;
+            m.win = winT.name; m.s1 = s1; m.s2 = s2; 
+            tState.bracketHistory[scoring.mid] = { ...scoring, s1, s2 }; 
+
+            const historyEntry = { 
+                id: scoring.mid, date: new Date().toLocaleDateString(), timestamp: Date.now(), 
+                t1Name: scoring.t1.name, t2Name: scoring.t2.name, s1: s1, s2: s2, 
+                frames: JSON.parse(JSON.stringify(scoring.frames)),
+                p1n: scoring.p1n, p2n: scoring.p2n, p3n: scoring.p3n, p4n: scoring.p4n,
+                h1: scoring.h1, h2: scoring.h2
+            };
+            if(!tState.matchHistory) tState.matchHistory = [];
+            tState.matchHistory.push(historyEntry);
+
+            const tourneySessionId = Date.now();
+            const playerList = [
+                {n: scoring.p1n, p: 'p1'}, {n: scoring.p2n, p: 'p2'},
+                {n: scoring.p3n, p: 'p3'}, {n: scoring.p4n, p: 'p4'}
+            ];
+
+            playerList.forEach(pl => {
+                if(pl.n && !['BYE','DUMMY'].includes(cleanN(pl.n).toUpperCase())) {
+                    const pScore = scoring.frames.reduce((a, b) => a + (Number(b[pl.p]) || 0), 0);
+                    const pRingers = scoring.frames.reduce((a, b) => a + getR(b[pl.p]), 0);
+
+                    state.history.push({
+                        player: pl.n,
+                        score: pScore,
+                        ringers: pRingers,
+                        result: null,
+                        mode: mode,
+                        date: new Date().toLocaleDateString(),
+                        sessionId: tourneySessionId,
+                        gameNum: 1,
+                        timestamp: Date.now()
+                    });
+                }
+            });
+
+            tAdvance(scoring.mid, winT, loseT);
+
+            tState.tActiveMatches = tState.tActiveMatches.filter(m => m.sessionId !== scoring.sessionId);
+            scoring.active = false;
+            showSummary(scoring.mid); 
+            save(); 
+            tSave();
+        }
+
+        function tAdvance(mid, winner, loser) {
+            const b = tState.bracket; 
+            const parts = mid.split('-');
+            const prefix = parts[0][0]; 
+            const r = parseInt(parts[0].substring(1)) || 0;
+            const mIdx = parseInt(parts[1].substring(1));
+            const wRounds = Math.log2(Math.pow(2, Math.ceil(Math.log2(tState.roster.length))));
+
+            if(prefix === 'W'){
+                const nextW = b.winners.find(x => x.id === `W${r+1}-M${Math.ceil(mIdx/2)}`);
+                if(nextW) { if(mIdx % 2 !== 0) nextW.t1 = winner; else nextW.t2 = winner; }
+                else if (r === wRounds) { 
+                    const gf = b.winners.find(x => x.id === 'GF-M1');
+                    if(gf) gf.t1 = winner;
+                }
+
+                if (loser) {
+                    if (r === 1) {
+                        const targetL = b.losers.find(x => x.id === `L1-M${Math.ceil(mIdx/2)}`);
+                        if (targetL) { if (mIdx % 2 !== 0) targetL.t1 = loser; else targetL.t2 = loser; }
+                    } else {
+                        const targetL = b.losers.find(x => x.id === `L${(r - 1) * 2}-M${mIdx}`);
+                        if (targetL) targetL.t2 = loser; 
+                    }
+                }
+            } else if (prefix === 'L') {
+                const maxLR = (wRounds - 1) * 2;
+                if (r < maxLR) {
+                    const nextR = r + 1;
+                    const nextMIdx = (r % 2 === 0) ? Math.ceil(mIdx/2) : mIdx;
+                    const nextL = b.losers.find(x => x.id === `L${nextR}-M${nextMIdx}`);
+                    if (nextL) { 
+                        if (r % 2 !== 0) nextL.t1 = winner; 
+                        else { if (mIdx % 2 !== 0) nextL.t1 = winner; else nextL.t2 = winner; } 
+                    }
+                } else {
+                    const gf = b.winners.find(x => x.id === 'GF-M1');
+                    if(gf) gf.t2 = winner;
+                }
+            }
+
+            let changed = true;
+            while(changed) {
+                changed = false;
+                [...b.winners, ...b.losers].forEach(m => {
+                    if(!m.win && m.t1 && m.t2) {
+                        if(m.t1.isBye) { m.win = m.t2.name; m.s1 = 'BYE'; m.s2 = 0; tAdvance(m.id, m.t2, {isBye:true, name:'BYE'}); changed = true; }
+                        else if(m.t2.isBye) { m.win = m.t1.name; m.s2 = 'BYE'; m.s1 = 0; tAdvance(m.id, m.t1, {isBye:true, name:'BYE'}); changed = true; }
+                    }
+                });
+            }
+        }
+
+        window.printBracket = () => {
+            const el = document.querySelector('.bracket-scroll').cloneNode(true);
+            el.querySelectorAll('*').forEach(x => {
+                x.style.color = 'black';
+                x.style.borderColor = 'black';
+                if(x.classList.contains('match-card')) x.style.background = 'white';
+                if(x.classList.contains('score-box')) x.style.background = '#eee';
+                if(x.classList.contains('team-line') && x.classList.contains('win')) x.style.background = '#f0f0f0';
+            });
+            window.executePrint("Tournament Bracket", el.outerHTML);
+        };
+
+        window.saveNews = async () => {
+            state.news = document.getElementById('newsInput').value;
+            await save();
+            alert("News Updated");
+            render();
+        };
+
+        window.setTView = (v) => { tView = v; render(); };
+
+        function render() {
+            document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
+            document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
+            ['NEWS', 'STANDINGS', 'STATS', 'SCORER', 'TOURNAMENT', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { 
+                const el = document.getElementById('tab'+t); if(el) { 
+                    el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; 
+                    if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none';
+                    if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled ? 'block' : 'none';
+                }
+            });
+            const content = document.getElementById('viewContent');
+
+            if (view === 'NEWS') {
+                content.innerHTML = `
+                    <div class="flex flex-col items-center py-8 px-4 max-w-2xl mx-auto">
+                        <img src="logo.jpg" class="w-48 h-48 object-contain mb-8 shadow-xl border-4 border-white">
+                        <div class="w-full bg-white p-8 shadow-2xl border-t-4 border-sky-500 min-h-[300px]">
+                            <h2 class="text-2xl font-black italic uppercase text-sky-500 mb-6 border-b pb-2 tracking-tighter">Club News & Announcements</h2>
+                            <div class="prose prose-sky max-w-none text-zinc-800 font-medium leading-relaxed whitespace-pre-wrap">${state.news || '<p class="opacity-40 italic text-center py-10 text-zinc-400 font-normal">No news updates at this time.</p>'}</div>
+                        </div>
+                    </div>`;
+            } else if (view === 'SCORER') {
+                if(!state.scorerEnabled) { view = 'STANDINGS'; render(); return; }
+                const upP = getPitcher();
+                const isT1Active = match.active && match.step === 'LIVE' && (upP === match.p1 || upP === match.p2);
+                const isT2Active = match.active && match.step === 'LIVE' && (upP === match.p3 || upP === match.p4);
+
+                if (!match.active) {
+                    const activeMatchHtml = state.activeMatches.filter(m => m.mode === mode).map(m => `
+                        <div class="bg-amber-50 border-2 border-amber-200 p-3 mb-2 flex justify-between items-center">
+                            <div class="text-left">
+                                <p class="text-[10px] font-black uppercase text-amber-600">Game in Progress</p>
+                                <p class="text-sm font-black uppercase">${m.t1Name} vs ${m.t2Name}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="resumeLeagueMatch(${m.sessionId})" class="bg-amber-500 text-white px-3 py-2 text-[10px] font-black uppercase">Resume</button>
+                                <button onclick="deleteLeagueMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase">Del</button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    const opts = [...(state.roster[mode]||[]).map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`), `<option value="BYE">BYE</option>`];
+                    content.innerHTML = `
+                        <div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">
+                            ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}
+                            <h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2>
+                            <select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm">${opts}</select>
+                            <select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm">${opts}</select>
+                            <button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button>
+                        </div>`;
+                } else if (match.step === 'PLAYERS') {
+                    const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = state.roster.DOUBLES.find(x => x.teamName === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
+                    const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
+                    content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center font-black uppercase italic text-sky-500">G${match.gameNum} Lineup<div class="space-y-4 mt-4 text-left"><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t1Name}</p><select id="sp1" class="w-full p-2 border mb-2 font-bold">${t1.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp2" class="w-full p-2 border font-bold">${t1.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t2Name}</p><select id="sp3" class="w-full p-2 border mb-2 font-bold">${t2.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp4" class="w-full p-2 border font-bold">${t2.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-none font-black uppercase">Ready</button></div></div>`;
+                } else if (match.step === 'GAME_SUMMARY' || match.step === 'MATCH_SUMMARY') {
+                    const isMatch = match.step === 'MATCH_SUMMARY', players = [match.p1, match.p2, match.p3, match.p4].filter(x => x && !['BYE','DUMMY'].includes(cleanN(x).toUpperCase()));
+                    let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
+                    players.forEach(p => { 
+                        let pScores = []; for(let gN=1; gN<=match.gameNum; gN++) { const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); pScores.push(h ? `${h.score}(${h.ringers})` : '-'); }
+                        while(pScores.length < 3) pScores.push('-');
+                        const sTot = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p)).reduce((s,x)=>s+x.score, 0), statAvg = getPlyrAvg(p);
+                        tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pScores[0]}</td><td>${pScores[1]}</td><td>${pScores[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black text-black">${statAvg}</td></tr>`; 
+                    });
+                    content.innerHTML = `<div class="p-4 bg-white shadow-2xl max-w-xl mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase">${isMatch ? 'Series Final' : 'Game Summary'}</h2><p class="text-4xl font-black my-4">${match.games[match.gameNum-1].s1} - ${match.games[match.gameNum-1].s2}</p>${tableHtml}<button onclick="${isMatch ? 'window.finalizeFullSeries()' : 'window.nextGame()'}" class="w-full bg-sky-500 text-black p-5 rounded-2xl font-black uppercase shadow-lg mt-6">${isMatch ? 'Save & Close' : 'Next Game'}</button></div>`;
+                } else {
+                    const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
+                    const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
+                    const s1C = sc1 + match.h1 + match.h2 + d1 + d2 + Number(match.currF.p1||0) + Number(match.currF.p2||0); 
+                    const s2C = sc2 + match.h3 + match.h4 + d3 + d4 + Number(match.currF.p3||0) + Number(match.currF.p4||0);
+
+                    const byeTarget = mode === 'SINGLES' ? 135 : 162;
+                    const displayS1 = cleanN(match.t1Name) === 'bye' ? byeTarget : s1C;
+                    const displayS2 = cleanN(match.t2Name) === 'bye' ? byeTarget : s2C;
+
+                    content.innerHTML = `<div class="bg-black text-white p-3 flex justify-between px-6 text-[11px] font-black uppercase"><span>Agg: ${match.sessionAgg.t1 + displayS1}</span><span>G${match.gameNum}</span><span>Agg: ${match.sessionAgg.t2 + displayS2}</span></div><div class="grid grid-cols-2 gap-1 mb-2"><div class="p-6 bg-white text-center shadow-inner ${isT1Active?'pitch-active':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t1Name}</p><p class="text-7xl font-black tracking-tighter">${displayS1}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">${cleanN(match.t1Name)==='bye'?'TARGET':' + '+(match.h1+match.h2)+' HC'}</p></div><div class="p-6 bg-white text-center shadow-inner ${isT2Active?'pitch-active':''}"><p class="text-[10px] font-black opacity-40 uppercase truncate">${match.t2Name}</p><p class="text-7xl font-black tracking-tighter">${displayS2}</p><p class="text-[9px] font-black text-sky-600 mt-1 uppercase">${cleanN(match.t2Name)==='bye'?'TARGET':' + '+(match.h3+match.h4)+' HC'}</p></div></div><div class="flex items-stretch gap-1 mb-2"><div class="bg-sky-500 text-white p-3 flex-1 text-center text-[12px] font-black uppercase italic tracking-widest shadow-lg">UP: ${upP}</div><button onclick="window.openExitModal()" class="bg-red-600 text-white px-6 font-black text-[10px] uppercase rounded">Exit</button></div><div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div><div class="micro-container mt-4"><table class="micro-table"><thead>${mode==='SINGLES'?'<tr><th>SH</th><th>R</th><th>P</th><th>SC</th><th>R</th><th>P</th><th>SC</th></tr>':'<tr><th>SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>T2</th></tr>'}</thead><tbody><tr class="curr-row"><td class="sh-cell">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td>` : `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p2, match.currF.p4)}</td><td>${match.currF.p2??''}</td><td></td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td><td>${getSym(match.currF.p4, match.currF.p2)}</td><td>${match.currF.p4??''}</td><td></td><td></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s+match.h1}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s+match.h3}</td></tr>`; return `<tr><td class="sh-cell">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s}</td><td>${getSym(f.p2,f.p4)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td>${p2s}</td><td>${p1s+p2s+match.h1+match.h2+d1+d2}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s}</td><td>${getSym(f.p4,f.p2)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td>${p4s}</td><td>${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
+                }
+            } else if (view === 'STANDINGS') {
+                const hList = (state.history || []).filter(h => h.mode === mode);
+                const rows = (state.roster[mode]||[]).map(t => { 
+                    const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0, l=0; 
+                    hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); 
+                    const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
+                    return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
+                }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col text-white">${d.w}</td><td class="st-num-col text-white">${d.l}</td><td class="st-num-col text-white">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col text-white">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
+                content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+            } else if (view === 'STATS') {
+                const shoes = mode === 'DOUBLES' ? 30 : 50, pNames = [...new Set(state.history.filter(h => h.mode === mode).map(h => h.player))];
+                const rows = pNames.map(pN => { 
+                    const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode), playerAvg = getPlyrAvg(pN), totP = g.reduce((s,x)=>s+x.score,0), totR = g.reduce((s,x)=>s+x.ringers,0);
+                    const rRec = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members)).find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0};
+                    const scPct = g.length ? (((totP - (2 * totR)) / (g.length * shoes)) * 100) : 0;
+                    const imp = Math.round(playerAvg - rRec.startAvg);
+                    const highGame = g.length ? Math.max(...g.map(x => x.score)) : 0;
+                    const hiOA = g.length ? (highGame - playerAvg) : 0;
+                    return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td>${getH(pN)}</td><td class="text-white">${playerAvg}</td><td>${((totR/(g.length*shoes))*100).toFixed(1)}%</td><td>${(Math.max(...g.map(x=>(x.ringers/shoes)*100))).toFixed(1)}%</td><td style="font-size:9px;">${scPct.toFixed(1)}%</td><td>${totP}</td><td>${highGame}</td><td style="color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td>${rRec.startAvg}</td><td class="pts-col" style="color:${imp>=0?'#4ade80':'#f87171'}">${imp >= 0 ? '+' : ''}${imp}</td></tr>`; 
+                }).sort((a,b)=>b.totP-a.totP).join('');
+
+                const weeklyHoaRows = (state.weeklyHoa[mode] || [])
+                    .slice()
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .map(entry => `<tr><td style="font-size: 10px; color: #94a3b8; width: 85px;">${entry.date}</td><td>${entry.player}</td><td class="val-col">${entry.hoa >= 0 ? '+' : ''}${entry.hoa}</td></tr>`).join('');
+
+                const fdSource = state.fourDeads[mode] || {};
+                const fourDeadRows = Object.keys(fdSource).map(name => ({ name: name, val: fdSource[name] }))
+                    .sort((a,b) => b.val - a.val).map(d => `<tr><td>${d.name}</td><td class="val-col">${d.val}</td></tr>`).join('');
+
+                content.innerHTML = `
+                    <div class="action-bar flex justify-end pt-2 no-print"><button onclick="window.printActive('Club Stats')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Stats</button></div>
+                    <div class="relative shadow-2xl rounded-none border border-zinc-800 bg-black overflow-x-auto mt-2">
+                        <table class="std-table w-full" style="min-width: 1100px; table-layout: auto;">
+                            <thead><tr class="bg-zinc-900"><th class="stats-name-col">Player</th><th>Hcp</th><th>Avg</th><th>R%</th><th>Hi R%</th><th>Scr %</th><th>Tot P</th><th>Hi G</th><th>HOA</th><th>S.Avg</th><th class="pts-col">Imp</th></tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div>
+                            <h3 class="text-sky-500 font-black uppercase italic mb-2 text-sm tracking-widest">Weekly High Over Average</h3>
+                            <div class="bg-black border border-zinc-800 shadow-xl">
+                                <table class="sum-stats-table"><thead><tr><th>Date</th><th>Player</th><th class="val-col">HOA</th></tr></thead><tbody>${weeklyHoaRows || '<tr><td colspan="3" class="text-center opacity-40">No weekly records found</td></tr>'}</tbody></table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-sky-500 font-black uppercase italic mb-2 text-sm tracking-widest">Season Four Deads</h3>
+                            <div class="bg-black border border-zinc-800 shadow-xl">
+                                <table class="sum-stats-table"><thead><tr><th>Player</th><th class="val-col">Count</th></tr></thead><tbody>${fourDeadRows || '<tr><td colspan="2" class="text-center opacity-40">No 4-deads logged</td></tr>'}</tbody></table>
+                            </div>
+                        </div>
+                    </div>`;
+            } else if (view === 'HISTORY') {
+                const sessionHtml = (state.sessions || []).filter(s => s.mode === mode).reverse().map(s => {
+                    let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
+                    return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name}</span><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600 float-right no-print">Print Sheets</button>${gHtml}</div>`;
+                }).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No league history found</p>`;
+                const tHistoryHtml = (tState.matchHistory || []).slice().reverse().map(h => `<div class="bg-zinc-900 text-white p-3 shadow mb-3 font-black uppercase text-xs border-l-4 border-sky-500"><span><span class="text-sky-400">[TOURNAMENT]</span> ${h.date} - ${h.t1Name} vs ${h.t2Name} (${h.s1}-${h.s2})</span><button onclick="window.printTournamentScoreSheet('${h.timestamp}')" class="text-sky-400 float-right no-print ml-2">Print</button><button onclick="window.showSummary('${h.id}')" class="text-zinc-400 float-right no-print">View</button></div>`).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No tournament matches found</p>`;
+                content.innerHTML = `<div class="p-4"><h2 class="text-sky-500 font-black italic uppercase mb-4">Series History</h2>${sessionHtml}<h2 class="text-sky-500 font-black italic uppercase mb-4 mt-8">Tournament Match History</h2>${tHistoryHtml}</div>`;
+            } else if (view === 'NHPA') {
+                const cfg = state.nhpa[mode] || {};
+                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div></div><div class="mt-6 flex gap-2"><button onclick="window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button></div></div></div>`;
+            } else if (view === 'MANAGE') {
+                const rH = (state.roster[mode]||[]).map((t, i) => `<div class="bg-white p-3 shadow mb-2 flex justify-between items-center text-xs font-bold uppercase"><span>${t.teamName||t.name}</span><div class="flex gap-2"><button onclick="window.editRosterItem(${i})" class="text-sky-500 font-black">EDIT</button><button onclick="window.delR(${i})" class="text-red-500 font-black">DEL</button></div></div>`).join('');
+                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div><div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-3 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button></div><button onclick="window.resetDeads()" class="w-full bg-red-900 text-white p-4 text-[10px] font-black uppercase">Clear Four Deads (${mode})</button><div class="bg-white p-6 shadow mb-4"><h3 class="text-[10px] font-black uppercase mb-2">Club News Editor</h3><textarea id="newsInput" class="w-full h-40 border p-3 rounded-none text-sm mb-2" placeholder="Write club news here...">${state.news || ''}</textarea><button onclick="window.saveNews()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-lg">Save News Update</button></div><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
+            } else if (view === 'TOURNAMENT') {
+                let navHtml = `<nav class="flex flex-col bg-zinc-950 border-b border-zinc-900 sticky top-0 z-50">
+                    <div class="flex">
+                        <button onclick="setTView('BRACKET')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'BRACKET' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Bracket</button>
+                        <button onclick="setTView('ROSTER')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'ROSTER' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Roster</button>
+                        <button onclick="setTView('MANAGE')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'MANAGE' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Manage</button>
+                    </div>`;
+
+                if (tView === 'BRACKET' && tState.bracket) {
+                    navHtml += `
+                    <div class="flex gap-2 p-3 bg-zinc-900 border-t border-zinc-800 no-print justify-center items-center">
+                        <button onclick="window.zoomB(0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">+</button>
+                        <button onclick="window.zoomB(-0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">-</button>
+                        <button onclick="window.zoomB('reset')" class="bg-zinc-800 text-white px-5 py-2 text-[10px] uppercase font-black border border-zinc-700 hover:bg-zinc-700">Reset</button>
+                        <button onclick="window.printBracket()" class="bg-sky-700 text-white px-5 py-2 text-[10px] uppercase font-black border border-sky-800 hover:bg-sky-600 ml-2">Print Bracket</button>
+                        <span class="text-[11px] text-sky-500 ml-4 font-black uppercase tracking-widest">Zoom: ${Math.round(bScale * 100)}%</span>
+                    </div>`;
+                }
+                navHtml += `</nav>`;
+
+                if (tView === 'ROSTER') {
+                    content.innerHTML = navHtml + `<div class="p-4"><button onclick="importTFromStandings()" class="w-full bg-sky-700 text-white p-4 mb-4 font-black uppercase text-xs rounded-xl">Import & Seed From Standings</button><textarea id="rosIn" class="w-full h-40 bg-zinc-900 border-2 border-zinc-800 p-4 text-xs text-white rounded-2xl" placeholder="TeamID | Last, First | HCP"></textarea><button onclick="tImportRoster()" class="w-full bg-sky-500 text-black p-5 mt-4 font-black uppercase text-sm rounded-2xl">Sync Roster</button><div class="mt-8 space-y-2 text-white">${tState.roster.map((t, i) => `<div class="p-4 bg-zinc-900 rounded-xl flex justify-between items-center border border-zinc-800"><b>Seed ${i + 1}: ${t.name}</b><button onclick="tDelTeam(${i})" class="text-red-500 font-black uppercase text-[12px]">Del</button></div>`).join('')}</div></div>`;
+                } else if (tView === 'BRACKET') {
+                    const activeMatchHtml = tState.tActiveMatches.map(m => `
+                        <div class="bg-sky-900/50 border-2 border-sky-500/50 p-3 mb-2 flex justify-between items-center rounded-xl">
+                            <div class="text-left">
+                                <p class="text-[10px] font-black uppercase text-sky-400">Match in Progress</p>
+                                <p class="text-sm font-black uppercase text-white">${m.t1.name} vs ${m.t2.name}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="resumeTMatch(${m.sessionId})" class="bg-sky-500 text-black px-3 py-2 text-[10px] font-black uppercase rounded-lg">Resume</button>
+                                <button onclick="deleteTMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase rounded-lg">Del</button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    if (!tState.bracket) { content.innerHTML = navHtml + `<div class="mt-20 text-center"><button onclick="initBracket()" class="bg-sky-500 text-black px-12 py-5 rounded-2xl font-black text-sm uppercase">Initialize Bracket</button></div>`; }
+                    else {
+                        const size = Math.pow(2, Math.ceil(Math.log2(tState.roster.length)));
+                        const wRounds = Math.log2(size);
+
+                        let bracketHtml = `<div class="bracket-outer">`;
+                        if(activeMatchHtml) { bracketHtml += `<div class="p-4 max-w-lg mx-auto no-print">${activeMatchHtml}</div><div class="h-px bg-zinc-800 mb-4"></div>`; }
+                        bracketHtml += `<div class="bracket-scale-layer" style="transform: scale(${bScale});">`;
+                        bracketHtml += `<div class="bracket-scroll">`;
+
+                        for (let r = 1; r <= wRounds; r++) { bracketHtml += `<div class="round-col"><div class="round-title">Winners R${r}</div>${tState.bracket.winners.filter(x => x.id.startsWith('W' + r)).map(m => renderCard(m)).join('')}</div>`; }
+                        bracketHtml += `<div class="round-col"><div class="round-title">Finals</div>${tState.bracket.winners.filter(x => x.id.startsWith('GF')).map(m => renderCard(m)).join('')}</div>`;
+                        for (let r = 1; r <= (wRounds * 2 - 2); r++) { bracketHtml += `<div class="round-col"><div class="round-title">Losers R${r}</div>${tState.bracket.losers.filter(x => x.id.startsWith('L' + r)).map(m => renderCard(m)).join('')}</div>`; }
+
+                        bracketHtml += `</div></div></div>`;
+                        content.innerHTML = navHtml + bracketHtml;
+                    }
+                } else if (tView === 'MANAGE') { 
+                    content.innerHTML = navHtml + `<div class="p-10"><button onclick="wipeTournament()" class="w-full bg-red-600 p-8 rounded-2xl font-black uppercase text-lg shadow-2xl text-white">Wipe All Tournament Data</button></div>`; 
+                }
+            }
+        }
+
+        function renderCard(m) { return `<div class="match-card" onclick="openMatch('${m.id}')"><div class="team-line ${m.win === m.t1?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t1?.name || '?'} ${m.t1?.isBye ? '' : '(S' + (m.t1?.id || '?') + ')'}</span><span class="score-box">${m.s1}</span></div><div class="team-line ${m.win === m.t2?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t2?.name || '?'} ${m.t2?.isBye ? '' : '(S' + (m.t2?.id || '?') + ')'}</span><span class="score-box">${m.s2}</span></div></div>`; }
+
+        function renderScorer() {
+            const mod = document.getElementById('modal'); mod.style.display = 'block';
+            const fNum = scoring.frames.length + 1;
+            let turn = (scoring.rotation === 'T1_FIRST') ? (fNum % 2 !== 0 ? ['p1', 'p3', 'p2', 'p4'] : ['p3', 'p1', 'p4', 'p2']) : (fNum % 2 !== 0 ? ['p3', 'p1', 'p4', 'p2'] : ['p1', 'p3', 'p2', 'p4']);
+            const upKey = turn[scoring.pitcherIdx];
+            const isT1Turn = ['p1', 'p2'].includes(upKey);
+            const t1s = scoring.frames.reduce((a, b) => a + (b.p1 || 0) + (b.p2 || 0), 0) + scoring.h1;
+            const t2s = scoring.frames.reduce((a, b) => a + (b.p3 || 0) + (b.p4 || 0), 0) + scoring.h2;
+
+            const getSymTourney = (pts, oppPts) => {
+                if (pts === null) return '--';
+                if (pts === 6 && oppPts === 6) return 'XX';
+                if (pts >= 6) return 'OO';
+                if (pts === 4) return "O'";
+                if (pts === 3) return 'O';
+                return '--';
+            };
+
+            mod.innerHTML = `
+                <div class="bg-black p-3 flex justify-between items-center border-b border-zinc-800 sticky top-0 z-[100]"><button onclick="document.getElementById('modal').style.display='none'; scoring.active=false;" class="text-[10px] font-black uppercase text-zinc-500">Back</button><span class="text-sky-400 font-black text-xs uppercase">Frame ${fNum} ${fNum > 15 ? '(Tie-Break)' : ''}</span><div class="w-8"></div></div>
+                <div class="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800">
+                    <div class="p-10 text-center transition-colors duration-300 ${isT1Turn ? 'active-team-card' : ''}">
+                        <p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t1.name}</p>
+                        <p class="text-5xl font-black score-val">${t1s}</p>
+                    </div>
+                    <div class="p-10 text-center transition-colors duration-300 ${!isT1Turn ? 'active-team-card' : ''}">
+                        <p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t2.name}</p>
+                        <p class="text-5xl font-black score-val">${t2s}</p>
+                    </div>
+                </div>
+                <div class="bg-sky-500 text-black text-center p-4 font-black uppercase text-[12px] italic">UP: ${getFirst(upKey === 'p1' ? scoring.p1n : upKey === 'p2' ? scoring.p2n : upKey === 'p3' ? scoring.p3n : scoring.p4n)}</div>
+                <div class="t-btn-score-grid">${[0, 1, 2, 3, 4, 6].map(s => `<button onclick="tAddScore(${s})" class="t-btn-score"><span class="num">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div>
+                <div class="t-micro-container"><table class="t-micro-table">
+                    <thead><tr><th class="c-sh">SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t">T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t2">T2</th></tr></thead>
+                    <tbody>
+                    <tr class="bg-zinc-950"><td class="c-sh">${fNum * 2}</td>
+                        <td class="c-r">${getSymTourney(scoring.currF.p1, scoring.currF.p3)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p1 ?? ''}</td><td class="c-s"></td>
+                        <td class="c-r">${getSymTourney(scoring.currF.p2, scoring.currF.p4)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p2 ?? ''}</td><td class="c-s"></td><td></td>
+                        <td class="c-r">${getSymTourney(scoring.currF.p3, scoring.currF.p1)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p3 ?? ''}</td><td class="c-s"></td>
+                        <td class="c-r">${getSymTourney(scoring.currF.p4, scoring.currF.p2)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p4 ?? ''}</td><td class="c-s"></td><td></td>
+                    </tr>
+                    ${scoring.frames.map((f, i) => {
+                        const sl = scoring.frames.slice(0, i + 1);
+                        const s1 = sl.reduce((a, b) => a + (b.p1 || 0), 0); const s2 = sl.reduce((a, b) => a + (b.p2 || 0), 0);
+                        const s3 = sl.reduce((a, b) => a + (b.p3 || 0), 0); const s4 = sl.reduce((a, b) => a + (b.p4 || 0), 0);
+                        return `<tr><td class="c-sh">${f.sh}</td>
+                        <td class="c-r">${getSymTourney(f.p1, f.p3)}</td><td class="c-p" onclick="tEditCell(${i},'p1')">${f.p1}</td><td class="c-s">${s1}</td>
+                        <td class="c-r">${getSymTourney(f.p2, f.p4)}</td><td class="c-p" onclick="tEditCell(${i},'p2')">${f.p2}</td><td class="c-s">${s2}</td>
+                        <td class="c-t">${s1 + s2 + scoring.h1}</td>
+                        <td class="c-r">${getSymTourney(f.p3, f.p1)}</td><td class="c-p" onclick="tEditCell(${i},'p3')">${f.p3}</td><td class="c-s">${s3}</td>
+                        <td class="c-r">${getSymTourney(f.p4, f.p2)}</td><td class="c-p" onclick="tEditCell(${i},'p4')">${f.p4}</td><td class="c-s">${s4}</td>
+                        <td class="c-t2">${s3 + s4 + scoring.h2}</td></tr>`;
+                    }).reverse().join('')}</tbody></table></div>`;
+        }
+
+        function showSummary(id) {
+            const h = tState.bracketHistory[id] || tState.matchHistory.find(x => x.id === id); 
+            if(!h) return;
+            const mod = document.getElementById('modal'); mod.style.display = 'block';
+            const calc = (k) => ({ pts: h.frames.reduce((a, b) => a + (b[k] || 0), 0), rng: h.frames.reduce((a, b) => a + getR(b[k]), 0) });
+            const s1 = calc('p1'), s2 = calc('p2'), s3 = calc('p3'), s4 = calc('p4');
+            const totalShoes = h.frames.length * 2;
+            mod.innerHTML = `<div class="p-8 text-center text-white"><h2 class="text-2xl font-black text-sky-400 uppercase mb-8 italic">Final Match Results</h2>
+                <div class="flex justify-between text-2xl font-black border-zinc-800 border-b-4 pb-4 mb-8"><span>${h.t1Name || h.t1.name}: ${h.s1}</span><span>${h.t2Name || h.t2.name}: ${h.s2}</span></div>
+                <div class="space-y-4 mb-10 text-left">
+                    <div class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 flex justify-between text-[11px]"><b>${h.p1n}</b><span>Pts: ${s1.pts} | Ringers: ${s1.rng} | Shoes: ${totalShoes}</span></div>
+                    <div class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 flex justify-between text-[11px]"><b>${h.p2n}</b><span>Pts: ${s2.pts} | Ringers: ${s2.rng} | Shoes: ${totalShoes}</span></div>
+                    <div class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 flex justify-between text-[11px]"><b>${h.p3n}</b><span>Pts: ${s3.pts} | Ringers: ${s3.rng} | Shoes: ${totalShoes}</span></div>
+                    <div class="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 flex justify-between text-[11px]"><b>${h.p4n}</b><span>Pts: ${s4.pts} | Ringers: ${s4.rng} | Shoes: ${totalShoes}</span></div>
+                </div>
+                <button onclick="document.getElementById('modal').style.display='none'" class="w-full bg-sky-500 text-black p-6 rounded-2xl font-black uppercase text-sm">Close Summary</button></div>`;
+        }
+    </script>
+</body>
+</html>
