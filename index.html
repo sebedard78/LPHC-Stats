@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loon Pond Stat Master Cloud</title>
+    <title>Loon Pond Master Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto+Condensed:wght@400;700&display=swap');
-
+        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; border-radius: 0 !important; }
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; overflow-x: hidden; }
-
+        
         .tab-active { border-bottom: 4px solid #0ea5e9; color: #0ea5e9; font-weight: 900; }
         .mode-btn-active { background-color: #0ea5e9 !important; color: white !important; font-weight: 900; }
 
@@ -31,7 +31,7 @@
         .std-table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #000; color: #fff; }
         .std-table th { background: #1a1a1a; color: #7dd3fc; font-size: 0.55rem; padding: 12px 1px; border: 1px solid #333; text-transform: uppercase; }
         .std-table td { border-bottom: 1px solid #222; padding: 12px 1px; text-align: center; font-size: 0.95rem; font-weight: bold; vertical-align: middle; }
-
+        
         .stats-name-col { width: 160px; min-width: 160px; text-align: left !important; padding-left: 15px !important; border-right: 3px solid #0ea5e9 !important; text-transform: uppercase; position: sticky; left: 0; background: #000; z-index: 10; color: #fff !important; font-size: 0.9rem !important; white-space: normal !important; overflow-wrap: break-word; line-height: 1.2; }
         .st-name-col { width: 52%; text-align: left !important; padding-left: 10px !important; border-right: 3px solid #0ea5e9 !important; text-transform: uppercase; color: #fff !important; white-space: normal !important; overflow-wrap: break-word; line-height: 1.2; }
         .st-num-col { width: 9%; color: #fff; }
@@ -69,19 +69,19 @@
         .t-btn-score { background: #1e293b; border-radius: 16px; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-bottom: 5px solid #0f172a; }
         .t-btn-score .num { font-size: 3.2rem; font-weight: 900; line-height: 1; color: white; }
         .t-btn-score .sym { font-size: 0.8rem; color: #38bdf8; font-weight: 900; margin-top: 4px; }
-
+        
         .t-micro-container { width: 100vw; background: #000; overflow-x: hidden; border-top: 1px solid #1e293b; }
         .t-micro-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: 'Roboto Condensed', sans-serif; }
         .t-micro-table th { font-size: 0.35rem; padding: 4px 0; color: #7dd3fc; background: #0f172a; border: 0.1px solid #1e293b; text-transform: uppercase; }
         .t-micro-table td { font-size: 0.8rem; padding: 8px 0; text-align: center; border: 0.1px solid #0f172a; color: #fff; line-height: 1; }
-
+        
         .c-sh { width: 22px !important; font-weight: 900; color: #0ea5e9 !important; border-right: 1px solid #0ea5e9 !important; background: #000; position: sticky; left: 0; z-index: 10; }
         .c-r { width: 22px !important; color: #38bdf8; font-weight: bold; } 
         .c-p { width: 22px !important; font-weight: bold; color: #facc15; } 
         .c-s { width: 24px !important; font-weight: bold; color: #fff; opacity: 0.8; }
         .c-t { width: 38px !important; background: #0c4a6e; font-weight: 900; font-size: 0.9rem !important; border-left: 1px solid #38bdf8 !important; }
         .c-t2 { width: 38px !important; background: #1e293b; font-weight: 900; color: #0ea5e9 !important; font-size: 0.9rem !important; border-left: 1px solid #0ea5e9 !important; }
-
+        
         .active-team-card { background-color: #0ea5e9 !important; color: #000 !important; }
         .active-team-card p { color: #000 !important; opacity: 1 !important; font-weight: 900; }
         .active-team-card .score-val { color: #000 !important; }
@@ -123,7 +123,7 @@
     <header class="bg-black text-white p-4 shadow-2xl flex justify-between items-center border-b-4 border-sky-500 no-print">
         <div class="flex items-center gap-3">
             <img src="logo.jpg" alt="Logo" class="w-10 h-10 object-contain">
-            <h1 class="text-xl font-black italic uppercase tracking-tighter text-white">Loon Pond Stat Master</h1>
+            <h1 class="text-xl font-black italic uppercase tracking-tighter text-white">Loon Pond Master</h1>
         </div>
         <div id="leagueModes" class="flex gap-1 bg-zinc-900 p-1">
             <button id="modeS" onclick="window.setMode('SINGLES')" class="text-[10px] px-4 py-2 transition font-bold uppercase">Singles</button>
@@ -343,7 +343,7 @@
                 html += `<div style="margin-bottom:50px; page-break-inside: avoid; border: 1px solid #000; padding: 10px;">`;
                 html += `<div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; text-transform:uppercase; font-size:14px;"><span>Game ${g.gameNum}</span><span>Score: ${g.s1} - ${g.s2}</span></div>`;
                 html += `<table style="width:100%; border-collapse:collapse; text-align:center; border:2px solid #000; font-size:11px;">`;
-
+                
                 const d1 = cleanN(g.p1) === 'dummy' ? 30 : 0, d2 = cleanN(g.p2) === 'dummy' ? 30 : 0;
                 const d3 = cleanN(g.p3) === 'dummy' ? 30 : 0, d4 = cleanN(g.p4) === 'dummy' ? 30 : 0;
 
@@ -381,7 +381,7 @@
             const s1=calc('p1'), s2=calc('p2'), s3=calc('p3'), s4=calc('p4');
 
             let html = `<div style="font-family: Arial; color:black; background:white;">`;
-
+            
             // MATCH SUMMARY TABLE (Using global getFirst)
             html += `<div style="margin-bottom:20px;"><h3 style="text-transform:uppercase; font-size:14px; border-bottom:2px solid #000; margin-bottom:10px;">Match Summary</h3><table style="width:100%; border-collapse:collapse; text-align:center; border:1px solid #000; font-size:11px;"><thead><tr style="background:#eee;"><th style="text-align:left; padding-left:5px;">Player</th><th>Total Points</th><th>Total Ringers</th><th>Shoes Thrown</th></tr></thead><tbody>`;
             [ {n:getFirst(h.p1n), s:s1}, {n:getFirst(h.p2n), s:s2}, {n:getFirst(h.p3n), s:s3}, {n:getFirst(h.p4n), s:s4} ].forEach(p => {
@@ -395,7 +395,7 @@
             html += `<table style="width:100%; border-collapse:collapse; text-align:center; border:2px solid #000; font-size:10px;">`;
             html += `<thead><tr style="background:#eee;"><th rowspan="2" style="border:1px solid #000; width:30px;">SH</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p1n}</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p2n}</th><th rowspan="2" style="border-right:2px solid #000; width:45px; background:#f9f9f9;">T1</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p3n}</th><th colspan="3" style="border:1px solid #000; text-transform:uppercase;">${h.p4n}</th><th rowspan="2" style="width:45px; background:#f9f9f9;">T2</th></tr>`;
             html += `<tr style="background:#eee; border-bottom:2px solid #000;"><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th><th style="border:1px solid #000;">R</th><th style="border:1px solid #000;">P</th><th style="border:1px solid #000;">S</th></tr></thead><tbody>`;
-
+            
             let fsc1=0, fsc2=0, fsc3=0, fsc4=0;
             h.frames.forEach(f => {
                 fsc1 += Number(f.p1||0); fsc2 += Number(f.p2||0); fsc3 += Number(f.p3||0); fsc4 += Number(f.p4||0);
@@ -475,7 +475,7 @@
             const t1 = document.getElementById('lt1').value, t2 = document.getElementById('lt2').value;
             if(!t1 || !t2) return alert("Select teams");
             match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode };
-
+            
             state.activeMatches.push(match);
             save();
 
@@ -518,7 +518,7 @@
             if (p === match.p1) match.currF.p1 = Number(pts); else if (p === match.p2) match.currF.p2 = Number(pts); else if (p === match.p3) match.currF.p3 = Number(pts); else if (p === match.p4) match.currF.p4 = Number(pts);
             match.pitcherIdx++; const limit = mode === 'DOUBLES' ? 4 : 2;
             if (match.pitcherIdx >= limit) finalizeFrame();
-
+            
             updateActiveMatchRef();
             render();
         };
@@ -577,7 +577,7 @@
             const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
             const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
             const g1 = sc1 + d1 + d2 + match.h1 + match.h2, g2 = sc2 + d3 + d4 + match.h3 + match.h4;
-
+            
             const byeTarget = mode === 'SINGLES' ? 135 : 162;
             let res1, res2;
             if (cleanN(match.t2Name) === 'bye') {
@@ -617,7 +617,7 @@
 
             const today = new Date().toLocaleDateString();
             state.history.push(...match.seriesBuffer);
-
+            
             match.seriesBuffer.forEach(entry => {
                 const playerAvg = getPlyrAvg(entry.player);
                 const currentHoa = entry.score - playerAvg;
@@ -633,7 +633,7 @@
 
             state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now() });
             Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
-
+            
             state.activeMatches = state.activeMatches.filter(m => m.sessionId !== match.sessionId);
             match.active = false; view = 'STANDINGS'; 
             save();
@@ -679,7 +679,7 @@
             const updH = (pN, res) => { const hR = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pN)); if(hR) hR.result = res; };
             updH(g.p1, res1); updH(g.p2, res1); updH(g.p3, res2); updH(g.p4, res2);
             sess.agg1 = sess.fullData.reduce((s, gm)=> s + gm.s1, 0); sess.agg2 = sess.fullData.reduce((s, gm)=> s + gm.s2, 0);
-
+            
             if (cleanN(t2n) === 'bye') {
                 const wins = sess.fullData.filter(gm => gm.s1 >= target).length;
                 sess.matchWinner = wins > 0 ? t1n : 'BYE';
@@ -689,7 +689,7 @@
             } else {
                 sess.matchWinner = sess.agg1 > sess.agg2 ? t1n : (sess.agg1 < sess.agg2 ? t2n : 'Tie');
             }
-
+            
             save(); render();
         };
 
@@ -737,21 +737,9 @@
             tState.roster = rankings.map((r, idx) => {
                 const item = r.team;
                 return { id: idx+1, name: item.teamName || item.name, members: mode === 'DOUBLES' ? item.members.map(m => ({ name: m.name, hcp: m.currentHcp })) : [{ name: item.name, hcp: item.currentHcp }] };
-                const targetScore = (mode === 'DOUBLES' ? 90 : 150);
-                // This calculates the handicap LIVE based on current averages, bypassing the 'Locked' check
-                const getLiveHcp = (pName) => Math.max(0, Math.floor((targetScore - getPlyrAvg(pName)) * 0.9));
-
-                return { 
-                    id: idx+1, 
-                    name: item.teamName || item.name, 
-                    members: mode === 'DOUBLES' 
-                        ? item.members.map(m => ({ name: m.name, hcp: getLiveHcp(m.name) })) 
-                        : [{ name: item.name, hcp: getLiveHcp(item.name) }] 
-                };
             });
             tSave(); render();
         };
-        
         window.tImportRoster = () => {
             const raw = document.getElementById('rosIn').value; if(!raw.trim()) return;
             const teams = {};
@@ -769,7 +757,7 @@
             if(tState.roster.length < 2) return alert("Add teams first");
             const teams = [...tState.roster];
             const size = Math.pow(2, Math.ceil(Math.log2(teams.length)));
-
+            
             const getSeedOrder = (n) => { 
                 let order = [0, 1]; 
                 for (let i = 2; i < n; i <<= 1) { 
@@ -782,20 +770,20 @@
                 } 
                 return order; 
             };
-
+            
             const seedSequence = getSeedOrder(size);
             const seeded = seedSequence.map(idx => teams[idx] || { name: 'BYE', isBye: true, id: idx+1, members: [{name:'BYE', hcp:0}, {name:'BYE', hcp:0}] });
 
             tState.bracket = { winners: [], losers: [] };
             const wRounds = Math.log2(size);
-
+            
             // Winners Bracket Generation
             for (let i = 0; i < seeded.length; i += 2) tState.bracket.winners.push({ id: 'W1-M'+(i/2+1), t1: seeded[i], t2: seeded[i+1], win: null, s1: 0, s2: 0 });
             for (let r = 2; r <= wRounds; r++) { 
                 let count = size / Math.pow(2, r); 
                 for (let m = 1; m <= count; m++) tState.bracket.winners.push({ id: `W${r}-M${m}`, t1: null, t2: null, win: null, s1: 0, s2: 0 }); 
             }
-
+            
             // Losers Bracket Generation
             let lMatchesInRound = size / 4;
             for (let r = 1; r <= (wRounds - 1) * 2; r++) {
@@ -804,7 +792,7 @@
                 }
                 if (r % 2 === 0) lMatchesInRound /= 2;
             }
-
+            
             // Grand Final
             tState.bracket.winners.push({ id: `GF-M1`, t1: null, t2: null, win: null, s1: 0, s2: 0 });
 
@@ -822,16 +810,6 @@
             const ops = (team) => team.members.map(mem => `<option value="${mem.name}" data-hcp="${mem.hcp}">${mem.name} (${mem.hcp})</option>`).join('');
             mod.innerHTML = `<div class="p-8"><h2 class="text-2xl font-black text-sky-400 uppercase italic mb-8">Lineup: ${id}</h2><div class="space-y-8"><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t1.name}</p><select id="selP1" class="t-select">${ops(m.t1)}</select><select id="selP2" class="t-select">${ops(m.t1)}</select></div><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t2.name}</p><select id="selP3" class="t-select">${ops(m.t2)}</select><select id="selP4" class="t-select">${ops(m.t2)}</select></div><div class="flex gap-4"><button id="rotT1" onclick="window.selRot='T1_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT2').classList.remove('rot-active');" class="rot-btn rot-active">${m.t1.id || 'T1'} Starts</button><button id="rotT2" onclick="window.selRot='T2_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT1').classList.remove('rot-active');" class="rot-btn">Opponent Starts</button></div></div><button onclick="startScoring('${id}')" class="w-full bg-sky-500 text-black p-6 mt-10 rounded-2xl font-black uppercase text-lg">Start Match</button><button onclick="document.getElementById('modal').style.display='none'" class="w-full p-6 mt-2 text-zinc-500 font-bold uppercase text-xs">Back</button></div>`;
             window.selRot = 'T1_FIRST'; if(m.t1.members.length > 1) document.getElementById('selP2').selectedIndex = 1; if(m.t2.members.length > 1) document.getElementById('selP4').selectedIndex = 1;
-        };
-        window.startScoring = (id) => {
-            const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); const getD = (id) => { const el = document.getElementById(id); return { n: el.value, h: parseInt(el.options[el.selectedIndex].dataset.hcp) }; };
-            const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
-            scoring = { active: true, mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h, h2: p3.h+p4.h, rotation: window.selRot, frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0, sessionId: Date.now() };
-            
-            tState.tActiveMatches.push(scoring);
-            tSave();
-
-            renderScorer();
         };
         // Locate the window.startScoring function inside your <script> tag and replace it with this:
 
@@ -898,7 +876,7 @@ window.startScoring = (id) => {
                 scoring.pitcherIdx = 0; 
                 const t1s = scoring.frames.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1; 
                 const t2s = scoring.frames.reduce((a,b)=>a+(b.p3||0)+(b.p4||0),0) + scoring.h2; 
-
+                
                 const frameCount = scoring.frames.length;
                 if(frameCount >= 15 && (frameCount === 15 || (frameCount - 15) % 2 === 0) && t1s !== t2s) {
                     finalizeTMatch(); 
@@ -915,7 +893,7 @@ window.startScoring = (id) => {
             renderScorer();
         };
         window.tEditCell = (idx, p) => { const v = prompt("Correct points (0,1,2,3,4,6):", scoring.frames[idx][p]); if([0,1,2,3,4,6].includes(parseInt(v))) { scoring.frames[idx][p] = parseInt(v); renderScorer(); } };
-
+        
         function finalizeTMatch() {
             const f = scoring.frames; 
             const s1 = f.reduce((a,b)=>a+(b.p1||0)+(b.p2||0),0) + scoring.h1; 
@@ -925,7 +903,7 @@ window.startScoring = (id) => {
             const loseT = s1 > s2 ? scoring.t2 : scoring.t1;
             m.win = winT.name; m.s1 = s1; m.s2 = s2; 
             tState.bracketHistory[scoring.mid] = { ...scoring, s1, s2 }; 
-
+            
             const historyEntry = { 
                 id: scoring.mid, date: new Date().toLocaleDateString(), timestamp: Date.now(), 
                 t1Name: scoring.t1.name, t2Name: scoring.t2.name, s1: s1, s2: s2, 
@@ -946,7 +924,7 @@ window.startScoring = (id) => {
                 if(pl.n && !['BYE','DUMMY'].includes(cleanN(pl.n).toUpperCase())) {
                     const pScore = scoring.frames.reduce((a, b) => a + (Number(b[pl.p]) || 0), 0);
                     const pRingers = scoring.frames.reduce((a, b) => a + getR(b[pl.p]), 0);
-
+                    
                     state.history.push({
                         player: pl.n,
                         score: pScore,
@@ -977,7 +955,7 @@ window.startScoring = (id) => {
             const r = parseInt(parts[0].substring(1)) || 0;
             const mIdx = parseInt(parts[1].substring(1));
             const wRounds = Math.log2(Math.pow(2, Math.ceil(Math.log2(tState.roster.length))));
-
+            
             if(prefix === 'W'){
                 const nextW = b.winners.find(x => x.id === `W${r+1}-M${Math.ceil(mIdx/2)}`);
                 if(nextW) { if(mIdx % 2 !== 0) nextW.t1 = winner; else nextW.t2 = winner; }
@@ -985,7 +963,7 @@ window.startScoring = (id) => {
                     const gf = b.winners.find(x => x.id === 'GF-M1');
                     if(gf) gf.t1 = winner;
                 }
-
+                
                 if (loser) {
                     if (r === 1) {
                         const targetL = b.losers.find(x => x.id === `L1-M${Math.ceil(mIdx/2)}`);
@@ -1192,7 +1170,7 @@ window.startScoring = (id) => {
                         <button onclick="setTView('ROSTER')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'ROSTER' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Roster</button>
                         <button onclick="setTView('MANAGE')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'MANAGE' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Manage</button>
                     </div>`;
-
+                
                 if (tView === 'BRACKET' && tState.bracket) {
                     navHtml += `
                     <div class="flex gap-2 p-3 bg-zinc-900 border-t border-zinc-800 no-print justify-center items-center">
@@ -1225,16 +1203,16 @@ window.startScoring = (id) => {
                     else {
                         const size = Math.pow(2, Math.ceil(Math.log2(tState.roster.length)));
                         const wRounds = Math.log2(size);
-
+                        
                         let bracketHtml = `<div class="bracket-outer">`;
                         if(activeMatchHtml) { bracketHtml += `<div class="p-4 max-w-lg mx-auto no-print">${activeMatchHtml}</div><div class="h-px bg-zinc-800 mb-4"></div>`; }
                         bracketHtml += `<div class="bracket-scale-layer" style="transform: scale(${bScale});">`;
                         bracketHtml += `<div class="bracket-scroll">`;
-
+                        
                         for (let r = 1; r <= wRounds; r++) { bracketHtml += `<div class="round-col"><div class="round-title">Winners R${r}</div>${tState.bracket.winners.filter(x => x.id.startsWith('W' + r)).map(m => renderCard(m)).join('')}</div>`; }
                         bracketHtml += `<div class="round-col"><div class="round-title">Finals</div>${tState.bracket.winners.filter(x => x.id.startsWith('GF')).map(m => renderCard(m)).join('')}</div>`;
                         for (let r = 1; r <= (wRounds * 2 - 2); r++) { bracketHtml += `<div class="round-col"><div class="round-title">Losers R${r}</div>${tState.bracket.losers.filter(x => x.id.startsWith('L' + r)).map(m => renderCard(m)).join('')}</div>`; }
-
+                        
                         bracketHtml += `</div></div></div>`;
                         content.innerHTML = navHtml + bracketHtml;
                     }
