@@ -1005,12 +1005,12 @@ window.startScoring = (id) => {
             const prefix = parts[0][0]; 
             const r = parseInt(parts[0].substring(1)) || 0;
             const mIdx = parseInt(parts[1].substring(1));
-            const wRounds = Math.log2(Math.pow(2, Math.ceil(Math.log2(tState.roster.length))));
+            const wRounds = Math.log2(Math.pow(2, Math.ceil(Math.log2(tState.roster.length)))); }
 
             if(prefix === 'W'){
                 const nextW = b.winners.find(x => x.id === `W${r+1}-M${Math.ceil(mIdx/2)}`);
                 if(nextW) { if(mIdx % 2 !== 0) nextW.t1 = winner; else nextW.t2 = winner; }
-                else if (r === wRounds) { 
+            } else if (r === wRounds) { 
                     const gf = b.winners.find(x => x.id === 'GF-M1');
                     if(gf) gf.t1 = winner;
                 }
@@ -1023,7 +1023,7 @@ window.startScoring = (id) => {
                         const targetL = b.losers.find(x => x.id === `L${(r - 1) * 2}-M${mIdx}`);
                         if (targetL) targetL.t2 = loser; 
                     }
-                }
+                
             } else if (prefix === 'L') {
                 const maxLR = (wRounds - 1) * 2;
                 if (r < maxLR) {
@@ -1046,11 +1046,11 @@ window.startScoring = (id) => {
                 [...b.winners, ...b.losers].forEach(m => {
                     if(!m.win && m.t1 && m.t2) {
                         if(m.t1.isBye) { m.win = m.t2.name; m.s1 = 'BYE'; m.s2 = 0; tAdvance(m.id, m.t2, {isBye:true, name:'BYE'}); changed = true; }
-                        else if(m.t2.isBye) { m.win = m.t1.name; m.s2 = 'BYE'; m.s1 = 0; tAdvance(m.id, m.t1, {isBye:true, name:'BYE'}); changed = true; }
+                    } else if(m.t2.isBye) { m.win = m.t1.name; m.s2 = 'BYE'; m.s1 = 0; tAdvance(m.id, m.t1, {isBye:true, name:'BYE'}); changed = true; }
                     }
-                });
+                );
             }
-        }
+        
 
         window.printBracket = () => {
             const el = document.querySelector('.bracket-scroll').cloneNode(true);
@@ -1081,8 +1081,7 @@ window.startScoring = (id) => {
                     el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; 
                     if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none';
                     if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled ? 'block' : 'none';
-                }
-            });
+                }});
             const content = document.getElementById('viewContent');
 
             if (view === 'NEWS') {
@@ -1225,7 +1224,7 @@ window.startScoring = (id) => {
                 if (tView === 'ROSTER') {
                     content.innerHTML = navHtml + `<div class="p-4"><button onclick="importTFromStandings()" class="w-full bg-sky-700 text-white p-4 mb-4 font-black uppercase text-xs rounded-xl">Import & Seed From Standings</button><textarea id="rosIn" class="w-full h-40 bg-zinc-900 border-2 border-zinc-800 p-4 text-xs text-white rounded-2xl" placeholder="TeamID | Last, First | HCP"></textarea><button onclick="tImportRoster()" class="w-full bg-sky-500 text-black p-5 mt-4 font-black uppercase text-sm rounded-2xl">Sync Roster</button><div class="mt-8 space-y-2 text-white">${tState.roster.map((t, i) => `<div class="p-4 bg-zinc-900 rounded-xl flex justify-between items-center border border-zinc-800"><b>Seed ${i + 1}: ${t.name}</b><button onclick="tDelTeam(${i})" class="text-red-500 font-black uppercase text-[12px]">Del</button></div>`).join('')}</div></div>`;
                 } 
-                else if (tView === 'BRACKET') {
+            }  else if (tView === 'BRACKET') {
                     if (!tState.bracket) { 
                         content.innerHTML = navHtml + `<div class="mt-20 text-center"><button onclick="initBracket()" class="bg-sky-500 text-black px-12 py-5 rounded-2xl font-black text-sm uppercase">Initialize Bracket</button></div>`; 
                     } else {
@@ -1267,8 +1266,7 @@ window.startScoring = (id) => {
                                 </div>
                             </div>`;
                     }
-                } 
-                else if (tView === 'MANAGE') { 
+                } else if (tView === 'MANAGE') { 
                     content.innerHTML = navHtml + `<div class="p-10"><button onclick="wipeTournament()" class="w-full bg-red-600 p-8 rounded-2xl font-black uppercase text-lg shadow-2xl text-white">Wipe All Tournament Data</button></div>`; 
                 }
             }
