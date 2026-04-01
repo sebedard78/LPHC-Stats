@@ -102,20 +102,6 @@
         .rot-btn { flex: 1; background: #1e293b; padding: 20px; border-radius: 12px; font-weight: 900; border: 2px solid transparent; color: white; }
         .rot-active { background: #0ea5e9; color: black; }
         #modal { display: none; position: fixed; inset: 0; background: #020617; z-index: 1000; overflow-y: auto; color: white; }
-   /* ADD THIS TO YOUR <STYLE> SECTION */
-.app-bracket-stack { display: flex; flex-direction: column; gap: 30px; padding: 15px; background: #000; }
-.app-bracket-section { display: flex; flex-direction: column; gap: 10px; background: #0a0a0a; border: 1px solid #1e293b; padding: 10px; }
-.app-section-label { font-size: 14px; font-weight: 900; text-transform: uppercase; color: #0ea5e9; letter-spacing: 1px; border-bottom: 2px solid #1e293b; padding-bottom: 5px; margin-bottom: 10px; }
-.app-rounds-row { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
-.app-round-col { display: flex; flex-direction: column; gap: 10px; min-width: 220px; justify-content: space-around; }
-.app-match-card { background: #111; border: 2px solid #334155; border-radius: 6px; cursor: pointer; transition: border-color 0.2s; overflow: hidden; }
-.app-match-card:hover { border-color: #0ea5e9; }
-.app-team-strip { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 13px; font-weight: 800; border-bottom: 1px solid #000; }
-.app-team-strip.win { background: #0ea5e9; color: #000; }
-.app-score-box { background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 14px; }
-.app-team-strip.win .app-score-box { background: #fff; color: #000; }
-    
-    
     </style>
 </head>
 <body class="min-h-screen pb-40">
@@ -1223,78 +1209,60 @@ window.startScoring = (id) => {
                         <button onclick="setTView('BRACKET')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'BRACKET' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Bracket</button>
                         <button onclick="setTView('ROSTER')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'ROSTER' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Roster</button>
                         <button onclick="setTView('MANAGE')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'MANAGE' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Manage</button>
-                    </div></nav>`;
+                    </div>`;
+
+                if (tView === 'BRACKET' && tState.bracket) {
+                    navHtml += `
+                    <div class="flex gap-2 p-3 bg-zinc-900 border-t border-zinc-800 no-print justify-center items-center">
+                        <button onclick="window.zoomB(0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">+</button>
+                        <button onclick="window.zoomB(-0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">-</button>
+                        <button onclick="window.zoomB('reset')" class="bg-zinc-800 text-white px-5 py-2 text-[10px] uppercase font-black border border-zinc-700 hover:bg-zinc-700">Reset</button>
+                        <button onclick="window.printBracket()" class="bg-sky-700 text-white px-5 py-2 text-[10px] uppercase font-black border border-sky-800 hover:bg-sky-600 ml-2">Print Bracket</button>
+                        <span class="text-[11px] text-sky-500 ml-4 font-black uppercase tracking-widest">Zoom: ${Math.round(bScale * 100)}%</span>
+                    </div>`;
+                }
+                navHtml += `</nav>`;
 
                 if (tView === 'ROSTER') {
                     content.innerHTML = navHtml + `<div class="p-4"><button onclick="importTFromStandings()" class="w-full bg-sky-700 text-white p-4 mb-4 font-black uppercase text-xs rounded-xl">Import & Seed From Standings</button><textarea id="rosIn" class="w-full h-40 bg-zinc-900 border-2 border-zinc-800 p-4 text-xs text-white rounded-2xl" placeholder="TeamID | Last, First | HCP"></textarea><button onclick="tImportRoster()" class="w-full bg-sky-500 text-black p-5 mt-4 font-black uppercase text-sm rounded-2xl">Sync Roster</button><div class="mt-8 space-y-2 text-white">${tState.roster.map((t, i) => `<div class="p-4 bg-zinc-900 rounded-xl flex justify-between items-center border border-zinc-800"><b>Seed ${i + 1}: ${t.name}</b><button onclick="tDelTeam(${i})" class="text-red-500 font-black uppercase text-[12px]">Del</button></div>`).join('')}</div></div>`;
-                } 
-                else if (tView === 'BRACKET') {
-                    if (!tState.bracket) { 
-                        content.innerHTML = navHtml + `<div class="mt-20 text-center"><button onclick="initBracket()" class="bg-sky-500 text-black px-12 py-5 rounded-2xl font-black text-sm uppercase">Initialize Bracket</button></div>`; 
-                    } else {
-                        const b = tState.bracket;
-                        const rosterSize = tState.roster?.length || 2;
-                        const size = Math.pow(2, Math.ceil(Math.log2(rosterSize)));
+                } else if (tView === 'BRACKET') {
+                    const activeMatchHtml = tState.tActiveMatches.map(m => `
+                        <div class="bg-sky-900/50 border-2 border-sky-500/50 p-3 mb-2 flex justify-between items-center rounded-xl">
+                            <div class="text-left">
+                                <p class="text-[10px] font-black uppercase text-sky-400">Match in Progress</p>
+                                <p class="text-sm font-black uppercase text-white">${m.t1.name} vs ${m.t2.name}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="resumeTMatch(${m.sessionId})" class="bg-sky-500 text-black px-3 py-2 text-[10px] font-black uppercase rounded-lg">Resume</button>
+                                <button onclick="deleteTMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase rounded-lg">Del</button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    if (!tState.bracket) { content.innerHTML = navHtml + `<div class="mt-20 text-center"><button onclick="initBracket()" class="bg-sky-500 text-black px-12 py-5 rounded-2xl font-black text-sm uppercase">Initialize Bracket</button></div>`; }
+                    else {
+                        const size = Math.pow(2, Math.ceil(Math.log2(tState.roster.length)));
                         const wRounds = Math.log2(size);
 
-                        let wHtml = "";
-                        for (let r = 1; r <= wRounds; r++) {
-                            wHtml += `<div class="app-round-col"><div class="text-[10px] font-black text-zinc-600 uppercase text-center mb-1">R${r}</div>`;
-                            wHtml += b.winners.filter(x => x.id.startsWith(`W${r}-`)).map(m => renderCard(m)).join('');
-                            wHtml += `</div>`;
-                        }
+                        let bracketHtml = `<div class="bracket-outer">`;
+                        if(activeMatchHtml) { bracketHtml += `<div class="p-4 max-w-lg mx-auto no-print">${activeMatchHtml}</div><div class="h-px bg-zinc-800 mb-4"></div>`; }
+                        bracketHtml += `<div class="bracket-scale-layer" style="transform: scale(${bScale});">`;
+                        bracketHtml += `<div class="bracket-scroll">`;
 
-                        let lHtml = "";
-                        const maxLR = (wRounds - 1) * 2;
-                        for (let r = 1; r <= maxLR; r++) {
-                            lHtml += `<div class="app-round-col"><div class="text-[10px] font-black text-zinc-600 uppercase text-center mb-1">L${r}</div>`;
-                            lHtml += b.losers.filter(x => x.id.startsWith(`L${r}-`)).map(m => renderCard(m)).join('');
-                            lHtml += `</div>`;
-                        }
+                        for (let r = 1; r <= wRounds; r++) { bracketHtml += `<div class="round-col"><div class="round-title">Winners R${r}</div>${tState.bracket.winners.filter(x => x.id.startsWith('W' + r)).map(m => renderCard(m)).join('')}</div>`; }
+                        bracketHtml += `<div class="round-col"><div class="round-title">Finals</div>${tState.bracket.winners.filter(x => x.id.startsWith('GF')).map(m => renderCard(m)).join('')}</div>`;
+                        for (let r = 1; r <= (wRounds * 2 - 2); r++) { bracketHtml += `<div class="round-col"><div class="round-title">Losers R${r}</div>${tState.bracket.losers.filter(x => x.id.startsWith('L' + r)).map(m => renderCard(m)).join('')}</div>`; }
 
-                        const gf = b.winners.find(x => x.id.startsWith('GF'));
-
-                        content.innerHTML = navHtml + `
-                            <div class="app-bracket-stack">
-                                <div class="app-bracket-section">
-                                    <div class="app-section-label">Winners Bracket</div>
-                                    <div class="app-rounds-row">${wHtml}</div>
-                                </div>
-                                <div class="app-bracket-section" style="border-color: #0ea5e9; background: #082f49;">
-                                    <div class="app-section-label text-white border-white">Championship Final</div>
-                                    <div class="flex justify-center py-2"><div style="width: 260px;">${renderCard(gf)}</div></div>
-                                </div>
-                                <div class="app-bracket-section">
-                                    <div class="app-section-label" style="color: #fb923c; border-color: #431407;">Losers Bracket</div>
-                                    <div class="app-rounds-row">${lHtml}</div>
-                                </div>
-                            </div>`;
+                        bracketHtml += `</div></div></div>`;
+                        content.innerHTML = navHtml + bracketHtml;
                     }
-                } 
-                else if (tView === 'MANAGE') { 
+                } else if (tView === 'MANAGE') { 
                     content.innerHTML = navHtml + `<div class="p-10"><button onclick="wipeTournament()" class="w-full bg-red-600 p-8 rounded-2xl font-black uppercase text-lg shadow-2xl text-white">Wipe All Tournament Data</button></div>`; 
                 }
             }
+        }
 
-        function renderCard(m) { 
-    if (!m) return "";
-    const t1 = m.t1?.name || 'TBD';
-    const t2 = m.t2?.name || 'TBD';
-    const isBye = m.s1 === 'BYE' || m.s2 === 'BYE';
-
-    return `
-        <div class="app-match-card" onclick="window.openMatch('${m.id}')">
-            <div class="app-team-strip ${m.win === t1 && !isBye ? 'win' : ''}">
-                <span class="truncate pr-2">${t1}</span>
-                <span class="app-score-box">${m.s1 || 0}</span>
-            </div>
-            <div class="app-team-strip ${m.win === t2 && !isBye ? 'win' : ''}">
-                <span class="truncate pr-2">${t2}</span>
-                <span class="app-score-box">${m.s2 || 0}</span>
-            </div>
-        </div>
-    `; 
-}
+        function renderCard(m) { return `<div class="match-card" onclick="openMatch('${m.id}')"><div class="team-line ${m.win === m.t1?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t1?.name || '?'} ${m.t1?.isBye ? '' : '(S' + (m.t1?.id || '?') + ')'}</span><span class="score-box">${m.s1}</span></div><div class="team-line ${m.win === m.t2?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t2?.name || '?'} ${m.t2?.isBye ? '' : '(S' + (m.t2?.id || '?') + ')'}</span><span class="score-box">${m.s2}</span></div></div>`; }
 
         function renderScorer() {
             const mod = document.getElementById('modal'); mod.style.display = 'block';
