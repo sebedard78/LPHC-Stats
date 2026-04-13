@@ -20,7 +20,7 @@
             margin-left: -0.5rem; 
             background: #000; 
             border-top: 1px solid #333;
-            height: calc(100vh - 460px); 
+            height: calc(100vh - 550px); 
             overflow-y: auto;
         }
         .micro-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: 'Roboto Condensed', sans-serif; }
@@ -38,8 +38,8 @@
         .curr-row { background: #171717; outline: 1px solid #444; }
 
         /* PITCHING HIGHLIGHT */
-        .pitch-active { border: 4px solid #0ea5e9 !important; background: #f0f9ff !important; position: relative; }
-        .pitch-active::after { content: 'PITCHING'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0ea5e9; color: white; font-size: 9px; padding: 1px 10px; font-weight: 900; z-index: 60; }
+        .pitch-active { border: 6px solid #0ea5e9 !important; background: #f0f9ff !important; position: relative; }
+        .pitch-active::after { content: 'PITCHING'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: #0ea5e9; color: white; font-size: 10px; padding: 2px 12px; font-weight: 900; z-index: 60; }
 
         /* DATA TABLES */
         .std-table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #000; color: #fff; }
@@ -188,14 +188,15 @@
         const docRef = doc(db, "league", "masterData");
         const docRefTourney = doc(db, "tournament_final_v1", "data");
 
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, activeMatches: [] };
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, activeMatches: [] };
         let mode = 'DOUBLES';
         let view = 'NEWS';
+        let scorerMode = 'LIVE'; 
         let isUnlocked = false;
 
         let tState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] };
         let tView = 'BRACKET';
-        let scoring = { active: false, mid: null, t1: null, t2: null, p1n: '', p2n: '', p3n: '', p4n: '', h1: 0, h2: 0, rotation: 'T1_FIRST', frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0 };
+        let scoring = { active: false, step: 'LIVE', mid: null, t1: null, t2: null, p1n: '', p2n: '', p3n: '', p4n: '', h1: 0, h2: 0, rotation: 'T1_FIRST', frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0 };
         let bScale = 1.0;
 
         let match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {} };
@@ -256,6 +257,7 @@
                 if(!state.managePin) state.managePin = '1234';
                 if(!state.nhpa) state.nhpa = {SINGLES:{}, DOUBLES:{}};
                 if(!state.hcpLocked) state.hcpLocked = {SINGLES:true, DOUBLES:true};
+                if(state.manualEntryEnabled === undefined) state.manualEntryEnabled = true;
                 if(!state.weeklyHoa) state.weeklyHoa = { SINGLES: [], DOUBLES: [] };
                 if(!state.fourDeads) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
                 if(state.news === undefined) state.news = '';
@@ -348,6 +350,12 @@
             await save(); render();
         };
 
+        window.toggleManualEntry = async () => {
+            state.manualEntryEnabled = !state.manualEntryEnabled;
+            if(!state.manualEntryEnabled && scorerMode === 'MANUAL') scorerMode = 'LIVE';
+            await save(); render();
+        }
+
         window.toggleScorer = async () => {
             state.scorerEnabled = !state.scorerEnabled;
             if(!state.scorerEnabled && view === 'SCORER') view = 'STANDINGS';
@@ -424,21 +432,26 @@
                     </div>
                 </div>
 
-                <div class="ps-section-title">Series Summary</div>
+                <div class="ps-section-title">Series Summary ${s.isManual ? '(Manual Entry)' : ''}</div>
                 <table class="ps-table">
                     <thead><tr><th style="text-align:left; padding-left: 10px; width: 30%;">Player</th><th>G1 Score</th><th>G2 Score</th><th>G3 Score</th><th>Series Total</th><th>Series Avg</th></tr></thead>
                     <tbody>`;
 
-            const sessionPlayers = [...new Set(s.fullData.flatMap(g => [g.p1, g.p2, g.p3, g.p4]))]
+            const sessionPlayers = [...new Set(s.fullData.flatMap(g => [g.p1, g.p2, g.p3, g.p4, g.p5, g.p6]))]
                 .filter(p => p && !['BYE', 'DUMMY'].includes(cleanN(p).toUpperCase()));
 
             sessionPlayers.forEach(p => {
                 let pScores = [0, 0, 0], pRings = [0, 0, 0];
                 s.fullData.forEach((g, i) => {
-                    const k = ['p1', 'p2', 'p3', 'p4'].find(key => cleanN(g[key]) === cleanN(p));
+                    const k = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].find(key => cleanN(g[key]) === cleanN(p));
                     if (k) {
-                        pScores[i] = (g.frames || []).reduce((sum, f) => sum + (Number(f[k]) || 0), 0) + (cleanN(g[k]) === 'dummy' ? 30 : 0);
-                        pRings[i] = (g.frames || []).reduce((sum, f) => sum + getR(f[k]), 0);
+                        if (s.isManual) {
+                           pScores[i] = g[k+'_scr'] || 0;
+                           pRings[i] = g[k+'_rng'] || 0;
+                        } else {
+                           pScores[i] = (g.frames || []).reduce((sum, f) => sum + (Number(f[k]) || 0), 0) + (cleanN(g[k]) === 'dummy' ? 30 : 0);
+                           pRings[i] = (g.frames || []).reduce((sum, f) => sum + getR(f[k]), 0);
+                        }
                     }
                 });
                 const total = pScores.reduce((a, b) => a + b, 0);
@@ -446,31 +459,33 @@
             });
             html += `</tbody></table>`;
 
-            s.fullData.forEach(g => {
-                const d1 = cleanN(g.p1) === 'dummy' ? 30 : 0, d2 = cleanN(g.p2) === 'dummy' ? 30 : 0;
-                const d3 = cleanN(g.p3) === 'dummy' ? 30 : 0, d4 = cleanN(g.p4) === 'dummy' ? 30 : 0;
-                const hc1 = g.h1 + g.h2 + d1 + d2, hc2 = g.h3 + g.h4 + d3 + d4;
+            if (!s.isManual) {
+                s.fullData.forEach(g => {
+                    const d1 = cleanN(g.p1) === 'dummy' ? 30 : 0, d2 = cleanN(g.p2) === 'dummy' ? 30 : 0;
+                    const d3 = cleanN(g.p3) === 'dummy' ? 30 : 0, d4 = cleanN(g.p4) === 'dummy' ? 30 : 0;
+                    const hc1 = g.h1 + g.h2 + d1 + d2, hc2 = g.h3 + g.h4 + d3 + d4;
 
-                html += `<div style="page-break-inside: avoid;"><div class="game-header"><span>GAME ${g.gameNum}</span><span>SCORE: ${g.s1} - ${g.s2}</span></div><table class="ps-table"><thead>`;
+                    html += `<div style="page-break-inside: avoid;"><div class="game-header"><span>GAME ${g.gameNum}</span><span>SCORE: ${g.s1} - ${g.s2}</span></div><table class="ps-table"><thead>`;
 
-                if (isSingles) {
-                    html += `<tr><th rowspan="2" style="width: 30px;">SH</th><th colspan="3">${g.p1}</th><th rowspan="2" style="width: 45px;" class="bold-border-left bold-border-right">T1</th><th colspan="3">${g.p3}</th><th rowspan="2" style="width: 45px;" class="bold-border-left">T2</th></tr><tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th></tr></thead><tbody>`;
-                    let p1s = 0, p3s = 0;
-                    g.frames.forEach(f => {
-                        p1s += (Number(f.p1) || 0); p3s += (Number(f.p3) || 0);
-                        html += `<tr><td class="font-black bg-grey">${f.sh}</td><td>${getSym(f.p1, f.p3)}</td><td>${f.p1 || 0}</td><td>${p1s}</td><td class="font-black bold-border-left bold-border-right">${p1s + hc1}</td><td>${getSym(f.p3, f.p1)}</td><td>${f.p3 || 0}</td><td>${p3s}</td><td class="font-black bold-border-left">${p3s + hc2}</td></tr>`;
-                    });
-                } else {
-                    html += `<tr><th rowspan="2" style="width: 25px;">SH</th><th colspan="3">${g.p1}</th><th colspan="3">${g.p2}</th><th rowspan="2" style="width: 35px;" class="bold-border-left bold-border-right">T1</th><th colspan="3">${g.p3}</th><th colspan="3">${g.p4}</th><th rowspan="2" style="width: 35px;" class="bold-border-left">T2</th></tr><tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th></tr></thead><tbody>`;
-                    let p1s = 0, p2s = 0, p3s = 0, p4s = 0;
-                    g.frames.forEach(f => {
-                        p1s += (Number(f.p1) || 0); p2s += (Number(f.p2) || 0);
-                        p3s += (Number(f.p3) || 0); p4s += (Number(f.p4) || 0);
-                        html += `<tr><td class="font-black bg-grey">${f.sh}</td><td>${getSym(f.p1, f.p3)}</td><td>${f.p1 || 0}</td><td>${p1s}</td><td>${getSym(f.p2, f.p4)}</td><td>${f.p2 || 0}</td><td>${p2s}</td><td class="font-black bold-border-left bold-border-right">${p1s + p2s + hc1}</td><td>${getSym(f.p3, f.p1)}</td><td>${f.p3 || 0}</td><td>${p3s}</td><td>${getSym(f.p4, f.p2)}</td><td>${f.p4 || 0}</td><td>${p4s}</td><td class="font-black bold-border-left">${p3s + p4s + hc2}</td></tr>`;
-                    });
-                }
-                html += `</tbody></table></div>`;
-            });
+                    if (isSingles) {
+                        html += `<tr><th rowspan="2" style="width: 30px;">SH</th><th colspan="3">${g.p1}</th><th rowspan="2" style="width: 45px;" class="bold-border-left bold-border-right">T1</th><th colspan="3">${g.p3}</th><th rowspan="2" style="width: 45px;" class="bold-border-left">T2</th></tr><tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th></tr></thead><tbody>`;
+                        let p1s = 0, p3s = 0;
+                        g.frames.forEach(f => {
+                            p1s += (Number(f.p1) || 0); p3s += (Number(f.p3) || 0);
+                            html += `<tr><td class="font-black bg-grey">${f.sh}</td><td>${getSym(f.p1, f.p3)}</td><td>${f.p1 || 0}</td><td>${p1s}</td><td class="font-black bold-border-left bold-border-right">${p1s + hc1}</td><td>${getSym(f.p3, f.p1)}</td><td>${f.p3 || 0}</td><td>${p3s}</td><td class="font-black bold-border-left">${p3s + hc2}</td></tr>`;
+                        });
+                    } else {
+                        html += `<tr><th rowspan="2" style="width: 25px;">SH</th><th colspan="3">${g.p1}</th><th colspan="3">${g.p2}</th><th rowspan="2" style="width: 35px;" class="bold-border-left bold-border-right">T1</th><th colspan="3">${g.p3}</th><th colspan="3">${g.p4}</th><th rowspan="2" style="width: 35px;" class="bold-border-left">T2</th></tr><tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th></tr></thead><tbody>`;
+                        let p1s = 0, p2s = 0, p3s = 0, p4s = 0;
+                        g.frames.forEach(f => {
+                            p1s += (Number(f.p1) || 0); p2s += (Number(f.p2) || 0);
+                            p3s += (Number(f.p3) || 0); p4s += (Number(f.p4) || 0);
+                            html += `<tr><td class="font-black bg-grey">${f.sh}</td><td>${getSym(f.p1, f.p3)}</td><td>${f.p1 || 0}</td><td>${p1s}</td><td>${getSym(f.p2, f.p4)}</td><td>${f.p2 || 0}</td><td>${p2s}</td><td class="font-black bold-border-left bold-border-right">${p1s + p2s + hc1}</td><td>${getSym(f.p3, f.p1)}</td><td>${f.p3 || 0}</td><td>${p3s}</td><td>${getSym(f.p4, f.p2)}</td><td>${f.p4 || 0}</td><td>${p4s}</td><td class="font-black bold-border-left">${p3s + p4s + hc2}</td></tr>`;
+                        });
+                    }
+                    html += `</tbody></table></div>`;
+                });
+            }
             html += `</div>`;
             window.executePrint("Session Score Sheets", html, true);
         };
@@ -652,12 +667,157 @@
             if(!state.fourDeads[mode]) state.fourDeads[mode] = {};
             Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
             
-            state.activeMatches = state.activeMatches.filter(m => m.sessionId !== match.sessionId);
+            state.activeMatches = state.activeMatches.filter(x => x.sessionId !== match.sessionId);
             match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {} };
             
             view = 'STANDINGS'; 
             await save(); 
             render();
+        };
+
+        /* MANUAL SCORER LOGIC */
+        window.setScorerView = (v) => { scorerMode = v; render(); };
+        window.updateManualHcp = (pNum) => { const pName = document.getElementById('mp'+pNum).value; document.getElementById('mh'+pNum).value = getH(pName); };
+
+        window.filterManualTeams = (teamNum) => {
+            const tName = document.getElementById('mt'+teamNum).value;
+            if(cleanN(tName) === 'bye') {
+                const startIdx = teamNum === 1 ? 1 : 4;
+                for(let i=startIdx; i<startIdx+3; i++) { 
+                    const el = document.getElementById('mp'+i); 
+                    if(el) { el.innerHTML = `<option value="">BYE</option>`; el.selectedIndex = 0; }
+                }
+                return;
+            }
+            const team = (state.roster[mode] || []).find(t => (t.teamName || t.name) === tName);
+            const members = team ? (mode === 'DOUBLES' ? team.members : [team]) : [];
+            const opts = `<option value="">--Select Player--</option>` + members.map(m => `<option value="${m.name}">${m.name}</option>`).join('') + `<option value="DUMMY">DUMMY</option>`;
+            const startIdx = teamNum === 1 ? 1 : 4;
+            for(let i=startIdx; i<startIdx+3; i++) { const el = document.getElementById('mp'+i); if(el) el.innerHTML = opts; }
+        };
+
+        window.submitManualFourDeads = async () => {
+            const name = document.getElementById('mfdName').value;
+            const count = parseInt(document.getElementById('mfdCount').value);
+            if(!name || isNaN(count)) return smAlert("Select name and enter count");
+            if(!state.fourDeads[mode]) state.fourDeads[mode] = {};
+            state.fourDeads[mode][name] = (state.fourDeads[mode][name] || 0) + count;
+            await save();
+            await smAlert(`Success: ${count} Four-Deads added to ${name}'s stats.`);
+            render();
+        };
+
+        window.submitManualMatch = async () => {
+            const t1 = document.getElementById('mt1').value, t2 = document.getElementById('mt2').value;
+            if(!t1 || !t2) return window.smAlert("Select both teams");
+            if(cleanN(t1) === 'bye' && cleanN(t2) === 'bye') return window.smAlert("Both teams cannot be BYE");
+            
+            const players = [];
+            for(let i=1; i<=6; i++) {
+                const n = document.getElementById('mp'+i).value;
+                if(n && n !== '') {
+                    players.push({ pIdx: i, name: n, hcp: Number(document.getElementById('mh'+i).value || 0), 
+                        g1_scr: document.getElementById(`ms${i}_g1`).value === '' ? null : Number(document.getElementById(`ms${i}_g1`).value), g1_rng: Number(document.getElementById(`mr${i}_g1`).value || 0),
+                        g2_scr: document.getElementById(`ms${i}_g2`).value === '' ? null : Number(document.getElementById(`ms${i}_g2`).value), g2_rng: Number(document.getElementById(`mr${i}_g2`).value || 0),
+                        g3_scr: document.getElementById(`ms${i}_g3`).value === '' ? null : Number(document.getElementById(`ms${i}_g3`).value), g3_rng: Number(document.getElementById(`mr${i}_g3`).value || 0)
+                    });
+                }
+            }
+
+            const t1Pls = players.filter(p => p.pIdx <= 3), t2Pls = players.filter(p => p.pIdx > 3);
+            const t1Hcp = t1Pls.reduce((a,b)=>a+b.hcp, 0), t2Hcp = t2Pls.reduce((a,b)=>a+b.hcp, 0);
+            
+            const target = mode === 'SINGLES' ? 135 : 162;
+            const games = []; let agg1 = 0, agg2 = 0;
+            const sIdMaster = Date.now();
+            const today = new Date().toLocaleDateString();
+            
+            for(let g=1; g<=3; g++) {
+                let s1 = t1Pls.reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + t1Hcp;
+                let s2 = t2Pls.reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + t2Hcp;
+                
+                let r1, r2;
+                if (cleanN(t2) === 'bye') {
+                    r1 = s1 >= target ? 'W' : 'L'; r2 = s1 >= target ? 'L' : 'W';
+                    s2 = target; 
+                } else if (cleanN(t1) === 'bye') {
+                    r2 = s2 >= target ? 'W' : 'L'; r1 = s2 >= target ? 'L' : 'W';
+                    s1 = target;
+                } else {
+                    r1 = s1 > s2 ? 'W' : (s1 < s2 ? 'L' : 'T');
+                    r2 = s2 > s1 ? 'W' : (s2 < s1 ? 'L' : 'T');
+                }
+
+                agg1 += s1; agg2 += s2;
+                
+                games.push({ gameNum: g, s1, s2, h1: t1Hcp, h2: t2Hcp, 
+                    p1: t1Pls[0]?.name||'', p1_scr: t1Pls[0]?.[`g${g}_scr`]||0, p1_rng: t1Pls[0]?.[`g${g}_rng`]||0, 
+                    p2: t1Pls[1]?.name||'', p2_scr: t1Pls[1]?.[`g${g}_scr`]||0, p2_rng: t1Pls[1]?.[`g${g}_rng`]||0, 
+                    p3: t2Pls[0]?.name||'', p3_scr: t2Pls[0]?.[`g${g}_scr`]||0, p3_rng: t2Pls[0]?.[`g${g}_rng`]||0, 
+                    p4: t2Pls[1]?.name||'', p4_scr: t2Pls[1]?.[`g${g}_scr`]||0, p4_rng: t2Pls[1]?.[`g${g}_rng`]||0,
+                    p5: t1Pls[2]?.name||'', p5_scr: t1Pls[2]?.[`g${g}_scr`]||0, p5_rng: t1Pls[2]?.[`g${g}_rng`]||0,
+                    p6: t2Pls[2]?.name||'', p6_scr: t2Pls[2]?.[`g${g}_scr`]||0, p6_rng: t2Pls[2]?.[`g${g}_rng`]||0
+                });
+                
+                players.forEach(p => { 
+                    const scr = p[`g${g}_scr`];
+                    if(scr !== null && cleanN(p.name) !== 'dummy' && cleanN(p.name) !== 'bye' && p.name !== '') {
+                        state.history.push({ player: p.name, score: scr, ringers: p[`g${g}_rng`], result: p.pIdx<=3?r1:r2, sessionId: sIdMaster, gameNum: g, mode, date: today, timestamp: Date.now() }); 
+                        const pAvg = getPlyrAvg(p.name);
+                        const hoaValue = scr - pAvg;
+                        const existingIdx = state.weeklyHoa[mode].findIndex(x => x.date === today);
+                        if (existingIdx !== -1) {
+                            if (hoaValue > state.weeklyHoa[mode][existingIdx].hoa) {
+                                state.weeklyHoa[mode][existingIdx] = { date: today, player: p.name, hoa: hoaValue };
+                            }
+                        } else {
+                            state.weeklyHoa[mode].push({ date: today, player: p.name, hoa: hoaValue });
+                        }
+                    }
+                });
+            }
+
+            let mW;
+            if (cleanN(t2) === 'bye') mW = games.filter(g => g.s1 >= target).length > 0 ? t1 : 'BYE';
+            else if (cleanN(t1) === 'bye') mW = games.filter(g => g.s2 >= target).length > 0 ? t2 : 'BYE';
+            else mW = agg1 > agg2 ? t1 : (agg1 < agg2 ? t2 : 'Tie');
+
+            state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster });
+            await save(); 
+            
+            const summaryRows = players.map(p => `
+                <tr class="border-b border-zinc-700 text-[11px]">
+                    <td class="p-2 text-left font-black uppercase text-sky-400">${p.name || '---'}</td>
+                    <td class="p-2">${p.g1_scr !== null ? `${p.g1_scr} (${p.g1_rng})` : '-'}</td>
+                    <td class="p-2">${p.g2_scr !== null ? `${p.g2_scr} (${p.g2_rng})` : '-'}</td>
+                    <td class="p-2">${p.g3_scr !== null ? `${p.g3_scr} (${p.g3_rng})` : '-'}</td>
+                </tr>
+            `).join('');
+
+            const mod = document.getElementById('modal'); mod.style.display = 'block';
+            mod.innerHTML = `
+            <div class="p-4 bg-zinc-950 text-white min-h-screen">
+                <h2 class="text-sky-500 font-black italic uppercase text-2xl mb-6 text-center">Manual Match Confirmation</h2>
+                <div class="bg-zinc-900 border-2 border-zinc-700 p-6 text-center mb-6 shadow-2xl">
+                    <p class="text-[10px] uppercase opacity-50 mb-2 tracking-[0.2em]">${t1} vs ${t2}</p>
+                    <p class="text-6xl font-black mb-2">${agg1} - ${agg2}</p>
+                    <div class="bg-black py-2 px-4 inline-block border border-sky-500/30">
+                        <p class="text-sky-400 font-black uppercase text-xs">Series Winner: ${mW}</p>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto bg-zinc-900 border border-zinc-800 rounded-lg p-2">
+                    <table class="w-full text-center">
+                        <thead>
+                            <tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400 border-b border-zinc-700">
+                                <th class="p-3 text-left">Player</th><th>G1 (S/R)</th><th>G2 (S/R)</th><th>G3 (S/R)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${summaryRows}</tbody>
+                    </table>
+                </div>
+                <button onclick="document.getElementById('modal').style.display='none'; view='STANDINGS'; render();" class="w-full bg-sky-500 text-black p-6 mt-10 font-black uppercase rounded-2xl shadow-xl hover:bg-sky-400">Finish & Exit</button>
+            </div>`;
         };
 
         /* TOURNAMENT SCORING LOGIC */
@@ -691,7 +851,7 @@
             renderScorer();
         };
 
-        window.saveTMatch = async () => {
+        window.saveTMatch = async (winOverride = null) => {
             const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === scoring.mid);
             if(!m) return window.smAlert("Error: Match ID not found.");
 
@@ -798,10 +958,10 @@
                 return {s: ns, r: nr, h: nh};
             };
 
-            const d1 = await processEdit(g.p1, g.frames.reduce((s,f)=>s+Number(f.p1||0),0), g.frames.reduce((s,f)=>s+getR(f.p1),0), g.h1);
-            const d2 = (mode==='DOUBLES') ? await processEdit(g.p2, g.frames.reduce((s,f)=>s+Number(f.p2||0),0), g.frames.reduce((s,f)=>s+getR(f.p2),0), g.h2) : {s:0, r:0, h:0};
-            const d3 = await processEdit(g.p3, g.frames.reduce((s,f)=>s+Number(f.p3||0),0), g.frames.reduce((s,f)=>s+getR(f.p3),0), g.h3);
-            const d4 = (mode==='DOUBLES') ? await processEdit(g.p4, g.frames.reduce((s,f)=>s+Number(f.p4||0),0), g.frames.reduce((s,f)=>s+getR(f.p4),0), g.h4) : {s:0, r:0, h:0};
+            const d1 = await processEdit(g.p1, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p1||0),0) : g.p1_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p1),0) : g.p1_rng, g.h1);
+            const d2 = (mode==='DOUBLES') ? await processEdit(g.p2, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p2||0),0) : g.p2_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p2),0) : g.p2_rng, g.h2) : {s:0, r:0, h:0};
+            const d3 = await processEdit(g.p3, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p3||0),0) : g.p3_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p3),0) : g.p3_rng, g.h3);
+            const d4 = (mode==='DOUBLES') ? await processEdit(g.p4, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p4||0),0) : g.p4_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p4),0) : g.p4_rng, g.h4) : {s:0, r:0, h:0};
             
             g.h1=d1.h; g.h2=d2.h; g.h3=d3.h; g.h4=d4.h;
             
@@ -821,19 +981,6 @@
             if (cleanN(t2n) === 'bye') { const wins = sess.fullData.filter(gm => gm.s1 >= target).length; sess.matchWinner = wins > 0 ? t1n : 'BYE'; }
             else if (cleanN(t1n) === 'bye') { const wins = sess.fullData.filter(gm => gm.s2 >= target).length; sess.matchWinner = wins > 0 ? t2n : 'BYE'; }
             else sess.matchWinner = sess.agg1 > sess.agg2 ? t1n : (sess.agg1 < sess.agg2 ? t2n : 'Tie');
-
-            const targetDate = sess.date;
-            const gamesThatDay = state.history.filter(h => h.date === targetDate && h.mode === mode);
-            if(gamesThatDay.length > 0) {
-                let dayLeader = null, maxHOA = -Infinity;
-                gamesThatDay.forEach(record => {
-                    const avg = getPlyrAvg(record.player);
-                    const currentHOA = record.score - avg;
-                    if(currentHOA > maxHOA) { maxHOA = currentHOA; dayLeader = { date: targetDate, player: record.player, hoa: currentHOA }; }
-                });
-                const hoaIdx = state.weeklyHoa[mode].findIndex(x => x.date === targetDate);
-                if(hoaIdx !== -1) state.weeklyHoa[mode][hoaIdx] = dayLeader;
-            }
 
             save(); render();
         };
@@ -884,7 +1031,7 @@
             const p = await window.smPrompt("Enter PIN to WIPE DATA:"); 
             if(p === state.managePin) { 
                 if(await window.smConfirm("Confirm Wipe? This is permanent.")) { 
-                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, activeMatches: [] }; 
+                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, activeMatches: [] }; 
                     await save(); location.reload(); 
                 } 
             } else if (p !== null) await window.smAlert("Incorrect PIN");
@@ -967,7 +1114,7 @@
 
         window.openMatch = (id) => {
             const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === id); if(!m || !m.t1 || !m.t2 || m.t1.isBye || m.t2.isBye) return;
-            if(m.win) { showSummary(id); return; }
+            if(m.win) { window.showSummary(id); return; }
             const mod = document.getElementById('modal'); mod.style.display = 'block';
             const ops = (team) => team.members.map(mem => `<option value="${mem.name}" data-hcp="${mem.hcp}">${mem.name} (${mem.hcp})</option>`).join('');
             mod.innerHTML = `<div class="p-8 text-white"><h2 class="text-2xl font-black text-sky-400 uppercase italic mb-8">Lineup: ${id}</h2><div class="space-y-8"><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t1.name}</p><select id="selP1" class="t-select">${ops(m.t1)}</select><select id="selP2" class="t-select">${ops(m.t1)}</select></div><div class="p-6 bg-zinc-900 rounded-2xl border-2 border-zinc-800"><p class="text-[12px] font-black uppercase text-zinc-400 mb-4">${m.t2.name}</p><select id="selP3" class="t-select">${ops(m.t2)}</select><select id="selP4" class="t-select">${ops(m.t2)}</select></div><div class="flex gap-4"><button id="rotT1" onclick="window.selRot='T1_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT2').classList.remove('rot-active');" class="rot-btn rot-active">T1 Starts</button><button id="rotT2" onclick="window.selRot='T2_FIRST'; this.classList.add('rot-active'); document.getElementById('rotT1').classList.remove('rot-active');" class="rot-btn">T2 Starts</button></div></div><button onclick="startScoring('${id}')" class="w-full bg-sky-500 text-black p-6 mt-10 rounded-2xl font-black uppercase text-lg">Start Match</button><button onclick="document.getElementById('modal').style.display='none'" class="w-full p-6 mt-2 text-zinc-500 font-bold uppercase text-xs">Back</button></div>`;
@@ -1044,10 +1191,103 @@
             } else if (view === 'SCORER') {
                 if(!state.scorerEnabled) { view = 'STANDINGS'; render(); return; }
                 const upP = getPitcher(); const isT1Active = match.active && match.step === 'LIVE' && (upP === match.p1 || upP === match.p2), isT2Active = match.active && match.step === 'LIVE' && (upP === match.p3 || upP === match.p4);
+                
+                if (scorerMode === 'MANUAL' && !match.active) {
+                    const opts = (state.roster[mode] || []).map(r => `<option value="${r.teamName || r.name}">${r.teamName || r.name}</option>`).join('') + `<option value="BYE">BYE</option>`;
+                    const allPlayers = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
+                    const pOpts = allPlayers.map(p => `<option value="${p.name}">${p.name}</option>`).sort().join('');
+
+                    content.innerHTML = `
+                        <div class="p-2 bg-white shadow-xl max-w-5xl mx-auto mt-4">
+                            <div class="flex gap-1 mb-4 no-print">
+                                <button onclick="setScorerView('LIVE')" class="flex-1 py-4 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Live Scorer</button>
+                                <button class="flex-1 py-4 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Manual Entry</button>
+                            </div>
+                            <h2 class="text-sky-500 font-black italic uppercase text-center mb-6 text-xl">3-Game Manual Entry Results</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- TEAM 1 -->
+                                <div class="space-y-4">
+                                    <div class="bg-black text-white p-4 border-b-4 border-sky-500">
+                                        <p class="text-[10px] font-black mb-2 uppercase tracking-widest text-sky-300">Team 1 Selection</p>
+                                        <select id="mt1" class="w-full p-3 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(1)"><option value="">Select Team</option>${opts}</select>
+                                    </div>
+                                    ${(mode === 'SINGLES' ? [1] : [1,2,3]).map(i => `
+                                    <div class="bg-white p-4 border shadow-sm space-y-4">
+                                        <select id="mp${i}" onchange="updateManualHcp(${i})" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50"><option value="">Select Player</option></select>
+                                        <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
+                                            <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
+                                            <input id="mh${i}" type="number" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white">
+                                        </div>
+                                        <div class="space-y-3">
+                                            ${[1,2,3].map(g => `
+                                            <div class="grid grid-cols-[60px_1fr_1fr] items-center gap-2">
+                                                <div class="text-[9px] font-black uppercase text-zinc-500">Game ${g}</div>
+                                                <input id="ms${i}_g${g}" type="number" placeholder="Scratch" class="w-full p-2 border-2 border-zinc-100 text-center font-bold text-sm bg-white">
+                                                <input id="mr${i}_g${g}" type="number" placeholder="Ringers" class="w-full p-2 border-2 border-sky-100 text-center font-bold text-sm text-sky-600 bg-sky-50/50">
+                                            </div>`).join('')}
+                                        </div>
+                                    </div>`).join('')}
+                                </div>
+
+                                <!-- TEAM 2 -->
+                                <div class="space-y-4">
+                                    <div class="bg-black text-white p-4 border-b-4 border-sky-500">
+                                        <p class="text-[10px] font-black mb-1 uppercase tracking-widest text-sky-300">Team 2 Selection</p>
+                                        <select id="mt2" class="w-full p-2 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(2)"><option value="">Select Team</option>${opts}</select>
+                                    </div>
+                                    ${(mode === 'SINGLES' ? [4] : [4,5,6]).map(i => `
+                                    <div class="bg-white p-4 border shadow-sm space-y-4">
+                                        <select id="mp${i}" onchange="updateManualHcp(${i})" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50"><option value="">Select Player</option></select>
+                                        <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
+                                            <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
+                                            <input id="mh${i}" type="number" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white">
+                                        </div>
+                                        <div class="space-y-3">
+                                            ${[1,2,3].map(g => `
+                                            <div class="grid grid-cols-[60px_1fr_1fr] items-center gap-2">
+                                                <div class="text-[9px] font-black uppercase text-zinc-500">Game ${g}</div>
+                                                <input id="ms${i}_g${g}" type="number" placeholder="Scratch" class="w-full p-2 border-2 border-zinc-100 text-center font-bold text-sm bg-white">
+                                                <input id="mr${i}_g${g}" type="number" placeholder="Ringers" class="w-full p-2 border-2 border-sky-100 text-center font-bold text-sm text-sky-600 bg-sky-50/50">
+                                            </div>`).join('')}
+                                        </div>
+                                    </div>`).join('')}
+                                </div>
+                            </div>
+
+                            <button onclick="submitManualMatch()" class="w-full bg-black text-white p-6 mt-10 font-black uppercase text-lg shadow-2xl hover:bg-sky-600 transition-colors">Submit 3-Game Series Results</button>
+                            
+                            <!-- MANUAL FOUR DEAD LOGGING -->
+                            <div class="mt-12 pt-8 border-t-4 border-zinc-100 max-w-md mx-auto">
+                                <h3 class="text-center text-sky-500 font-black italic uppercase mb-4">Manual Four-Dead Log</h3>
+                                <div class="bg-zinc-900 text-white p-6 shadow-2xl space-y-4">
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Player Name</label>
+                                        <select id="mfdName" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white font-bold text-sm">
+                                            <option value="">--Select Player--</option>
+                                            ${pOpts}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Add Count</label>
+                                        <input id="mfdCount" type="number" placeholder="How many deads?" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white text-center font-black">
+                                    </div>
+                                    <button onclick="submitManualFourDeads()" class="w-full bg-sky-500 text-black p-4 font-black uppercase text-xs hover:bg-sky-400">Log Four Deads</button>
+                                </div>
+                            </div>
+                        </div>`;
+                    return;
+                }
+
                 if (!match.active) {
                     const activeMatchHtml = state.activeMatches.filter(m => m.mode === mode).map(m => `<div class="bg-amber-50 border-2 border-amber-200 p-3 mb-2 flex justify-between items-center"><div class="text-left"><p class="text-[10px] font-black uppercase text-amber-600">Game in Progress</p><p class="text-sm font-black uppercase text-black">${m.t1Name} vs ${m.t2Name}</p></div><div class="flex gap-2"><button onclick="resumeLeagueMatch(${m.sessionId})" class="bg-amber-500 text-white px-3 py-2 text-[10px] font-black uppercase">Resume</button><button onclick="deleteLeagueMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase">Del</button></div></div>`).join('');
                     const opts = [...(state.roster[mode]||[]).map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`), `<option value="BYE">BYE</option>`];
-                    content.innerHTML = `<div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black">${opts}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black">${opts}</select><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button></div>`;
+                    content.innerHTML = `<div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">
+                        <div class="flex gap-2 mb-6 no-print">
+                            <button class="flex-1 py-3 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Live Scorer</button>
+                            ${state.manualEntryEnabled ? `<button onclick="setScorerView('MANUAL')" class="flex-1 py-3 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Manual Entry</button>` : ''}
+                        </div>
+                    ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black">${opts}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black">${opts}</select><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button></div>`;
                 } else if (match.step === 'PLAYERS') {
                     const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = state.roster.DOUBLES.find(x => x.teamName === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
                     const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
@@ -1068,17 +1308,17 @@
                     <div class="sticky top-[3.5rem] z-[60] bg-[#f1f5f9] -mx-2 px-2 shadow-md">
                         <div class="bg-black text-white p-2 flex justify-between px-6 text-[10px] font-black uppercase"><span>Agg: ${match.sessionAgg.t1 + dS1}</span><span>G${match.gameNum}</span><span>Agg: ${match.sessionAgg.t2 + dS2}</span></div>
                         <div class="grid grid-cols-2 gap-1 mb-1">
-                            <div class="p-3 bg-white text-center shadow-inner relative ${isT1Active?'pitch-active':''}">
-                                <p class="text-[9px] font-black opacity-40 uppercase truncate">${match.t1Name}</p>
-                                <div class="flex justify-center gap-1 mt-0.5 mb-1"><span class="bg-zinc-100 text-zinc-600 text-[8px] px-1.5 py-0.5 font-black uppercase">${getFirst(match.p1)}: ${rp1}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[8px] px-1.5 py-0.5 font-black uppercase">${getFirst(match.p2)}: ${rp2}R</span>` : ''}</div>
-                                <p class="text-5xl font-black tracking-tighter">${dS1}</p>
-                                <p class="text-[8px] font-black text-sky-600 mt-0.5 uppercase">${cleanN(match.t1Name)==='bye'?'TARGET':' + '+(match.h1+match.h2)+' HC'}</p>
+                            <div class="py-5 px-1 bg-white flex flex-col items-center justify-center shadow-inner relative ${isT1Active?'pitch-active':''}">
+                                <p class="text-[12px] font-black opacity-40 uppercase truncate w-full text-center">${match.t1Name}</p>
+                                <div class="flex justify-center gap-1 mt-1 mb-1 w-full"><span class="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-0.5 font-black uppercase">${getFirst(match.p1)}: ${rp1}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-0.5 font-black uppercase">${getFirst(match.p2)}: ${rp2}R</span>` : ''}</div>
+                                <p class="text-7xl font-black tracking-tighter leading-none my-2 text-center">${dS1}</p>
+                                <p class="text-[10px] font-black text-sky-600 mt-1 uppercase w-full text-center">${cleanN(match.t1Name)==='bye'?'TARGET':' + '+(match.h1+match.h2)+' HC'}</p>
                             </div>
-                            <div class="p-3 bg-white text-center shadow-inner relative ${isT2Active?'pitch-active':''}">
-                                <p class="text-[9px] font-black opacity-40 uppercase truncate">${match.t2Name}</p>
-                                <div class="flex justify-center gap-1 mt-0.5 mb-1"><span class="bg-zinc-100 text-zinc-600 text-[8px] px-1.5 py-0.5 font-black uppercase">${getFirst(match.p3)}: ${rp3}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[8px] px-1.5 py-0.5 font-black uppercase">${getFirst(match.p4)}: ${rp4}R</span>` : ''}</div>
-                                <p class="text-5xl font-black tracking-tighter">${dS2}</p>
-                                <p class="text-[8px] font-black text-sky-600 mt-0.5 uppercase">${cleanN(match.t2Name)==='bye'?'TARGET':' + '+(match.h3+match.h4)+' HC'}</p>
+                            <div class="py-5 px-1 bg-white flex flex-col items-center justify-center shadow-inner relative ${isT2Active?'pitch-active':''}">
+                                <p class="text-[12px] font-black opacity-40 uppercase truncate w-full text-center">${match.t2Name}</p>
+                                <div class="flex justify-center gap-1 mt-1 mb-1 w-full"><span class="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-0.5 font-black uppercase">${getFirst(match.p3)}: ${rp3}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-0.5 font-black uppercase">${getFirst(match.p4)}: ${rp4}R</span>` : ''}</div>
+                                <p class="text-7xl font-black tracking-tighter leading-none my-2 text-center">${dS2}</p>
+                                <p class="text-[10px] font-black text-sky-600 mt-1 uppercase w-full text-center">${cleanN(match.t2Name)==='bye'?'TARGET':' + '+(match.h3+match.h4)+' HC'}</p>
                             </div>
                         </div>
                         <div class="flex items-stretch gap-1 mb-1">
@@ -1100,15 +1340,31 @@
                 const rows = (state.roster[mode]||[]).map(t => { const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0, l=0; hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col">${d.w}</td><td class="st-num-col">${d.l}</td><td class="st-num-col">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
                 content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'STATS') {
-                const shoes = mode === 'DOUBLES' ? 30 : 50, pNames = [...new Set(state.history.filter(h => h.mode === mode).map(h => h.player))];
+                const shoesPerGame = (mode === 'DOUBLES' ? 30 : 50);
+                const rosterList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
+                const rosterNames = rosterList.map(p => p.name);
+                const historyNames = state.history.filter(h => h.mode === mode).map(h => h.player);
+                const pNames = [...new Set([...rosterNames, ...historyNames])];
+
                 const rows = pNames.map(pN => { 
-                    const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode), playerAvg = getPlyrAvg(pN), totP = g.reduce((s,x)=>s+x.score,0), totR = g.reduce((s,x)=>s+x.ringers,0); 
-                    const rRec = (mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t=>t.members)).find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0}; 
-                    const scPct = g.length ? Math.min(100, ((totP - (2 * totR)) / (g.length * shoes)) * 100) : 0; 
+                    const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode);
+                    const playerAvg = getPlyrAvg(pN);
+                    const totP = g.reduce((s,x)=>s+Number(x.score||0),0);
+                    const totR = g.reduce((s,x)=>s+Number(x.ringers||0),0); 
+                    const rRec = rosterList.find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0}; 
+                    
+                    let scPctText = "0.0%";
+                    if (g.length > 0) {
+                        const tShoes = g.length * shoesPerGame;
+                        const rawVal = ((totP - (2 * totR)) / tShoes) * 100;
+                        const finalVal = Math.min(100, Math.max(0, rawVal));
+                        scPctText = (Math.floor(finalVal * 10) / 10).toFixed(1) + "%";
+                    }
+
                     const imp = Math.round(playerAvg - rRec.startAvg); 
                     const highGame = g.length ? Math.max(...g.map(x => x.score)) : 0; 
                     const hiOA = g.length ? (highGame - playerAvg) : 0; 
-                    return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td style="width:7.5%">${getH(pN)}</td><td style="width:7.5%">${playerAvg}</td><td style="width:7.5%">${((totR/(g.length*shoes))*100).toFixed(1)}%</td><td style="width:7.5%">${(Math.max(...g.map(x=>(x.ringers/shoes)*100))).toFixed(1)}%</td><td style="width:7.5%">${scPct.toFixed(1)}%</td><td style="width:7.5%">${totP}</td><td style="width:7.5%">${highGame}</td><td style="width:7.5%; color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td style="width:7.5%">${rRec.startAvg}</td><td class="pts-col font-black" style="width:8%; color:${imp>=0?'#4ade80':'#f87171'}">${imp >= 0 ? '+' : ''}${imp}</td></tr>`; 
+                    return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td style="width:7.5%">${getH(pN)}</td><td style="width:7.5%">${playerAvg}</td><td style="width:7.5%">${g.length ? ((totR/(g.length*shoesPerGame))*100).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${g.length ? (Math.max(...g.map(x=>(x.ringers/shoesPerGame)*100))).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${scPctText}</td><td style="width:7.5%">${totP}</td><td style="width:7.5%">${highGame}</td><td style="width:7.5%; color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td style="width:7.5%">${rRec.startAvg}</td><td class="pts-col font-black" style="width:8%; color:${imp>=0?'#4ade80':'#f87171'}">${imp >= 0 ? '+' : ''}${imp}</td></tr>`; 
                 }).sort((a,b)=>b.totP-a.totP).join('');
                 const weeklyHoaRows = (state.weeklyHoa[mode] || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map(entry => `<tr><td style="width: 85px;">${entry.date}</td><td>${entry.player}</td><td class="val-col">${entry.hoa >= 0 ? '+' : ''}${entry.hoa}</td></tr>`).join('');
                 const fdSource = state.fourDeads[mode] || {}; const fourDeadRows = Object.keys(fdSource).map(name => ({ name: name, val: fdSource[name] })).sort((a,b) => b.val - a.val).map(d => `<tr><td>${d.name}</td><td class="val-col">${d.val}</td></tr>`).join('');
@@ -1116,7 +1372,7 @@
             } else if (view === 'HISTORY') {
                 const sessionHtml = (state.sessions || []).filter(s => s.mode === mode).reverse().map(s => {
                     let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
-                    return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name}</span><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600 float-right no-print ml-2">Print Sheets</button>${gHtml}</div>`;
+                    return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name} ${s.isManual ? '[M]' : ''}</span><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600 float-right no-print ml-2">Print Sheets</button>${gHtml}</div>`;
                 }).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No league history found</p>`;
                 const tHistoryHtml = (tState.matchHistory || []).slice().reverse().map(h => `<div class="bg-zinc-900 text-white p-3 shadow mb-3 font-black uppercase text-xs border-l-4 border-sky-500"><span><span class="text-sky-400">[TOURNAMENT]</span> ${h.date} - ${h.t1Name} vs ${h.t2Name} (${h.s1}-${h.s2})</span><button onclick="window.printTournamentScoreSheet('${h.timestamp}')" class="text-sky-400 float-right no-print ml-2">Print</button><button onclick="window.showSummary('${h.id}')" class="text-zinc-400 float-right no-print">View</button></div>`).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No tournament matches found</p>`;
                 content.innerHTML = `<div class="p-4"><h2 class="text-sky-500 font-black italic uppercase mb-4">Series History</h2>${sessionHtml}<h2 class="text-sky-500 font-black italic uppercase mb-4 mt-8">Tournament Match History</h2>${tHistoryHtml}</div>`;
@@ -1125,7 +1381,7 @@
                 content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div></div><div class="mt-6 flex gap-2"><button onclick="window.smAlert('Settings Saved'); window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button></div></div></div>`;
             } else if (view === 'MANAGE') {
                 const rH = (state.roster[mode]||[]).map((t, i) => `<div class="bg-white p-3 shadow mb-2 flex justify-between items-center text-xs font-bold uppercase"><span>${t.teamName||t.name}</span><div class="flex gap-2"><button onclick="window.editRosterItem(${i})" class="text-sky-500 font-black">EDIT</button><button onclick="window.delR(${i})" class="text-red-500 font-black">DEL</button></div></div>`).join('');
-                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div><div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-3 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button></div><button onclick="window.resetDeads()" class="w-full bg-red-900 text-white p-4 text-[10px] font-black uppercase">Clear Four Deads (${mode})</button><div class="bg-white p-6 shadow mb-4"><h3 class="text-[10px] font-black uppercase mb-2">Club News Editor</h3><textarea id="newsInput" class="w-full h-40 border p-3 rounded-none text-sm mb-2" placeholder="Write club news here...">${state.news || ''}</textarea><button onclick="window.saveNews()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-lg">Save News Update</button></div><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
+                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div><div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-2 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button><button onclick="window.toggleManualEntry()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.manualEntryEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Manual Entry: ${state.manualEntryEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button></div><button onclick="window.resetDeads()" class="w-full bg-red-900 text-white p-4 text-[10px] font-black uppercase">Clear Four Deads (${mode})</button><div class="bg-white p-6 shadow mb-4"><h3 class="text-[10px] font-black uppercase mb-2">Club News Editor</h3><textarea id="newsInput" class="w-full h-40 border p-3 rounded-none text-sm mb-2" placeholder="Write club news here...">${state.news || ''}</textarea><button onclick="window.saveNews()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-lg">Save News Update</button></div><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
             } else if (view === 'TOURNAMENT') {
                 let navHtml = `<nav class="flex flex-col bg-zinc-950 border-b border-zinc-900 sticky top-0 z-50"><div class="flex"><button onclick="setTView('BRACKET')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'BRACKET' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Bracket</button><button onclick="setTView('ROSTER')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'ROSTER' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Roster</button><button onclick="setTView('MANAGE')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'MANAGE' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Manage</button></div>${tView === 'BRACKET' && tState.bracket ? `<div class="flex gap-2 p-3 bg-zinc-900 border-t border-zinc-800 no-print justify-center items-center"><button onclick="window.zoomB(0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">+</button><button onclick="window.zoomB(-0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">-</button><button onclick="window.zoomB('reset')" class="bg-zinc-800 text-white px-5 py-2 text-[10px] uppercase font-black border border-zinc-700 hover:bg-zinc-700">Reset</button><button onclick="window.printBracket()" class="bg-sky-700 text-white px-5 py-2 text-[10px] uppercase font-black border border-sky-800 hover:bg-sky-600 ml-2">Print Bracket</button></div>` : ''}</nav>`;
                 if (tView === 'ROSTER') {
@@ -1216,8 +1472,8 @@
             <div class="sticky top-0 z-[100] bg-black text-white">
                 <div class="bg-black p-3 flex justify-between items-center border-b border-zinc-800"><button onclick="document.getElementById('modal').style.display='none'; scoring.active=false;" class="text-[10px] font-black uppercase text-zinc-500">Back</button><span class="text-sky-400 font-black text-xs uppercase">Frame ${fNum} ${fNum > 15 ? '(Tie-Break)' : ''}</span><div class="w-8"></div></div>
                 <div class="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800">
-                    <div class="p-4 text-center transition-colors duration-300 ${isT1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t1.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p1n)}: ${rp1}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p2n)}: ${rp2}R</span></div><p class="text-4xl font-black score-val">${t1s}</p></div>
-                    <div class="p-4 text-center transition-colors duration-300 ${!isT1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t2.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p3n)}: ${rp3}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p4n)}: ${rp4}R</span></div><p class="text-4xl font-black score-val">${t2s}</p></div>
+                    <div class="p-8 text-center transition-colors duration-300 ${isT1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t1.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p1n)}: ${rp1}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p2n)}: ${rp2}R</span></div><p class="text-7xl font-black score-val">${t1s}</p></div>
+                    <div class="p-8 text-center transition-colors duration-300 ${!isT1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t2.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p3n)}: ${rp3}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p4n)}: ${rp4}R</span></div><p class="text-7xl font-black score-val">${t2s}</p></div>
                 </div>
                 <div class="bg-sky-500 text-black text-center p-3 font-black uppercase text-[11px] italic">UP: ${getFirst(upKey === 'p1' ? scoring.p1n : upKey === 'p2' ? scoring.p2n : upKey === 'p3' ? scoring.p3n : scoring.p4n)}</div>
                 <div class="t-btn-score-grid">${[0, 1, 2, 3, 4, 6].map(s => `<button onclick="tAddScore(${s})" class="t-btn-score" style="height:70px;"><span class="num" style="font-size:2rem;">${s}</span><span class="sym" style="font-size:0.6rem;">${getSym(s)}</span></button>`).join('')}</div>
@@ -1225,7 +1481,7 @@
                     <thead><tr><th class="c-sh">SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t">T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t2">T2</th></tr></thead>
                 </table>
             </div>
-            <div class="t-micro-container" style="height: calc(100vh - 460px);">
+            <div class="t-micro-container" style="height: calc(100vh - 540px);">
                 <table class="t-micro-table">
                     <tbody><tr class="bg-zinc-950"><td class="c-sh">${fNum * 2}</td><td class="c-r">${getSymT(scoring.currF.p1, scoring.currF.p3)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p1 ?? ''}</td><td class="c-s"></td><td class="c-r">${getSymT(scoring.currF.p2, scoring.currF.p4)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p2 ?? ''}</td><td class="c-s"></td><td></td><td class="c-r">${getSymT(scoring.currF.p3, scoring.currF.p1)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p3 ?? ''}</td><td class="c-s"></td><td class="c-r">${getSymT(scoring.currF.p4, scoring.currF.p2)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p4 ?? ''}</td><td class="c-s"></td><td></td></tr>${scoring.frames.map((f, i) => { const sl = scoring.frames.slice(0, i + 1); const s1 = sl.reduce((a, b) => a + (Number(b.p1) || 0), 0); const s2 = sl.reduce((a, b) => a + (Number(b.p2) || 0), 0); const s3 = sl.reduce((a, b) => a + (Number(b.p3) || 0), 0); const s4 = sl.reduce((a, b) => a + (Number(b.p4) || 0), 0); return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSymT(f.p1, f.p3)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 1)">${f.p1}</td><td class="c-s">${s1}</td><td class="c-r">${getSymT(f.p2, f.p4)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 2)">${f.p2}</td><td class="c-s">${s2}</td><td class="c-t">${s1 + s2 + scoring.h1}</td><td class="c-r">${getSymT(f.p3, f.p1)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 3)">${f.p3}</td><td class="c-s">${s3}</td><td class="c-r">${getSymT(f.p4, f.p2)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 4)">${f.p4}</td><td class="c-s">${s4}</td><td class="c-t2">${s3 + s4 + scoring.h2}</td></tr>`; }).reverse().join('')}</tbody>
                 </table>
@@ -1263,9 +1519,9 @@
                     elig: Math.floor(currSeasonHiR / 10) > Math.floor(prevHighR / 10) ? 'Y' : '' 
                 };
             }).sort((a,b) => a.last.localeCompare(b.last));
-            let rows = pData.map(d => `<tr style="text-align:center; font-size: 7.5pt; height: 18px;"><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.last}</td><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.first}</td><td style="border:1.5px solid black;">${d.div}</td><td style="border:1.5px solid black;">${d.card}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c1}</td><td style="border:1.5px solid black;">${d.c2}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c3}</td><td style="border:1.5px solid black;">${d.c4}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c5}</td><td style="border:1.5px solid black;">${d.c6}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c7}</td><td style="border:1.5px solid black;">${d.elig}</td></tr>`).join('');
+            let rows = pData.map(d => `<tr style="text-align:center; font-size: 7.5pt; height: 18px;"><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.last}</td><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.first}</td><td style="border:1.5px solid black;">${d.div}</td><td style="border:1.5px solid black;">${d.card}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c1}</td><td style="border:1.5px solid black;">${d.c2}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c3}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c4}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c5}</td><td style="border:1.5px solid black;">${d.c6}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c7}</td><td style="border:1.5px solid black;">${d.elig}</td></tr>`).join('');
             for(let i=0; i<5; i++) rows += `<tr style="height: 18px;"><td style="border:1.5px solid black;" colspan="12"></td></tr>`;
-            const html = `<div style="font-family: 'Arial Narrow', Arial, sans-serif; padding: 10px; color: black; background: white; width: 7.5in; margin: auto;"><div style="display:flex; justify-content:center; align-items:center; position: relative; margin-bottom: 5px;"><div style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; border: 1.5px solid black; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width: 50px; max-height: 50px;"></div><div style="text-align:center;"><h1 style="margin:0; font-size:16pt; font-weight:900; font-style:italic;">National Horseshoe Pitchers Association</h1><h2 style="margin:0; font-size:11pt; font-weight:900; text-transform:uppercase;">Sanctioned Club/League Program - FINAL Stat Sheet</h2><p style="margin:0; font-size: 7.5pt;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p><p style="margin:0; font-size: 7.5pt; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH 44070 Bcarson848@gmail.com</p></div></div><div style="border-top: 2.5px solid black; border-bottom: 2.5px solid black; padding: 5px 0; margin-bottom: 10px;"><div style="display: grid; grid-template-columns: 1.5fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Club Name:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.clubName || ''}</span></div><div><b>Phone#:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.phone || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Sanction Number:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.sanctionNum || ''}</span></div><div><b>Director:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.director || ''}</span></div><div><b>Date Submitted:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.dateSubmitted || ''}</span></div></div><div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>State:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.state || ''}</span></div><div><b>Address:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.address || ''}</span></div><div><b>City:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.city || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-size: 9pt;"><div><b>Dates: Start</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.startDate || ''}</span></div><div><b>End</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.endDate || ''}</span></div><div><b>Cancellation:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.cancellation || ''}</span></div><div><b>Count All:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.countAll || ''}</span></div></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 6.5pt; font-weight: bold; margin-bottom: 5px; line-height: 1.1;"><div>Column Number:<br>1. Total League Pts, No Handicap<br>2. High Game Points, No Handicap<br>3. Total League Shoes</div><div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div><div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div></div><table style="width:100%; border-collapse: collapse; border: 2.5px solid black;"><thead><tr style="font-size: 6.5pt; background: #eee;"><th colspan="2" style="border:1.5px solid black;">Player Name</th><th rowspan="2" style="border:1.5px solid black; width: 30px;">Div.</th><th rowspan="2" style="border:1.5px solid black; width: 60px;">NHPA<br>Card No.</th><th style="border:1.5px solid black;">1</th><th style="border:1.5px solid black;">2</th><th style="border:1.5px solid black;">3</th><th style="border:1.5px solid black;">4</th><th style="border:1.5px solid black;">5</th><th style="border:1.5px solid black;">6</th><th style="border:1.5px solid black;">7</th><th rowspan="2" style="border:1.5px solid black; width: 25px;">Elig</th></tr><tr style="font-size: 5pt; background: #eee;"><th style="border:1.5px solid black; width: 70px;">Last</th><th style="border:1.5px solid black; width: 60px;">First</th><th colspan="7" style="border:1.5px solid black;">NHPA COLUMNS</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px; font-size: 8pt; font-weight: bold; display: flex; justify-content: space-between; align-items: flex-end;"><div style="width: 60%;">Signed <span style="border-bottom: 2px solid black; display: inline-block; width: 80%;"></span></div><div style="text-align: center; font-size: 6pt; width: 30%;">Club Officer / League Director</div></div></div>`;
+            const html = `<div style="font-family: 'Arial Narrow', Arial, sans-serif; padding: 10px; color: black; background: white; width: 7.5in; margin: auto;"><div style="display:flex; justify-content:center; align-items:center; position: relative; margin-bottom: 5px;"><div style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; border: 1.5px solid black; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width: 50px; max-height: 50px;"></div><div style="text-align:center;"><h1 style="margin:0; font-size:16pt; font-weight:900; font-style:italic;">National Horseshoe Pitchers Association</h1><h2 style="margin:0; font-size:11pt; font-weight:900; text-transform:uppercase;">Sanctioned Club/League Program - FINAL Stat Sheet</h2><p style="margin:0; font-size: 7.5pt;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p><p style="margin:0; font-size: 7.5pt; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH  Ohio 44070 Bcarson848@gmail.com</p></div></div><div style="border-top: 2.5px solid black; border-bottom: 2.5px solid black; padding: 5px 0; margin-bottom: 10px;"><div style="display: grid; grid-template-columns: 1.5fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Club Name:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.clubName || ''}</span></div><div><b>Phone#:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.phone || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Sanction Number:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.sanctionNum || ''}</span></div><div><b>Director:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.director || ''}</span></div><div><b>Date Submitted:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.dateSubmitted || ''}</span></div></div><div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>State:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.state || ''}</span></div><div><b>Address:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.address || ''}</span></div><div><b>City:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.city || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-size: 9pt;"><div><b>Dates: Start</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.startDate || ''}</span></div><div><b>End</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.endDate || ''}</span></div><div><b>Cancellation:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.cancellation || ''}</span></div><div><b>Count All:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.countAll || ''}</span></div></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 6.5pt; font-weight: bold; margin-bottom: 5px; line-height: 1.1;"><div>Column Number:<br>1. Total League Pts, No Handicap<br>2. High Game Points, No Handicap<br>3. Total League Shoes</div><div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div><div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div></div><table style="width:100%; border-collapse: collapse; border: 2.5px solid black;"><thead><tr style="font-size: 6.5pt; background: #eee;"><th colspan="2" style="border:1.5px solid black;">Player Name</th><th rowspan="2" style="border:1.5px solid black; width: 30px;">Div.</th><th rowspan="2" style="border:1.5px solid black; width: 60px;">NHPA<br>Card No.</th><th style="border:1.5px solid black;">1</th><th style="border:1.5px solid black;">2</th><th style="border:1.5px solid black;">3</th><th style="border:1.5px solid black;">4</th><th style="border:1.5px solid black;">5</th><th style="border:1.5px solid black;">6</th><th style="border:1.5px solid black;">7</th><th rowspan="2" style="border:1.5px solid black; width: 25px;">Elig</th></tr><tr style="font-size: 5pt; background: #eee;"><th style="border:1.5px solid black; width: 70px;">Last</th><th style="border:1.5px solid black; width: 60px;">First</th><th colspan="7" style="border:1.5px solid black;">NHPA COLUMNS</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px; font-size: 8pt; font-weight: bold; display: flex; justify-content: space-between; align-items: flex-end;"><div style="width: 60%;">Signed <span style="border-bottom: 2px solid black; display: inline-block; width: 80%;"></span></div><div style="text-align: center; font-size: 6pt; width: 30%;">Club Officer / League Director</div></div></div>`;
             window.executePrint("NHPA Final Stat Sheet", html, true);
         };
     </script>
