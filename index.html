@@ -131,6 +131,22 @@
         /* CUSTOM DIALOG STYLES */
         #customDialog { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
         .dialog-box { background: #18181b; border: 2px solid #3f3f46; width: 100%; max-width: 400px; padding: 24px; color: white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+
+        /* LANDSCAPE SPECIFIC ADJUSTMENTS */
+        @media (orientation: landscape) {
+            .sticky-scorer { position: relative !important; top: 0 !important; }
+            .micro-container { height: auto !important; min-height: 250px; overflow-y: visible !important; }
+            .btn-score-grid { grid-template-columns: repeat(6, 1fr) !important; padding: 5px !important; }
+            .btn-score { height: 50px !important; }
+            .btn-score .num { font-size: 1.5rem !important; }
+            .btn-score .sym { display: none; }
+            .sticky-scorer .text-8xl { font-size: 4rem !important; line-height: 1 !important; }
+            .sticky-scorer .py-4 { padding: 0.5rem !important; }
+            .t-micro-container { height: auto !important; min-height: 200px; }
+            .t-btn-score-grid { grid-template-columns: repeat(6, 1fr) !important; padding: 8px !important; }
+            .t-btn-score { height: 60px !important; }
+            .t-btn-score .num { font-size: 2rem !important; }
+        }
     </style>
 </head>
 <body class="min-h-screen pb-40 text-black">
@@ -176,7 +192,6 @@
 
     <script type="module">
         // Firebase code and all logic below remains unchanged as per the "100% exact" requirement.
-        // The specific layout changes are applied inside the render() logic for 'LIVE' scoring.
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -1086,7 +1101,7 @@
                 const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0; 
                 hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; } } }); 
                 const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
-                return { team: t, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
+                return { team: r.team, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
             }).sort((a,b) => b.pts - a.pts);
             tState.roster = rankings.map((r, idx) => {
                 const item = r.team; const target = (mode === 'DOUBLES' ? 90 : 150);
@@ -1470,6 +1485,9 @@
             const html = `<div style="font-family: 'Arial Narrow', Arial, sans-serif; padding: 10px; color: black; background: white; width: 7.5in; margin: auto;"><div style="display:flex; justify-content:center; align-items:center; position: relative; margin-bottom: 5px;"><div style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; border: 1.5px solid black; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width: 50px; max-height: 50px;"></div><div style="text-align:center;"><h1 style="margin:0; font-size:16pt; font-weight:900; font-style:italic;">National Horseshoe Pitchers Association</h1><h2 style="margin:0; font-size:11pt; font-weight:900; text-transform:uppercase;">Sanctioned Club/League Program - FINAL Stat Sheet</h2><p style="margin:0; font-size: 7.5pt;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p><p style="margin:0; font-size: 7.5pt; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH  Ohio 44070 Bcarson848@gmail.com</p></div></div><div style="border-top: 2.5px solid black; border-bottom: 2.5px solid black; padding: 5px 0; margin-bottom: 10px;"><div style="display: grid; grid-template-columns: 1.5fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Club Name:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.clubName || ''}</span></div><div><b>Phone#:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.phone || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Sanction Number:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.sanctionNum || ''}</span></div><div><b>Director:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.director || ''}</span></div><div><b>Date Submitted:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.dateSubmitted || ''}</span></div></div><div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>State:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.state || ''}</span></div><div><b>Address:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.address || ''}</span></div><div><b>City:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.city || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-size: 9pt;"><div><b>Dates: Start</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.startDate || ''}</span></div><div><b>End</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.endDate || ''}</span></div><div><b>Cancellation:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.cancellation || ''}</span></div><div><b>Count All:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.countAll || ''}</span></div></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 6.5pt; font-weight: bold; margin-bottom: 5px; line-height: 1.1;"><div>Column Number:<br>1. Total League Pts, No Handicap<br>2. High Game Points, No Handicap<br>3. Total League Shoes</div><div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div><div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div></div><table style="width:100%; border-collapse: collapse; border: 2.5px solid black;"><thead><tr style="font-size: 6.5pt; background: #eee;"><th colspan="2" style="border:1.5px solid black;">Player Name</th><th rowspan="2" style="border:1.5px solid black; width: 30px;">Div.</th><th rowspan="2" style="border:1.5px solid black; width: 60px;">NHPA<br>Card No.</th><th style="border:1.5px solid black;">1</th><th style="border:1.5px solid black;">2</th><th style="border:1.5px solid black;">3</th><th style="border:1.5px solid black;">4</th><th style="border:1.5px solid black;">5</th><th style="border:1.5px solid black;">6</th><th style="border:1.5px solid black;">7</th><th rowspan="2" style="border:1.5px solid black; width: 25px;">Elig</th></tr><tr style="font-size: 5pt; background: #eee;"><th style="border:1.5px solid black; width: 70px;">Last</th><th style="border:1.5px solid black; width: 60px;">First</th><th colspan="7" style="border:1.5px solid black;">NHPA COLUMNS</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px; font-size: 8pt; font-weight: bold; display: flex; justify-content: space-between; align-items: flex-end;"><div style="width: 60%;">Signed <span style="border-bottom: 2px solid black; display: inline-block; width: 80%;"></span></div><div style="text-align: center; font-size: 6pt; width: 30%;">Club Officer / League Director</div></div></div>`;
             window.executePrint("NHPA Final Stat Sheet", html, true);
         };
+
+        // Redraw when rotated to ensure view is consistent
+        window.addEventListener('resize', render);
     </script>
 </body>
 </html>
