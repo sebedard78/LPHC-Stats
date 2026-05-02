@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Loon Pond Stat Master Cloud</title>
-    <!-- PWA Meta Tags -->
+    <!-- 1. PWA Meta Tags -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0ea5e9">
     <link rel="apple-touch-icon" href="logo.jpg">
 
@@ -32,19 +31,19 @@
             margin-left: -0.5rem; 
             background: #000; 
             border-top: 1px solid #333;
-            height: calc(100vh - 550px); /* Increased from 650px to make bottom larger */
+            height: calc(100vh - 550px);
             overflow-y: auto;
         }
         .micro-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: 'Roboto Condensed', sans-serif; }
         .micro-table th { 
-            font-size: 0.6rem; /* Increased from 0.45rem */
+            font-size: 0.6rem;
             padding: 8px 0; 
             color: #7dd3fc; 
             background: #111; 
             border: 0.5px solid #333; 
             text-transform: uppercase;
         }
-        .micro-table td { font-size: 1.25rem; /* Increased from 1.1rem */ padding: 12px 0; text-align: center; border: 0.5px solid #1a1a1a; color: #fff; line-height: 1; }
+        .micro-table td { font-size: 1.25rem; padding: 12px 0; text-align: center; border: 0.5px solid #1a1a1a; color: #fff; line-height: 1; }
         .edit-cell { color: #fcd34d !important; font-weight: 900; cursor: pointer; }
         .sh-cell { background: #000; color: #0ea5e9; font-weight: 900; border-right: 1.5px solid #0ea5e9 !important; }
         .curr-row { background: #171717; outline: 1px solid #444; }
@@ -88,6 +87,11 @@
         .btn-score { background: white; border-bottom: 4px solid #cbd5e1; height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .btn-score .num { font-size: 2.2rem; font-weight: 900; color: #111; line-height: 1; }
         .btn-score .sym { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
+
+        /* BUTTON SCORER STYLES */
+        .manual-entry-btn { background: white; border: 2px solid #e2e8f0; height: 44px; width: 100%; font-weight: 900; display: flex; align-items: center; justify-content: center; color: #000; border-radius: 6px !important; transition: background 0.2s; }
+        .manual-entry-btn.active { border-color: #0ea5e9; background: #f0f9ff; }
+
         .sum-row-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10px; }
         .sum-row-table th { color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding: 5px; font-size: 8px; text-align: center; }
         .sum-row-table td { padding: 10px 2px; border-bottom: 1px solid #f1f5f9; font-weight: 900; text-align: center; vertical-align: middle; }
@@ -103,12 +107,13 @@
         .t-micro-table th { font-size: 0.35rem; padding: 4px 0; color: #7dd3fc; background: #0f172a; border: 0.1px solid #1e293b; text-transform: uppercase; }
         .t-micro-table td { font-size: 0.8rem; padding: 8px 0; text-align: center; border: 0.1px solid #0f172a; color: #fff; line-height: 1; }
 
-        .c-sh { width: 22px !important; font-weight: 900; color: #0ea5e9 !important; border-right: 1px solid #0ea5e9 !important; background: #000; position: sticky; left: 0; z-index: 10; }
+        .c-sh { width: 30px !important; font-weight: 900; color: #0ea5e9 !important; border-right: 1.5px solid #0ea5e9 !important; background: #000; position: sticky; left: 0; z-index: 10; }
         .c-r { width: 22px !important; color: #38bdf8; font-weight: bold; } 
         .c-p { width: 22px !important; font-weight: bold; color: #facc15; } 
         .c-s { width: 24px !important; font-weight: bold; color: #fff; opacity: 0.8; }
-        .c-t { width: 38px !important; background: #0c4a6e; font-weight: 900; font-size: 0.9rem !important; border-left: 1px solid #38bdf8 !important; }
-        .c-t2 { width: 38px !important; background: #1e293b; font-weight: 900; color: #0ea5e9 !important; font-size: 0.9rem !important; border-left: 1px solid #0ea5e9 !important; }
+        /* T1 and T2 made wider as requested */
+        .c-t { width: 44px !important; background: #0c4a6e; font-weight: 900; font-size: 0.9rem !important; border-left: 1.5px solid #38bdf8 !important; }
+        .c-t2 { width: 44px !important; background: #1e293b; font-weight: 900; color: #0ea5e9 !important; font-size: 0.9rem !important; border-left: 1.5px solid #0ea5e9 !important; }
 
         .active-team-card { background-color: #0ea5e9 !important; color: #000 !important; }
         .active-team-card p { color: #000 !important; opacity: 1 !important; font-weight: 900; }
@@ -155,6 +160,7 @@
             .t-btn-score-grid { grid-template-columns: repeat(6, 1fr) !important; padding: 8px !important; }
             .t-btn-score { height: 100px !important; }
             .t-btn-score .num { font-size: 3rem !important; }
+            .c-t, .c-t2 { width: 50px !important; }
         }
 
         /* REPORT STYLES */
@@ -210,11 +216,11 @@
     <main id="viewContent" class="p-2 max-w-6xl mx-auto no-print"></main>
 
     <script type="module">
-        // PWA SERVICE WORKER REGISTRATION
+        // 1. PWA Logic: Register Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(() => console.log("StatMaster SW Registered"));
+            navigator.serviceWorker.register('sw.js').then(() => console.log("SW Registered"));
         }
-
+        
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -233,7 +239,8 @@
         const docRef = doc(db, "league", "masterData");
         const docRefTourney = doc(db, "tournament_final_v1", "data");
 
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: [] }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null };
+        // state updated to include 4. Singles Half logic storage
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: [] }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null };
         let mode = 'DOUBLES';
         let view = 'NEWS';
         let scorerMode = 'LIVE'; 
@@ -244,7 +251,7 @@
         let scoring = { active: false, step: 'LIVE', mid: null, t1: null, t2: null, p1n: '', p2n: '', p3n: '', p4n: '', h1: 0, h2: 0, rotation: 'T1_FIRST', frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0 };
         let bScale = 1.0;
 
-        let match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {} };
+        let match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {}, isPlayoff: false };
 
         const dBox = document.getElementById('customDialog');
         window.smAlert = (msg) => {
@@ -275,13 +282,36 @@
             });
         };
 
+        // NEW: Specialized keypad dialog with restricted buttons
+        window.smHorseKeypad = (msg, options) => {
+            return new Promise(res => {
+                dBox.style.display = 'flex';
+                dBox.innerHTML = `
+                <div class="dialog-box text-center">
+                    <p class="font-black italic uppercase text-sky-500 mb-6">${msg}</p>
+                    <div class="grid grid-cols-3 gap-3">
+                        ${options.map(n => `<button class="kp-opt-btn bg-zinc-800 text-white p-6 font-black text-2xl border-b-4 border-zinc-950 active:translate-y-1 active:border-b-0" data-val="${n}">${n}</button>`).join('')}
+                    </div>
+                    <button id="kpCancel" class="w-full mt-6 text-zinc-500 font-bold uppercase text-[10px]">Cancel</button>
+                </div>`;
+                document.querySelectorAll('.kp-opt-btn').forEach(btn => {
+                    btn.onclick = () => { dBox.style.display = 'none'; res(btn.dataset.val); };
+                });
+                document.getElementById('kpCancel').onclick = () => { dBox.style.display = 'none'; res(null); };
+            });
+        };
+
         window.smKeypad = (msg) => {
             return new Promise(res => {
                 dBox.style.display = 'flex';
-                dBox.innerHTML = `<div class="dialog-box text-center"><p class="font-black italic uppercase text-sky-500 mb-4">${msg}</p><div class="grid grid-cols-3 gap-2">${[0,1,2,3,4,6].map(n => `<button class="kp-btn bg-zinc-800 text-white p-6 font-black text-2xl hover:bg-sky-500 hover:text-black" data-val="${n}">${n}</button>`).join('')}</div><button id="smCancel" class="w-full mt-4 text-zinc-500 font-bold uppercase text-[10px]">Cancel</button></div>`;
+                dBox.innerHTML = `<div class="dialog-box text-center"><p class="font-black italic uppercase text-sky-500 mb-4">${msg}</p><div class="grid grid-cols-3 gap-2">${[0,1,2,3,4,5,6,7,8,9].map(n => `<button class="kp-btn bg-zinc-800 text-white p-6 font-black text-2xl hover:bg-sky-500 hover:text-black" data-val="${n}">${n}</button>`).join('')}<button id="kpClear" class="bg-zinc-700 text-white p-6 font-black text-xs uppercase">Clear</button><button id="kpGo" class="bg-sky-500 text-black p-6 font-black text-xs uppercase col-span-2">Enter</button></div><button id="smCancel" class="w-full mt-4 text-zinc-500 font-bold uppercase text-[10px]">Cancel</button></div>`;
+                let currentVal = "";
+                const updateUI = () => { document.querySelector('#customDialog p').innerText = `${msg}: ${currentVal}`; };
                 document.querySelectorAll('.kp-btn').forEach(btn => {
-                    btn.onclick = () => { dBox.style.display = 'none'; res(btn.dataset.val); };
+                    btn.onclick = () => { currentVal += btn.dataset.val; updateUI(); };
                 });
+                document.getElementById('kpClear').onclick = () => { currentVal = ""; updateUI(); };
+                document.getElementById('kpGo').onclick = () => { dBox.style.display = 'none'; res(currentVal); };
                 document.getElementById('smCancel').onclick = () => { dBox.style.display = 'none'; res(null); };
             });
         };
@@ -309,8 +339,11 @@
                 if(state.reportEnabled === undefined) state.reportEnabled = true;
                 if(!state.winners) state.winners = {champ:'', runner:'', season:''};
                 if(!state.activeMatches) state.activeMatches = [];
+                // 4. Half Logic State Check
                 if(!state.singlesHalfWinner) state.singlesHalfWinner = null;
-                if(!state.singlesHalfHcp) state.singlesHalfHcp = null;
+                if(!state.singlesHalfArchive) state.singlesHalfArchive = [];
+                if(state.singlesPlayoffActive === undefined) state.singlesPlayoffActive = false;
+                if(state.singlesStandingsResetDate === undefined) state.singlesStandingsResetDate = null;
                 render(); 
             } 
         });
@@ -350,26 +383,25 @@
             return Math.round(rawAvg);
         }
 
-        // UPDATED GET HANDICAP FOR 2-HALF SYSTEM
+        // 4. Update Handicap Logic for 2-Half System
         function getH(pName) {
             const n = cleanN(pName); if(!pName || n === 'bye') return 0; if(n === 'dummy') return 54;
             const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
             const p = rList.find(x => cleanN(x.name) === n);
             
-            let currentCalcHcp = 0;
+            let currentCalc = 0;
             if (state.hcpLocked && state.hcpLocked[mode]) {
-                currentCalcHcp = Number(p ? (p.currentHcp || 0) : 0);
+                currentCalc = Number(p ? (p.currentHcp || 0) : 0);
             } else {
                 const avg = getPlyrAvg(pName);
-                currentCalcHcp = Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
+                currentCalc = Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
             }
 
-            // Logic: Singles 2-Half winner uses the better handicap (lower usually means better performance in this calculation)
+            // Logic: Winner uses the "Better" (Lower) handicap for the playoff
             if (mode === 'SINGLES' && state.singlesHalfWinner && cleanN(state.singlesHalfWinner) === n) {
-                return Math.min(currentCalcHcp, state.singlesHalfHcp);
+                return Math.min(currentCalc, state.singlesHalfHcp || currentCalc);
             }
-
-            return currentCalcHcp;
+            return currentCalc;
         }
 
         window.zoomB = (delta) => {
@@ -435,6 +467,11 @@
             await save(); render();
         }
 
+        window.toggleSinglesPlayoff = async () => {
+            state.singlesPlayoffActive = !state.singlesPlayoffActive;
+            await save(); render();
+        }
+
         window.saveWinners = async () => {
             state.winners.champ = document.getElementById('win-champ').value;
             state.winners.runner = document.getElementById('win-runner').value;
@@ -442,29 +479,12 @@
             await save(); window.smAlert("Winners Saved"); render();
         };
 
-        // NEW: END FIRST HALF LOGIC
-        window.endSinglesHalf = async () => {
-            if (!await window.smConfirm("This will clear current Singles standings/history and save the #1 player for the playoff. Proceed?")) return;
-            
-            // Identify winner
-            const hList = (state.history || []).filter(h => h.mode === 'SINGLES');
-            const rankings = (state.roster.SINGLES||[]).map(t => { 
-                const name = t.name, gS = new Set(); let w=0, ti=0; 
-                hList.forEach(h => { if(cleanN(h.player) === cleanN(name)){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; } } }); 
-                return { name, pts: (w*2)+ti }; 
-            }).sort((a,b)=>b.pts-a.pts);
-
-            if (rankings.length > 0) {
-                state.singlesHalfWinner = rankings[0].name;
-                state.singlesHalfHcp = getH(rankings[0].name);
-                // Clear singles history
-                state.history = state.history.filter(h => h.mode !== 'SINGLES');
-                state.sessions = state.sessions.filter(s => s.mode !== 'SINGLES');
-                await save();
-                window.smAlert(`Standings Cleared. Half 1 Winner: ${state.singlesHalfWinner}`);
-                render();
-            }
-        };
+        // 3. Fullscreen trigger helper
+        function triggerFS() {
+            const de = document.documentElement;
+            const rfs = de.requestFullscreen || de.webkitRequestFullScreen || de.mozRequestFullScreen || de.msRequestFullscreen;
+            if (rfs) rfs.call(de).catch(() => {});
+        }
 
         window.executePrint = (title, html, isNhpa = false) => {
             const zone = document.getElementById('printZone');
@@ -674,15 +694,24 @@
         window.pickLiveTeams = () => {
             const t1 = document.getElementById('lt1').value, t2 = document.getElementById('lt2').value;
             if(!t1 || !t2) return window.smAlert("Select teams");
-            match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode };
+            match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode, isPlayoff: (mode === 'SINGLES' && state.singlesPlayoffActive) };
+            
+            if (mode === 'SINGLES') {
+                match.p1 = match.t1Name;
+                match.p3 = match.t2Name;
+                match.h1 = Number(getH(match.p1));
+                match.h3 = Number(getH(match.p3));
+            }
+            
             state.activeMatches.push(match); save();
-            if (mode === 'SINGLES') { match.p1 = match.t1Name; match.p3 = match.t2Name; window.startTheLiveGame(); }
+            if (mode === 'SINGLES' && !match.isPlayoff) { window.startTheLiveGame(); }
             else { match.step = 'PLAYERS'; render(); }
         };
 
         window.resumeLeagueMatch = (sessId) => { const found = state.activeMatches.find(m => m.sessionId === sessId); if(found) { 
             match = JSON.parse(JSON.stringify(found)); 
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            // 3. Trigger Fullscreen on resume
+            triggerFS();
             render(); 
         } };
         
@@ -693,18 +722,37 @@
             } 
         };
 
+        window.editPlayoffHcp = async (pNum) => {
+            const name = pNum === 1 ? match.p1 : match.p3;
+            const val = await window.smKeypad(`Handicap for ${getFirst(name)}`);
+            if(val !== null) {
+                if(pNum === 1) match.h1 = Number(val);
+                else match.h3 = Number(val);
+                updateActiveMatchRef();
+                render();
+            }
+        };
+
         window.startTheLiveGame = () => {
-            if (mode === 'DOUBLES') { match.p1 = document.getElementById('sp1').value; match.p2 = document.getElementById('sp2').value; match.p3 = document.getElementById('sp3').value; match.p4 = document.getElementById('sp4').value; }
-            else { match.p1 = match.t1Name; match.p2 = 'BYE'; match.p3 = match.t2Name; match.p4 = 'BYE'; }
-            match.h1 = Number(getH(match.p1)); match.h2 = Number(getH(match.p2)); match.h3 = Number(getH(match.p3)); match.h4 = Number(getH(match.p4));
+            if (mode === 'DOUBLES') { 
+                match.p1 = document.getElementById('sp1').value; 
+                match.p2 = document.getElementById('sp2').value; 
+                match.p3 = document.getElementById('sp3').value; 
+                match.p4 = document.getElementById('sp4').value; 
+                match.h1 = Number(getH(match.p1)); match.h2 = Number(getH(match.p2)); 
+                match.h3 = Number(getH(match.p3)); match.h4 = Number(getH(match.p4));
+            } else { 
+                match.p1 = match.t1Name; 
+                match.p2 = 'BYE'; 
+                match.p3 = match.t2Name; 
+                match.p4 = 'BYE'; 
+                match.h2 = 0; match.h4 = 0;
+            }
+
             match.step = 'LIVE'; match.pitcherIdx = 0; match.currGameFrames = []; match.currF = { p1: null, p2: null, p3: null, p4: null };
             
-            // FULLSCREEN TRIGGER
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Fullscreen failed: ${err.message}`);
-                });
-            }
+            // 3. Trigger Fullscreen on start
+            triggerFS();
             
             updateActiveMatchRef(); render();
         };
@@ -720,17 +768,42 @@
         function updateActiveMatchRef() { const idx = state.activeMatches.findIndex(m => m.sessionId === match.sessionId); if(idx !== -1) { state.activeMatches[idx] = JSON.parse(JSON.stringify(match)); save(); } }
 
         window.editLiveScoreCell = async (idx, pNum) => {
-            const pName = getFirst(match['p' + pNum]);
-            const val = await window.smKeypad(`Edit ${pName}`);
+            // FIX: Prevent invalid values by using button keypad
+            const val = await window.smHorseKeypad(`Edit Scratch Score`, [0, 1, 2, 3, 4, 6]);
             if(val !== null) { match.currGameFrames[idx]['p'+pNum] = Number(val); updateActiveMatchRef(); render(); }
         };
 
-        window.nextGame = () => { match.gameNum++; if (mode === 'SINGLES') window.startTheLiveGame(); else { match.step = 'PLAYERS'; render(); } };
+        window.nextGame = () => { match.gameNum++; if (mode === 'SINGLES' && !match.isPlayoff) window.startTheLiveGame(); else { match.step = 'PLAYERS'; render(); } };
 
         function finalizeFrame() {
-            const isFourDead = (pA, pB) => { if(!pA || !pB || ['bye','dummy'].includes(cleanN(pA)) || ['bye','dummy'].includes(cleanN(pB))) return false; return (match.currF['p'+pA] === 6 && match.currF['p'+pB] === 6); };
-            if (mode === 'SINGLES') { if (isFourDead('1', '3')) { match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; } }
-            else { if (isFourDead('1', '3')) { match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; } if (isFourDead('2', '4')) { match.fourDeadLog[match.p2] = (match.fourDeadLog[match.p2] || 0) + 1; match.fourDeadLog[match.p4] = (match.fourDeadLog[match.p4] || 0) + 1; } }
+            // LOGIC FIX: Helper to verify if two specific opponents both hit 6 in the same frame
+            const isFourDeadPair = (idxA, idxB) => {
+                const nameA = match['p' + idxA];
+                const nameB = match['p' + idxB];
+                // Ignore BYE/DUMMY
+                if (!nameA || !nameB || ['bye', 'dummy'].includes(cleanN(nameA)) || ['bye', 'dummy'].includes(cleanN(nameB))) return false;
+                // Check if both had a 6 frame
+                return (match.currF['p' + idxA] === 6 && match.currF['p' + idxB] === 6);
+            };
+            
+            if (mode === 'SINGLES') { 
+                if (isFourDeadPair('1', '3')) { 
+                    match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; 
+                    match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; 
+                } 
+            } else { 
+                // Doubles Pair 1: p1 vs p3
+                if (isFourDeadPair('1', '3')) { 
+                    match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; 
+                    match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; 
+                } 
+                // Doubles Pair 2: p2 vs p4
+                if (isFourDeadPair('2', '4')) { 
+                    match.fourDeadLog[match.p2] = (match.fourDeadLog[match.p2] || 0) + 1; 
+                    match.fourDeadLog[match.p4] = (match.fourDeadLog[match.p4] || 0) + 1; 
+                } 
+            }
+            
             match.currGameFrames.push({ ...match.currF, sh: (match.currGameFrames.length + 1) * 2 });
             match.currF = { p1: null, p2: null, p3: null, p4: null }; match.pitcherIdx = 0;
             if (match.currGameFrames.length >= (mode === 'DOUBLES' ? 15 : 25)) showInterSummary();
@@ -754,7 +827,7 @@
             const r1 = finalG1 > finalG2 ? 'W' : (finalG1 < finalG2 ? 'L' : 'T'), r2 = finalG2 > finalG1 ? 'W' : (finalG2 < finalG1 ? 'L' : 'T');
             const pls = [{n:match.p1,p:'p1',r:r1,d:d1},{n:match.p2,p:'p2',r:r1,d:d2},{n:match.p3,p:'p3',r:r2,d:d3},{n:match.p4,p:'p4',r:r2,d:d4}];
             pls.forEach(pl => { if(pl.n && !['bye','dummy'].includes(cleanN(pl.n))) { match.seriesBuffer.push({ player: pl.n, score: match.currGameFrames.reduce((s,f)=>s+Number(f[pl.p]||0), 0) + pl.d, ringers: match.currGameFrames.reduce((s,f)=>s+getR(f[pl.p]), 0), result: pl.r, sessionId: match.sessionId, gameNum: match.gameNum, mode, date: new Date().toLocaleDateString(), timestamp: Date.now() }); } });
-            match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, s1: finalG1, s2: finalG2, frames: [...match.currGameFrames] });
+            match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, s1: finalG1, s2: finalG2, frames: [...match.currGameFrames], isPlayoff: match.isPlayoff });
             match.step = (match.gameNum >= 3) ? 'MATCH_SUMMARY' : 'GAME_SUMMARY'; updateActiveMatchRef(); render();
         }
 
@@ -765,20 +838,25 @@
             if (cleanN(match.t2Name) === 'bye') { const wins = match.games.filter(g => g.s1 >= target).length; mW = wins > 0 ? match.t1Name : 'BYE'; }
             else if (cleanN(match.t1Name) === 'bye') { const wins = match.games.filter(g => g.s2 >= target).length; mW = wins > 0 ? match.t2Name : 'BYE'; }
             else mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie');
-            const today = new Date().toLocaleDateString(); state.history.push(...match.seriesBuffer);
-            match.seriesBuffer.forEach(entry => {
-                const pAvg = getPlyrAvg(entry.player), hoa = entry.score - pAvg;
-                const idx = state.weeklyHoa[mode].findIndex(x => x.date === today);
-                if (idx !== -1) { if (hoa > state.weeklyHoa[mode][idx].hoa) state.weeklyHoa[mode][idx] = { date: today, player: entry.player, hoa: hoa }; }
-                else state.weeklyHoa[mode].push({ date: today, player: entry.player, hoa: hoa });
-            });
-            state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now() });
+            const today = new Date().toLocaleDateString(); 
             
-            if(!state.fourDeads[mode]) state.fourDeads[mode] = {};
-            Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
+            if (!match.isPlayoff) {
+                state.history.push(...match.seriesBuffer);
+                match.seriesBuffer.forEach(entry => {
+                    const pAvg = getPlyrAvg(entry.player), hoa = entry.score - pAvg;
+                    const idx = state.weeklyHoa[mode].findIndex(x => x.date === today);
+                    if (idx !== -1) { if (hoa > state.weeklyHoa[mode][idx].hoa) state.weeklyHoa[mode][idx] = { date: today, player: entry.player, hoa: hoa }; }
+                    else state.weeklyHoa[mode].push({ date: today, player: entry.player, hoa: hoa });
+                });
+                
+                if(!state.fourDeads[mode]) state.fourDeads[mode] = {};
+                Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
+            }
+
+            state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now(), isPlayoff: match.isPlayoff });
             
             state.activeMatches = state.activeMatches.filter(x => x.sessionId !== match.sessionId);
-            match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {} };
+            match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {}, isPlayoff: false };
             
             view = 'STANDINGS'; 
             await save(); 
@@ -788,6 +866,18 @@
         /* MANUAL SCORER LOGIC */
         window.setScorerView = (v) => { scorerMode = v; render(); };
         window.updateManualHcp = (pNum) => { const pName = document.getElementById('mp'+pNum).value; document.getElementById('mh'+pNum).value = getH(pName); };
+
+        // Restricted Value Picker for Manual Entry
+        window.openManualPicker = async (id, isRingers = false) => {
+            const options = isRingers ? [0, 1, 2] : [0, 1, 2, 3, 4, 6];
+            const result = await window.smHorseKeypad(isRingers ? "Select Turn Ringers" : "Select Turn Scratch Score", options);
+            if (result !== null) {
+                const btn = document.getElementById(id);
+                btn.innerText = (isRingers ? "RNG: " : "SCR: ") + result;
+                btn.dataset.value = result;
+                btn.classList.add('active');
+            }
+        };
 
         window.filterManualTeams = (teamNum) => {
             const tName = document.getElementById('mt'+teamNum).value;
@@ -829,9 +919,9 @@
                 const n = el.value;
                 if(n && n !== '') {
                     players.push({ pIdx: i, name: n, hcp: Number(document.getElementById('mh'+i).value || 0), 
-                        g1_scr: document.getElementById(`ms${i}_g1`).value === '' ? null : Number(document.getElementById(`ms${i}_g1`).value), g1_rng: Number(document.getElementById(`mr${i}_g1`).value || 0),
-                        g2_scr: document.getElementById(`ms${i}_g2`).value === '' ? null : Number(document.getElementById(`ms${i}_g2`).value), g2_rng: Number(document.getElementById(`mr${i}_g2`).value || 0),
-                        g3_scr: document.getElementById(`ms${i}_g3`).value === '' ? null : Number(document.getElementById(`ms${i}_g3`).value), g3_rng: Number(document.getElementById(`mr${i}_g3`).value || 0)
+                        g1_scr: Number(document.getElementById(`ms${i}_g1`).dataset.value || 0), g1_rng: Number(document.getElementById(`mr${i}_g1`).dataset.value || 0),
+                        g2_scr: Number(document.getElementById(`ms${i}_g2`).dataset.value || 0), g2_rng: Number(document.getElementById(`mr${i}_g2`).dataset.value || 0),
+                        g3_scr: Number(document.getElementById(`ms${i}_g3`).dataset.value || 0), g3_rng: Number(document.getElementById(`mr${i}_g3`).dataset.value || 0)
                     });
                 }
             }
@@ -1042,8 +1132,8 @@
         };
 
         window.editTScoreCell = async (idx, pNum) => {
-            const pName = getFirst(scoring['p' + pNum + 'n']);
-            const val = await window.smKeypad(`Edit ${pName}`);
+            // FIX: Use appropriate button keypad for restricted scores
+            const val = await window.smHorseKeypad(`Edit Points`, [0, 1, 2, 3, 4, 6]);
             if(val !== null) {
                 scoring.frames[idx]['p'+pNum] = Number(val);
                 const midx = tState.tActiveMatches.findIndex(m => m.sessionId === scoring.sessionId);
@@ -1143,7 +1233,7 @@
             const p = await window.smPrompt("Enter PIN to WIPE DATA:"); 
             if(p === state.managePin) { 
                 if(await window.smConfirm("Confirm Wipe? This is permanent.")) { 
-                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: [] }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null }; 
+                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: [] }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [] }; 
                     await save(); location.reload(); 
                 } 
             } else if (p !== null) await window.smAlert("Incorrect PIN");
@@ -1158,12 +1248,6 @@
             const f = ['clubName','phone','sanctionNum','director','state','address','city','startDate','endDate','dateSubmitted','cancellation','countAll']; 
             if(!state.nhpa[mode]) state.nhpa[mode] = {}; f.forEach(k => state.nhpa[mode][k] = document.getElementById('f-'+k).value); 
             await save(); window.smAlert("Saved"); 
-        };
-
-        window.resetDeads = async () => { 
-            if(await window.smConfirm("Clear Four Deads for this mode?")) { 
-                state.fourDeads[mode] = {}; save(); render(); 
-            } 
         };
 
         window.wipeTournament = async () => { 
@@ -1238,15 +1322,18 @@
             let b1 = (m.t1.id === 1) ? 10 : (m.t1.id === 2 ? 5 : 0), b2 = (m.t2.id === 1) ? 10 : (m.t2.id === 2 ? 5 : 0);
             scoring = { active: true, step: 'LIVE', mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h+b1, h2: p3.h+p4.h+b2, rotation: window.selRot, frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0, sessionId: Date.now() };
             
-            // FULLSCREEN TRIGGER
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
-            
+            // 3. Trigger Fullscreen for tournament
+            triggerFS();
+
             tState.tActiveMatches.push(scoring); tSave(); renderScorer();
         };
 
-        window.resumeTMatch = (sessId) => { const found = tState.tActiveMatches.find(m => m.sessionId === sessId); if(found) { scoring = JSON.parse(JSON.stringify(found)); renderScorer(); } };
+        window.resumeTMatch = (sessId) => { const found = tState.tActiveMatches.find(m => m.sessionId === sessId); if(found) { 
+            scoring = JSON.parse(JSON.stringify(found)); 
+            // 3. Trigger Fullscreen for tournament resume
+            triggerFS();
+            renderScorer(); 
+        } };
         
         window.deleteTMatch = async (sessId) => { 
             if(await window.smConfirm("Delete Tournament Match in Progress?")) { 
@@ -1296,6 +1383,30 @@
 
         window.setTView = (v) => { tView = v; render(); };
 
+        // 4. End Singles Half logic - UPDATED: DO NOT clear stats, ONLY the standings reset marker
+        window.endSinglesHalf = async () => {
+            if (!await window.smConfirm("Archive 1st Half? All standing data and HCPs will be stored. Standings will be reset for the 2nd half, but all Season stats will remain.")) return;
+            const hList = (state.history || []).filter(h => h.mode === 'SINGLES');
+            const rankings = (state.roster.SINGLES||[]).map(t => { 
+                const name = t.name, gS = new Set(); let w=0, ti=0, l=0; 
+                hList.forEach(h => { if(cleanN(h.player) === cleanN(name)){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); 
+                return { name, w, l, ti, pts: (w*2)+ti, hcp: getH(t.name) }; 
+            }).sort((a,b)=>b.pts-a.pts);
+            
+            if (rankings.length > 0) {
+                state.singlesHalfWinner = rankings[0].name;
+                state.singlesHalfHcp = rankings[0].hcp;
+                state.singlesHalfArchive = rankings;
+                
+                // 4. SET RESET DATE: Do NOT clear history. Marker resets standings view.
+                state.singlesStandingsResetDate = Date.now();
+                
+                await save();
+                window.smAlert(`1st Half Archived. Standings Reset. All season stats preserved.`);
+                render();
+            }
+        };
+
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
@@ -1305,29 +1416,18 @@
             if (view === 'NEWS') {
                 content.innerHTML = `<div class="flex flex-col items-center py-8 px-4 max-w-2xl mx-auto"><img src="logo.jpg" class="w-48 h-48 object-contain mb-8 shadow-xl border-4 border-white"><div class="w-full bg-white p-8 shadow-2xl border-t-4 border-sky-500 min-h-[300px]"><h2 class="text-2xl font-black italic uppercase text-sky-500 mb-6 border-b pb-2 tracking-tighter">Club News & Announcements</h2><div class="prose prose-sky max-w-none text-zinc-800 font-medium leading-relaxed whitespace-pre-wrap">${state.news || '<p class="opacity-40 italic text-center py-10 text-zinc-400 font-normal">No news updates at this time.</p>'}</div></div></div>`;
             } else if (view === 'REPORT') {
-                // DOUBLES AUTO-FILL LOGIC
-                let autoChamp = state.winners.champ;
-                let autoRunner = state.winners.runner;
-                let autoSeason = state.winners.season;
-
+                // 2. Auto-fill logic for report
+                let aChamp = state.winners.champ, aRunner = state.winners.runner, aSeason = state.winners.season;
                 if (mode === 'DOUBLES') {
-                    // 1. Season Winner (First place in current standings)
-                    const hList = (state.history || []).filter(h => h.mode === 'DOUBLES');
                     const standings = (state.roster.DOUBLES||[]).map(t => { 
-                        const name = t.teamName, tPs = t.members.map(m=>cleanN(m.name)), gS = new Set(); let w=0, ti=0; 
-                        hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; } } }); 
-                        const mp = (state.sessions || []).filter(s => s.mode === 'DOUBLES' && cleanN(s.matchWinner) === cleanN(name)).length; 
-                        return { name, pts: (w*2)+ti+mp }; 
+                        const name = t.teamName, hL = state.history.filter(h => h.mode === 'DOUBLES');
+                        let w=0, ti=0; hL.forEach(h => { if(t.members.some(m => cleanN(m.name) === cleanN(h.player))){ if(h.result==='W') w++; else if(h.result==='T') ti++; } });
+                        return { name, pts: (w*2)+ti };
                     }).sort((a,b)=>b.pts-a.pts);
-                    if (standings.length > 0) autoSeason = standings[0].name;
-
-                    // 2. Tournament Champ/Runner Up (From Bracket GF-M1)
-                    if (tState.bracket) {
-                        const gfMatch = tState.bracket.winners.find(m => m.id === 'GF-M1');
-                        if (gfMatch && gfMatch.win) {
-                            autoChamp = gfMatch.win;
-                            autoRunner = (gfMatch.win === gfMatch.t1.name) ? gfMatch.t2.name : gfMatch.t1.name;
-                        }
+                    if(standings[0]) aSeason = standings[0].name;
+                    if(tState.bracket) {
+                        const gf = tState.bracket.winners.find(m => m.id === 'GF-M1');
+                        if(gf && gf.win) { aChamp = gf.win; aRunner = gf.win === gf.t1.name ? gf.t2.name : gf.t1.name; }
                     }
                 }
 
@@ -1366,9 +1466,9 @@
                     <div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Season Report')" class="bg-black text-white px-4 py-2 font-black uppercase border">Print Report</button></div>
                     <div class="report-grid max-w-4xl mx-auto border-4 border-black">
                         <div class="col-span-2 border-b-2 border-black p-4 space-y-2">
-                            <div class="flex items-center"><span class="w-40 font-bold uppercase text-sm">League Champion</span><input id="win-champ" value="${autoChamp}" onchange="window.saveWinners()" class="flex-1 border-b border-black outline-none px-2"></div>
-                            <div class="flex items-center"><span class="w-40 font-bold uppercase text-sm">League Runner Up</span><input id="win-runner" value="${autoRunner}" onchange="window.saveWinners()" class="flex-1 border-b border-black outline-none px-2"></div>
-                            <div class="flex items-center"><span class="w-40 font-bold uppercase text-sm">Season Winner</span><input id="win-season" value="${autoSeason}" onchange="window.saveWinners()" class="flex-1 border-b border-black outline-none px-2"></div>
+                            <div class="flex items-center"><span class="w-40 font-bold uppercase text-sm">League Champion</span><input id="win-champ" value="${aChamp}" onchange="window.saveWinners()" class="flex-1 border-b border-black outline-none px-2"></div>
+                            <div class="flex items-center"><span class="w-40 font-bold uppercase text-sm">League Runner Up</span><input id="win-runner" value="${aRunner}" onchange="window.saveWinners()" class="flex-1 border-b border-black outline-none px-2"></div>
+                            <div class="flex items-center"><span class="w-40 font-bold uppercase text-sm">Season Winner</span><input id="win-season" value="${aSeason}" onchange="window.saveWinners()" class="flex-1 border-b border-black outline-none px-2"></div>
                         </div>
                         ${renderT('high point avg', sort('avg'), 'avg')}
                         ${renderT('High pts over avg', sort('hoa'), 'hoa')}
@@ -1418,10 +1518,15 @@
                                         </div>
                                         <div class="space-y-3">
                                             ${[1,2,3].map(g => `
-                                            <div class="grid grid-cols-[60px_1fr_1fr] items-center gap-2">
-                                                <div class="text-[9px] font-black uppercase text-zinc-500">Game ${g}</div>
-                                                <input id="ms${i}_g${g}" type="number" placeholder="Scratch" class="w-full p-2 border-2 border-zinc-100 text-center font-bold text-sm bg-white">
-                                                <input id="mr${i}_g${g}" type="number" placeholder="Ringers" class="w-full p-2 border-2 border-sky-100 text-center font-bold text-sm text-sky-600 bg-sky-50/50">
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Score</p>
+                                                    <button id="ms${i}_g${g}" data-value="0" onclick="openManualPicker('ms${i}_g${g}', false)" class="manual-entry-btn">SCR: 0</button>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Ringers</p>
+                                                    <button id="mr${i}_g${g}" data-value="0" onclick="openManualPicker('mr${i}_g${g}', true)" class="manual-entry-btn">RNG: 0</button>
+                                                </div>
                                             </div>`).join('')}
                                         </div>
                                     </div>`).join('')}
@@ -1440,10 +1545,15 @@
                                         </div>
                                         <div class="space-y-3">
                                             ${[1,2,3].map(g => `
-                                            <div class="grid grid-cols-[60px_1fr_1fr] items-center gap-2">
-                                                <div class="text-[9px] font-black uppercase text-zinc-500">Game ${g}</div>
-                                                <input id="ms${i}_g${g}" type="number" placeholder="Scratch" class="w-full p-2 border-2 border-zinc-100 text-center font-bold text-sm bg-white">
-                                                <input id="mr${i}_g${g}" type="number" placeholder="Ringers" class="w-full p-2 border-2 border-sky-100 text-center font-bold text-sm text-sky-600 bg-sky-50/50">
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Score</p>
+                                                    <button id="ms${i}_g${g}" data-value="0" onclick="openManualPicker('ms${i}_g${g}', false)" class="manual-entry-btn">SCR: 0</button>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Ringers</p>
+                                                    <button id="mr${i}_g${g}" data-value="0" onclick="openManualPicker('mr${i}_g${g}', true)" class="manual-entry-btn">RNG: 0</button>
+                                                </div>
                                             </div>`).join('')}
                                         </div>
                                     </div>`).join('')}
@@ -1481,9 +1591,26 @@
                         </div>
                     ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black">${opts}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black">${opts}</select><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button></div>`;
                 } else if (match.step === 'PLAYERS') {
-                    const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = state.roster.DOUBLES.find(x => x.teamName === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
-                    const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
-                    content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center font-black uppercase italic text-sky-500">G${match.gameNum} Lineup<div class="space-y-4 mt-4 text-left text-black"><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t1Name}</p><select id="sp1" class="w-full p-2 border mb-2 font-bold">${t1.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp2" class="w-full p-2 border font-bold">${t1.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t2Name}</p><select id="sp3" class="w-full p-2 border mb-2 font-bold">${t2.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp4" class="w-full p-2 border font-bold">${t2.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-none font-black uppercase">Ready</button></div></div>`;
+                    if (mode === 'SINGLES' && match.isPlayoff) {
+                        content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center">
+                            <h2 class="text-sky-500 font-black italic uppercase mb-6">Playoff HCP Setup</h2>
+                            <div class="space-y-4 text-left">
+                                <div class="p-4 bg-zinc-50 border flex justify-between items-center">
+                                    <label class="text-[11px] font-black uppercase text-zinc-500">${match.p1}</label>
+                                    <button onclick="editPlayoffHcp(1)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h1}</button>
+                                </div>
+                                <div class="p-4 bg-zinc-50 border flex justify-between items-center">
+                                    <label class="text-[11px] font-black uppercase text-zinc-500">${match.p3}</label>
+                                    <button onclick="editPlayoffHcp(3)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h3}</button>
+                                </div>
+                                <button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 font-black uppercase mt-6 shadow-xl">Begin Playoff Match</button>
+                            </div>
+                        </div>`;
+                    } else {
+                        const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = state.roster.DOUBLES.find(x => x.teamName === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
+                        const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
+                        content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center font-black uppercase italic text-sky-500">G${match.gameNum} Lineup<div class="space-y-4 mt-4 text-left text-black"><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t1Name}</p><select id="sp1" class="w-full p-2 border mb-2 font-bold">${t1.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp2" class="w-full p-2 border font-bold">${t1.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t2Name}</p><select id="sp3" class="w-full p-2 border mb-2 font-bold">${t2.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp4" class="w-full p-2 border font-bold">${t2.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-none font-black uppercase">Ready</button></div></div>`;
+                    }
                 } else if (match.step === 'GAME_SUMMARY' || match.step === 'MATCH_SUMMARY') {
                     const isMatch = match.step === 'MATCH_SUMMARY', players = [match.p1, match.p2, match.p3, match.p4].filter(x => x && !['BYE','DUMMY'].includes(cleanN(x).toUpperCase()));
                     let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
@@ -1532,7 +1659,11 @@
                     </div>`;
                 }
             } else if (view === 'STANDINGS') {
-                const hList = (state.history || []).filter(h => h.mode === mode);
+                let hList = (state.history || []).filter(h => h.mode === mode);
+                // 4. FILTER STANDINGS BY RESET DATE IF IN SINGLES
+                if (mode === 'SINGLES' && state.singlesStandingsResetDate) {
+                    hList = hList.filter(h => h.timestamp > state.singlesStandingsResetDate);
+                }
                 const rows = (state.roster[mode]||[]).map(t => { const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0, l=0; hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col">${d.w}</td><td class="st-num-col">${d.l}</td><td class="st-num-col">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
                 content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'STATS') {
@@ -1567,23 +1698,39 @@
                 content.innerHTML = `<div class="action-bar flex justify-end pt-2 no-print"><button onclick="window.printActive('Club Stats')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Stats</button></div><div class="relative shadow-2xl rounded-none border border-zinc-800 bg-black overflow-x-auto mt-2"><table class="std-table w-full" style="min-width: 1100px; table-layout: auto;"><thead><tr class="bg-zinc-900"><th class="stats-name-col">Player</th><th>Hcp</th><th>Avg</th><th>R%</th><th>Hi R%</th><th>Scr %</th><th>Tot P</th><th>Hi G</th><th>HOA</th><th>S.Avg</th><th class="pts-col">Imp</th></tr></thead><tbody>${rows}</tbody></table></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"><div><h3 class="text-sky-500 font-black uppercase italic mb-2 text-sm tracking-widest">Weekly High Over Average</h3><div class="bg-black border border-zinc-800 shadow-xl"><table class="sum-stats-table"><thead><tr><th style="width:85px;">Date</th><th>Player</th><th class="val-col">HOA</th></tr></thead><tbody>${weeklyHoaRows || '<tr><td colspan="3" class="text-center opacity-40">No weekly records found</td></tr>'}</tbody></table></div></div><div><h3 class="text-sky-500 font-black uppercase italic mb-2 text-sm tracking-widest">Season Four Deads</h3><div class="bg-black border border-zinc-800 shadow-xl"><table class="sum-stats-table"><thead><tr><th>Player</th><th class="val-col">Count</th></tr></thead><tbody>${fourDeadRows || '<tr><td colspan="2" class="text-center opacity-40">No 4-deads logged</td></tr>'}</tbody></table></div></div></div>`;
             } else if (view === 'HISTORY') {
                 const sessionHtml = (state.sessions || []).filter(s => s.mode === mode).reverse().map(s => {
-                    let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
+                    let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2} ${g.isPlayoff ? '(PLAYOFF)' : ''}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
                     return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name} ${s.isManual ? '[M]' : ''}</span><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600 float-right no-print ml-2">Print Sheets</button>${gHtml}</div>`;
                 }).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No league history found</p>`;
                 const tHistoryHtml = (tState.matchHistory || []).slice().reverse().map(h => `<div class="bg-zinc-900 text-white p-3 shadow mb-3 font-black uppercase text-xs border-l-4 border-sky-500"><span><span class="text-sky-400">[TOURNAMENT]</span> ${h.date} - ${h.t1Name} vs ${h.t2Name} (${h.s1}-${h.s2})</span><button onclick="window.printTournamentScoreSheet('${h.timestamp}')" class="text-sky-400 float-right no-print ml-2">Print</button><button onclick="window.showSummary('${h.id}')" class="text-zinc-400 float-right no-print">View</button></div>`).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No tournament matches found</p>`;
-                content.innerHTML = `<div class="p-4"><h2 class="text-sky-500 font-black italic uppercase mb-4">Series History</h2>${sessionHtml}<h2 class="text-sky-500 font-black italic uppercase mb-4 mt-8">Tournament Match History</h2>${tHistoryHtml}</div>`;
+                
+                let archH = ''; 
+                if(mode === 'SINGLES' && state.singlesHalfArchive && state.singlesHalfArchive.length > 0) {
+                    const archRows = state.singlesHalfArchive.map(a => `<tr class="border-b"><td class="p-2 text-left">${a.name}</td><td>${a.w}</td><td>${a.l}</td><td>${a.ti}</td><td class="font-black">${a.pts}</td><td>${a.hcp}</td></tr>`).join('');
+                    archH = `<div class="mt-10 p-4 bg-zinc-950 text-white border-t-4 border-sky-500"><div class="flex justify-between mb-4"><h2 class="text-sky-500 font-black italic uppercase">1st Half Standings</h2><button onclick="window.executePrint('1st Half Standings Snapshot', document.getElementById('archiveZone').innerHTML)" class="bg-sky-500 text-black px-4 py-2 text-[10px] font-black uppercase">Print Snapshot</button></div><div id="archiveZone"><table class="w-full text-center border-collapse text-[11px]"><thead><tr class="bg-zinc-800 text-sky-400"><th>Player</th><th>W</th><th>L</th><th>T</th><th>Pts</th><th>HCP</th></tr></thead><tbody>${archRows}</tbody></table></div></div>`;
+                }
+                content.innerHTML = `<div class="p-4"><h2 class="text-sky-500 font-black italic uppercase mb-4">Series History</h2>${sessionHtml}${archH}<h2 class="text-sky-500 font-black italic uppercase mb-4 mt-8">Tournament Match History</h2>${tHistoryHtml}</div>`;
             } else if (view === 'NHPA') {
                 const cfg = state.nhpa[mode] || {};
                 content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div></div><div class="mt-6 flex gap-2"><button onclick="window.smAlert('Settings Saved'); window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button></div></div></div>`;
             } else if (view === 'MANAGE') {
                 const rH = (state.roster[mode]||[]).map((t, i) => `<div class="bg-white p-3 shadow mb-2 flex justify-between items-center text-xs font-bold uppercase"><span>${t.teamName||t.name}</span><div class="flex gap-2"><button onclick="window.editRosterItem(${i})" class="text-sky-500 font-black">EDIT</button><button onclick="window.delR(${i})" class="text-red-500 font-black">DEL</button></div></div>`).join('');
-                content.innerHTML = `<div class="p-4 space-y-4 no-print">
+                content.innerHTML = `
+                <div class="p-4 space-y-4 no-print">
                     <div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div>
-                    <div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div>
                     
-                    ${mode === 'SINGLES' ? `<button onclick="window.endSinglesHalf()" class="w-full bg-blue-900 text-white p-5 font-black uppercase text-[10px] shadow-xl">End First Half & Save Standings</button>` : ''}
-                    
-                    <input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-2 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button><button onclick="window.toggleManualEntry()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.manualEntryEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Manual Entry: ${state.manualEntryEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleReport()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.reportEnabled ? 'bg-purple-600 text-white' : 'bg-zinc-500 text-white'}">Report: ${state.reportEnabled ? 'ON' : 'OFF'}</button></div><button onclick="window.resetDeads()" class="w-full bg-red-900 text-white p-4 text-[10px] font-black uppercase">Clear Four Deads (${mode})</button><div class="bg-white p-6 shadow mb-4"><h3 class="text-[10px] font-black uppercase mb-2">Club News Editor</h3><textarea id="newsInput" class="w-full h-40 border p-3 rounded-none text-sm mb-2" placeholder="Write club news here...">${state.news || ''}</textarea><button onclick="window.saveNews()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-lg">Save News Update</button></div><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
+                    ${mode === 'SINGLES' ? `
+                        <div class="bg-amber-100 p-4 border-2 border-amber-300 flex justify-between items-center mb-4">
+                            <span class="text-[10px] font-black uppercase text-amber-800">Singles Playoff Mode (Manual HCP Override)</span>
+                            <button onclick="toggleSinglesPlayoff()" class="px-6 py-3 text-[10px] font-black rounded shadow-md ${state.singlesPlayoffActive ? 'bg-sky-500 text-white' : 'bg-gray-400 text-white'}">${state.singlesPlayoffActive ? 'ACTIVE' : 'OFF'}</button>
+                        </div>
+                        <div class="bg-sky-900 text-white p-6 shadow-xl">
+                            <h3 class="font-black uppercase italic mb-2">1st Half Standings Reset</h3>
+                            <p class="text-[10px] opacity-70 mb-4">Archives full standings with HCP. Standings will be reset to 0-0-0. Season Stats will stay cumulative.</p>
+                            <button onclick="window.endSinglesHalf()" class="w-full bg-sky-500 text-black p-4 font-black uppercase shadow-lg">Archive Standings Now</button>
+                        </div>
+                    ` : ''}
+
+                    <div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-2 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button><button onclick="window.toggleManualEntry()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.manualEntryEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Manual Entry: ${state.manualEntryEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleReport()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.reportEnabled ? 'bg-purple-600 text-white' : 'bg-zinc-500 text-white'}">Report: ${state.reportEnabled ? 'ON' : 'OFF'}</button></div><div class="bg-white p-6 shadow mb-4"><h3 class="text-[10px] font-black uppercase mb-2">Club News Editor</h3><textarea id="newsInput" class="w-full h-40 border p-3 rounded-none text-sm mb-2" placeholder="Write club news here...">${state.news || ''}</textarea><button onclick="window.saveNews()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-lg">Save News Update</button></div><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
             } else if (view === 'TOURNAMENT') {
                 let navHtml = `<nav class="flex flex-col bg-zinc-950 border-b border-zinc-900 sticky top-0 z-50"><div class="flex"><button onclick="setTView('BRACKET')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'BRACKET' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Bracket</button><button onclick="setTView('ROSTER')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'ROSTER' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Roster</button><button onclick="setTView('MANAGE')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'MANAGE' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Manage</button></div>${tView === 'BRACKET' && tState.bracket ? `<div class="flex gap-2 p-3 bg-zinc-900 border-t border-zinc-800 no-print justify-center items-center"><button onclick="window.zoomB(0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">+</button><button onclick="window.zoomB(-0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">-</button><button onclick="window.zoomB('reset')" class="bg-zinc-800 text-white px-5 py-2 text-[10px] uppercase font-black border border-zinc-700 hover:bg-zinc-700">Reset</button><button onclick="window.printBracket()" class="bg-sky-700 text-white px-5 py-2 text-[10px] uppercase font-black border border-sky-800 hover:bg-sky-600 ml-2">Print Bracket</button></div>` : ''}</nav>`;
                 if (tView === 'ROSTER') {
@@ -1622,7 +1769,7 @@
             }
             const fNum = scoring.frames.length + 1;
             let turn = (scoring.rotation === 'T1_FIRST') ? (fNum % 2 !== 0 ? ['p1', 'p3', 'p2', 'p4'] : ['p3', 'p1', 'p4', 'p2']) : (fNum % 2 !== 0 ? ['p3', 'p1', 'p4', 'p2'] : ['p1', 'p3', 'p2', 'p4']);
-            const upKey = turn[scoring.pitcherIdx]; const isT1Turn = ['p1', 'p2'].includes(upKey);
+            const upKey = turn[scoring.pitcherIdx]; const iST1Turn = ['p1', 'p2'].includes(upKey);
             const t1s = scoring.frames.reduce((a, b) => a + (Number(b.p1) || 0) + (Number(b.p2) || 0), 0) + scoring.h1;
             const t2s = scoring.frames.reduce((a, b) => a + (Number(b.p3) || 0) + (Number(b.p4) || 0), 0) + scoring.h2;
             const rp1 = scoring.frames.reduce((s,f)=>s+getR(f.p1),0) + getR(scoring.currF.p1);
@@ -1630,7 +1777,7 @@
             const rp3 = scoring.frames.reduce((s,f)=>s+getR(f.p3),0) + getR(scoring.currF.p3);
             const rp4 = scoring.frames.reduce((s,f)=>s+getR(f.p4),0) + getR(scoring.currF.p4);
             const getSymT = (pts, oppPts) => { if (pts === null) return '--'; if (pts === 6 && oppPts === 6) return 'XX'; if (pts >= 6) return 'OO'; if (pts === 4) return "O'"; if (pts === 3) return 'O'; return '--'; };
-            mod.innerHTML = `<div class="sticky top-0 z-[100] bg-black text-white"><div class="bg-black p-3 flex justify-between items-center border-b border-zinc-800"><button onclick="document.getElementById('modal').style.display='none'; scoring.active=false;" class="text-[10px] font-black uppercase text-zinc-500">Back</button><span class="text-sky-400 font-black text-xs uppercase">Frame ${fNum} ${fNum > 15 ? '(Tie-Break)' : ''}</span><div class="w-8"></div></div><div class="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800"><div class="p-8 text-center transition-colors duration-300 ${isT1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t1.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p1n)}: ${rp1}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p2n)}: ${rp2}R</span></div><p class="text-7xl font-black score-val">${t1s}</p></div><div class="p-8 text-center transition-colors duration-300 ${!isT1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t2.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p3n)}: ${rp3}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p4n)}: ${rp4}R</span></div><p class="text-7xl font-black score-val">${t2s}</p></div></div><div class="bg-sky-500 text-black text-center p-3 font-black uppercase text-[11px] italic">UP: ${getFirst(upKey === 'p1' ? scoring.p1n : upKey === 'p2' ? scoring.p2n : upKey === 'p3' ? scoring.p3n : scoring.p4n)}</div><div class="t-btn-score-grid">${[0, 1, 2, 3, 4, 6].map(s => `<button onclick="tAddScore(${s})" class="t-btn-score"><span class="num" style="font-size:2rem;">${s}</span><span class="sym" style="font-size:0.6rem;">${getSym(s)}</span></button>`).join('')}</div><table class="t-micro-table border-b border-sky-500"><thead><tr><th class="c-sh">SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t">T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t2">T2</th></tr></thead></table></div><div class="t-micro-container" style="height: calc(100vh - 540px);"><table class="t-micro-table"><tbody><tr class="bg-zinc-950"><td class="c-sh">${fNum * 2}</td><td class="c-r">${getSymT(scoring.currF.p1, scoring.currF.p3)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p1 ?? ''}</td><td class="c-s"></td><td class="c-r">${getSymT(scoring.currF.p2, scoring.currF.p4)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p2 ?? ''}</td><td class="c-s"></td><td></td><td class="c-r">${getSymT(scoring.currF.p3, scoring.currF.p1)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p3 ?? ''}</td><td class="c-s"></td><td class="c-r">${getSymT(scoring.currF.p4, scoring.currF.p2)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p4 ?? ''}</td><td class="c-s"></td><td></td></tr>${scoring.frames.map((f, i) => { const sl = scoring.frames.slice(0, i + 1); const s1 = sl.reduce((a, b) => a + (Number(b.p1) || 0), 0); const s2 = sl.reduce((a, b) => a + (Number(b.p2) || 0), 0); const s3 = sl.reduce((a, b) => a + (Number(b.p3) || 0), 0); const s4 = sl.reduce((a, b) => a + (Number(b.p4) || 0), 0); return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSymT(f.p1, f.p3)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 1)">${f.p1}</td><td class="c-s">${s1}</td><td class="c-r">${getSymT(f.p2, f.p4)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 2)">${f.p2}</td><td class="c-s">${s2}</td><td class="c-t">${s1 + s2 + scoring.h1}</td><td class="c-r">${getSymT(f.p3, f.p1)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 3)">${f.p3}</td><td class="c-s">${s3}</td><td class="c-r">${getSymT(f.p4, f.p2)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 4)">${f.p4}</td><td class="c-s">${s4}</td><td class="c-t2">${s3 + s4 + scoring.h2}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
+            mod.innerHTML = `<div class="sticky top-0 z-[100] bg-black text-white"><div class="bg-black p-3 flex justify-between items-center border-b border-zinc-800"><button onclick="document.getElementById('modal').style.display='none'; scoring.active=false; if(document.fullscreenElement) document.exitFullscreen();" class="text-[10px] font-black uppercase text-zinc-500">Back</button><span class="text-sky-400 font-black text-xs uppercase">Frame ${fNum} ${fNum > 15 ? '(Tie-Break)' : ''}</span><div class="w-8"></div></div><div class="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800"><div class="p-8 text-center transition-colors duration-300 ${iST1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t1.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p1n)}: ${rp1}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p2n)}: ${rp2}R</span></div><p class="text-7xl font-black score-val">${t1s}</p></div><div class="p-8 text-center transition-colors duration-300 ${!iST1Turn ? 'active-team-card' : ''}"><p class="text-[8px] font-black opacity-30 truncate uppercase">${scoring.t2.name}</p><div class="flex justify-center gap-1 mt-1 mb-2"><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p3n)}: ${rp3}R</span><span class="bg-zinc-800/50 text-[8px] px-2 py-0.5 font-black uppercase border border-zinc-700">${getFirst(scoring.p4n)}: ${rp4}R</span></div><p class="text-7xl font-black score-val">${t2s}</p></div></div><div class="bg-sky-500 text-black text-center p-3 font-black uppercase text-[11px] italic">UP: ${getFirst(upKey === 'p1' ? scoring.p1n : upKey === 'p2' ? scoring.p2n : upKey === 'p3' ? scoring.p3n : scoring.p4n)}</div><div class="t-btn-score-grid">${[0, 1, 2, 3, 4, 6].map(s => `<button onclick="tAddScore(${s})" class="t-btn-score"><span class="num" style="font-size:2rem;">${s}</span><span class="sym" style="font-size:0.6rem;">${getSym(s)}</span></button>`).join('')}</div><table class="t-micro-table border-b border-sky-500"><thead><tr><th class="c-sh">SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t">T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="c-t2">T2</th></tr></thead></table></div><div class="t-micro-container" style="height: calc(100vh - 540px);"><table class="t-micro-table"><tbody><tr class="bg-zinc-950"><td class="c-sh">${fNum * 2}</td><td class="c-r">${getSymT(scoring.currF.p1, scoring.currF.p3)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p1 ?? ''}</td><td class="c-s"></td><td class="c-r">${getSymT(scoring.currF.p2, scoring.currF.p4)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p2 ?? ''}</td><td class="c-s"></td><td></td><td class="c-r">${getSymT(scoring.currF.p3, scoring.currF.p1)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p3 ?? ''}</td><td class="c-s"></td><td class="c-r">${getSymT(scoring.currF.p4, scoring.currF.p2)}</td><td class="c-p" style="color:#facc15;">${scoring.currF.p4 ?? ''}</td><td class="c-s"></td><td></td></tr>${scoring.frames.map((f, i) => { const sl = scoring.frames.slice(0, i + 1); const s1 = sl.reduce((a, b) => a + (Number(b.p1) || 0), 0); const s2 = sl.reduce((a, b) => a + (Number(b.p2) || 0), 0); const s3 = sl.reduce((a, b) => a + (Number(b.p3) || 0), 0); const s4 = sl.reduce((a, b) => a + (Number(b.p4) || 0), 0); return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSymT(f.p1, f.p3)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 1)">${f.p1}</td><td class="c-s">${s1}</td><td class="c-r">${getSymT(f.p2, f.p4)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 2)">${f.p2}</td><td class="c-s">${s2}</td><td class="c-t">${s1 + s2 + scoring.h1}</td><td class="c-r">${getSymT(f.p3, f.p1)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 3)">${f.p3}</td><td class="c-s">${s3}</td><td class="c-r">${getSymT(f.p4, f.p2)}</td><td class="edit-cell" onclick="window.editTScoreCell(${i}, 4)">${f.p4}</td><td class="c-s">${s4}</td><td class="c-t2">${s3 + s4 + scoring.h2}</td></tr>`; }).reverse().join('')}</tbody></table></div>`;
         }
 
         window.printSanctionSheet = () => {
@@ -1662,4 +1809,3 @@
     </script>
 </body>
 </html>
-
