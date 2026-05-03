@@ -25,27 +25,37 @@
         .tab-active { border-bottom: 4px solid #0ea5e9; color: #0ea5e9; font-weight: 900; }
         .mode-btn-active { background-color: #0ea5e9 !important; color: white !important; font-weight: 900; }
 
-        /* SCORER TABLES */
+        /* SCORER TABLES - FIXED WIDTH FOR MOBILE FIT */
+        .scorer-max-width { max-width: 900px; margin: 0 auto; width: 100%; }
+        
         .micro-container { 
-            width: 100vw; 
-            margin-left: -0.5rem; 
+            width: 100%; 
             background: #000; 
             border-top: 1px solid #333;
-            height: calc(100vh - 550px);
+            height: calc(100vh - 540px);
             overflow-y: auto;
         }
         .micro-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: 'Roboto Condensed', sans-serif; }
         .micro-table th { 
-            font-size: 0.6rem;
+            font-size: 0.5rem;
             padding: 8px 0; 
             color: #7dd3fc; 
             background: #111; 
-            border: 0.5px solid #333; 
+            border: 0.5px solid #222; 
             text-transform: uppercase;
         }
-        .micro-table td { font-size: 1.25rem; padding: 12px 0; text-align: center; border: 0.5px solid #1a1a1a; color: #fff; line-height: 1; }
+        .micro-table td { font-size: 1.1rem; padding: 12px 0; text-align: center; border: 0.5px solid #1a1a1a; color: #fff; line-height: 1; }
+        
+        /* SCORER COLUMN WIDTH PERCENTAGES (Total = 100%) */
+        .c-sh { width: 8% !important; font-weight: 900; color: #0ea5e9 !important; border-right: 1.5px solid #0ea5e9 !important; background: #000; position: sticky; left: 0; z-index: 10; }
+        .c-r { width: 5% !important; color: #38bdf8; font-weight: bold; font-size: 0.6rem !important; } 
+        .c-p { width: 5% !important; font-weight: bold; color: #facc15; } 
+        .c-s { width: 6% !important; font-weight: bold; color: #fff; opacity: 0.5; }
+        /* T1 and T2 - Highlight Removed */
+        .c-t { width: 13.5% !important; background: #000 !important; color: #fff !important; font-weight: 900; font-size: 1.1rem !important; border-left: 1px solid #333 !important; border-right: 1px solid #333 !important; }
+        .c-t2 { width: 13.5% !important; background: #000 !important; color: #0ea5e9 !important; font-weight: 900; font-size: 1.1rem !important; border-left: 1px solid #333 !important; }
+
         .edit-cell { color: #fcd34d !important; font-weight: 900; cursor: pointer; }
-        .sh-cell { background: #000; color: #0ea5e9; font-weight: 900; border-right: 1.5px solid #0ea5e9 !important; }
         .curr-row { background: #171717; outline: 1px solid #444; }
 
         /* PITCHING HIGHLIGHT */
@@ -83,7 +93,7 @@
             .grid > div { flex: 1 !important; }
         }
 
-        .btn-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
+        .btn-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; background: #000; }
         .btn-score { background: white; border-bottom: 4px solid #cbd5e1; height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .btn-score .num { font-size: 2.2rem; font-weight: 900; color: #111; line-height: 1; }
         .btn-score .sym { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
@@ -102,18 +112,10 @@
         .t-btn-score .num { font-size: 3.2rem; font-weight: 900; line-height: 1; color: white; }
         .t-btn-score .sym { font-size: 0.8rem; color: #38bdf8; font-weight: 900; margin-top: 4px; }
 
-        .t-micro-container { width: 100vw; background: #000; overflow-x: hidden; border-top: 1px solid #1e293b; }
+        .t-micro-container { width: 100%; background: #000; overflow-x: hidden; border-top: 1px solid #1e293b; height: 40vh; overflow-y: auto; }
         .t-micro-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: 'Roboto Condensed', sans-serif; }
         .t-micro-table th { font-size: 0.35rem; padding: 4px 0; color: #7dd3fc; background: #0f172a; border: 0.1px solid #1e293b; text-transform: uppercase; }
         .t-micro-table td { font-size: 0.8rem; padding: 8px 0; text-align: center; border: 0.1px solid #0f172a; color: #fff; line-height: 1; }
-
-        .c-sh { width: 30px !important; font-weight: 900; color: #0ea5e9 !important; border-right: 1.5px solid #0ea5e9 !important; background: #000; position: sticky; left: 0; z-index: 10; }
-        .c-r { width: 22px !important; color: #38bdf8; font-weight: bold; } 
-        .c-p { width: 22px !important; font-weight: bold; color: #facc15; } 
-        .c-s { width: 24px !important; font-weight: bold; color: #fff; opacity: 0.8; }
-        /* T1 and T2 made wider as requested */
-        .c-t { width: 44px !important; background: #0c4a6e; font-weight: 900; font-size: 0.9rem !important; border-left: 1.5px solid #38bdf8 !important; }
-        .c-t2 { width: 44px !important; background: #1e293b; font-weight: 900; color: #0ea5e9 !important; font-size: 0.9rem !important; border-left: 1.5px solid #0ea5e9 !important; }
 
         .active-team-card { background-color: #0ea5e9 !important; color: #000 !important; }
         .active-team-card p { color: #000 !important; opacity: 1 !important; font-weight: 900; }
@@ -144,7 +146,7 @@
         #customDialog { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
         .dialog-box { background: #18181b; border: 2px solid #3f3f46; width: 100%; max-width: 400px; padding: 24px; color: white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
 
-        /* LANDSCAPE SPECIFIC ADJUSTMENTS */
+        /* LANDSCAPE SPECIFIC ADJUSTMENTS - HUGE SCORE RESTORED */
         @media (orientation: landscape) {
             .sticky-scorer { position: relative !important; top: 0 !important; width: 100% !important; max-width: none !important; }
             .micro-container { height: auto !important; min-height: 250px; overflow-y: visible !important; }
@@ -152,7 +154,7 @@
             .btn-score { height: 90px !important; background: #fff !important; }
             .btn-score .num { font-size: 3rem !important; }
             .btn-score .sym { display: block; font-size: 0.8rem; }
-            .sticky-scorer .text-8xl { font-size: 10rem !important; line-height: 0.8 !important; }
+            .sticky-scorer .text-8xl { font-size: 12rem !important; line-height: 0.8 !important; }
             .sticky-scorer .py-4 { padding: 1.5rem !important; }
             .sticky-scorer .text-[12px] { font-size: 1.2rem !important; }
             .sticky-scorer .text-[11px] { font-size: 1rem !important; }
@@ -160,7 +162,7 @@
             .t-btn-score-grid { grid-template-columns: repeat(6, 1fr) !important; padding: 8px !important; }
             .t-btn-score { height: 100px !important; }
             .t-btn-score .num { font-size: 3rem !important; }
-            .c-t, .c-t2 { width: 50px !important; }
+            .c-t, .c-t2 { width: 15% !important; }
         }
 
         /* REPORT STYLES */
@@ -240,7 +242,7 @@
         const docRefTourney = doc(db, "tournament_final_v1", "data");
 
         // state updated to include 4. Singles Half logic storage
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: [] }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null };
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null };
         let mode = 'DOUBLES';
         let view = 'NEWS';
         let scorerMode = 'LIVE'; 
@@ -332,7 +334,12 @@
                 if(!state.hcpLocked) state.hcpLocked = {SINGLES:true, DOUBLES:true};
                 if(state.manualEntryEnabled === undefined) state.manualEntryEnabled = true;
                 if(!state.weeklyHoa) state.weeklyHoa = { SINGLES: [], DOUBLES: [] };
-                if(!state.fourDeads) state.fourDeads = { SINGLES: {}, DOUBLES: [] };
+                
+                // FIX: Initialization for Four Deads structure
+                if (!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
+                if (Array.isArray(state.fourDeads.SINGLES)) state.fourDeads.SINGLES = {};
+                if (Array.isArray(state.fourDeads.DOUBLES)) state.fourDeads.DOUBLES = {};
+                
                 if(state.news === undefined) state.news = '';
                 if(state.scorerEnabled === undefined) state.scorerEnabled = true;
                 if(state.tournamentEnabled === undefined) state.tournamentEnabled = false;
@@ -710,7 +717,6 @@
 
         window.resumeLeagueMatch = (sessId) => { const found = state.activeMatches.find(m => m.sessionId === sessId); if(found) { 
             match = JSON.parse(JSON.stringify(found)); 
-            // 3. Trigger Fullscreen on resume
             triggerFS();
             render(); 
         } };
@@ -719,6 +725,7 @@
             if(await window.smConfirm("Delete this in-progress game?")) { 
                 state.activeMatches = state.activeMatches.filter(m => m.sessionId !== sessId); 
                 save(); 
+                render();
             } 
         };
 
@@ -750,10 +757,7 @@
             }
 
             match.step = 'LIVE'; match.pitcherIdx = 0; match.currGameFrames = []; match.currF = { p1: null, p2: null, p3: null, p4: null };
-            
-            // 3. Trigger Fullscreen on start
             triggerFS();
-            
             updateActiveMatchRef(); render();
         };
 
@@ -768,7 +772,6 @@
         function updateActiveMatchRef() { const idx = state.activeMatches.findIndex(m => m.sessionId === match.sessionId); if(idx !== -1) { state.activeMatches[idx] = JSON.parse(JSON.stringify(match)); save(); } }
 
         window.editLiveScoreCell = async (idx, pNum) => {
-            // FIX: Prevent invalid values by using button keypad
             const val = await window.smHorseKeypad(`Edit Scratch Score`, [0, 1, 2, 3, 4, 6]);
             if(val !== null) { match.currGameFrames[idx]['p'+pNum] = Number(val); updateActiveMatchRef(); render(); }
         };
@@ -776,34 +779,6 @@
         window.nextGame = () => { match.gameNum++; if (mode === 'SINGLES' && !match.isPlayoff) window.startTheLiveGame(); else { match.step = 'PLAYERS'; render(); } };
 
         function finalizeFrame() {
-            // LOGIC FIX: Helper to verify if two specific opponents both hit 6 in the same frame
-            const isFourDeadPair = (idxA, idxB) => {
-                const nameA = match['p' + idxA];
-                const nameB = match['p' + idxB];
-                // Ignore BYE/DUMMY
-                if (!nameA || !nameB || ['bye', 'dummy'].includes(cleanN(nameA)) || ['bye', 'dummy'].includes(cleanN(nameB))) return false;
-                // Check if both had a 6 frame
-                return (match.currF['p' + idxA] === 6 && match.currF['p' + idxB] === 6);
-            };
-            
-            if (mode === 'SINGLES') { 
-                if (isFourDeadPair('1', '3')) { 
-                    match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; 
-                    match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; 
-                } 
-            } else { 
-                // Doubles Pair 1: p1 vs p3
-                if (isFourDeadPair('1', '3')) { 
-                    match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1; 
-                    match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1; 
-                } 
-                // Doubles Pair 2: p2 vs p4
-                if (isFourDeadPair('2', '4')) { 
-                    match.fourDeadLog[match.p2] = (match.fourDeadLog[match.p2] || 0) + 1; 
-                    match.fourDeadLog[match.p4] = (match.fourDeadLog[match.p4] || 0) + 1; 
-                } 
-            }
-            
             match.currGameFrames.push({ ...match.currF, sh: (match.currGameFrames.length + 1) * 2 });
             match.currF = { p1: null, p2: null, p3: null, p4: null }; match.pitcherIdx = 0;
             if (match.currGameFrames.length >= (mode === 'DOUBLES' ? 15 : 25)) showInterSummary();
@@ -818,6 +793,14 @@
         }
 
         function showInterSummary() {
+            if (mode === 'SINGLES') {
+                match.currGameFrames.forEach(f => {
+                    if (f.p1 === 6 && f.p3 === 6) {
+                        if (match.p1) match.fourDeadLog[match.p1] = (match.fourDeadLog[match.p1] || 0) + 1;
+                        if (match.p3) match.fourDeadLog[match.p3] = (match.fourDeadLog[match.p3] || 0) + 1;
+                    }
+                });
+            }
             const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
             const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
             const s1C = sc1 + match.h1 + match.h2 + d1 + d2, s2C = sc2 + match.h3 + match.h4 + d3 + d4;
@@ -833,13 +816,11 @@
 
         window.finalizeFullSeries = async () => {
             if (document.fullscreenElement) document.exitFullscreen();
-            
             let mW; const target = mode === 'SINGLES' ? 135 : 162;
             if (cleanN(match.t2Name) === 'bye') { const wins = match.games.filter(g => g.s1 >= target).length; mW = wins > 0 ? match.t1Name : 'BYE'; }
             else if (cleanN(match.t1Name) === 'bye') { const wins = match.games.filter(g => g.s2 >= target).length; mW = wins > 0 ? match.t2Name : 'BYE'; }
             else mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie');
             const today = new Date().toLocaleDateString(); 
-            
             if (!match.isPlayoff) {
                 state.history.push(...match.seriesBuffer);
                 match.seriesBuffer.forEach(entry => {
@@ -848,16 +829,12 @@
                     if (idx !== -1) { if (hoa > state.weeklyHoa[mode][idx].hoa) state.weeklyHoa[mode][idx] = { date: today, player: entry.player, hoa: hoa }; }
                     else state.weeklyHoa[mode].push({ date: today, player: entry.player, hoa: hoa });
                 });
-                
                 if(!state.fourDeads[mode]) state.fourDeads[mode] = {};
                 Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
             }
-
             state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now(), isPlayoff: match.isPlayoff });
-            
             state.activeMatches = state.activeMatches.filter(x => x.sessionId !== match.sessionId);
             match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {}, isPlayoff: false };
-            
             view = 'STANDINGS'; 
             await save(); 
             render();
@@ -867,13 +844,13 @@
         window.setScorerView = (v) => { scorerMode = v; render(); };
         window.updateManualHcp = (pNum) => { const pName = document.getElementById('mp'+pNum).value; document.getElementById('mh'+pNum).value = getH(pName); };
 
-        // Restricted Value Picker for Manual Entry
-        window.openManualPicker = async (id, isRingers = false) => {
-            const options = isRingers ? [0, 1, 2] : [0, 1, 2, 3, 4, 6];
-            const result = await window.smHorseKeypad(isRingers ? "Select Turn Ringers" : "Select Turn Scratch Score", options);
+        window.openManualPicker = async (id, label) => {
+            const result = await window.smKeypad("Enter " + label);
             if (result !== null) {
                 const btn = document.getElementById(id);
-                btn.innerText = (isRingers ? "RNG: " : "SCR: ") + result;
+                let prefix = "SCR: ";
+                if(label.toLowerCase().includes("ringer")) prefix = "RNG: ";
+                btn.innerText = prefix + result;
                 btn.dataset.value = result;
                 btn.classList.add('active');
             }
@@ -896,14 +873,28 @@
             for(let i=startIdx; i<startIdx+3; i++) { const el = document.getElementById('mp'+i); if(el) el.innerHTML = opts; }
         };
 
+        window.openManualFourDeadPicker = async () => {
+            const val = await window.smKeypad("Count Four-Deads");
+            if(val !== null) document.getElementById('mfdCount').value = val;
+        };
+
+        // FIXED: Manual Four Deads Logic
         window.submitManualFourDeads = async () => {
             const name = document.getElementById('mfdName').value;
-            const count = parseInt(document.getElementById('mfdCount').value);
-            if(!name || isNaN(count)) return smAlert("Select name and enter count");
-            if(!state.fourDeads[mode]) state.fourDeads[mode] = {};
+            const countStr = document.getElementById('mfdCount').value;
+            const count = parseInt(countStr);
+            
+            if(!name || isNaN(count)) return window.smAlert("Select name and enter count");
+            
+            // Critical Safety: Initialize state path if broken
+            if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
+            if(!state.fourDeads[mode] || Array.isArray(state.fourDeads[mode])) state.fourDeads[mode] = {};
+            
             state.fourDeads[mode][name] = (state.fourDeads[mode][name] || 0) + count;
+            
             await save();
-            await smAlert(`Success: ${count} Four-Deads added to ${name}'s stats.`);
+            await window.smAlert(`Success: ${count} Four-Deads added to ${name}'s stats.`);
+            document.getElementById('mfdCount').value = ""; // Clear input
             render();
         };
 
@@ -949,9 +940,7 @@
                     r1 = s1 > s2 ? 'W' : (s1 < s2 ? 'L' : 'T');
                     r2 = s2 > s1 ? 'W' : (s2 < s1 ? 'L' : 'T');
                 }
-
                 agg1 += s1; agg2 += s2;
-                
                 games.push({ gameNum: g, s1, s2, h1: t1Hcp, h2: t2Hcp, 
                     p1: t1Pls[0]?.name||'', p1_scr: t1Pls[0]?.[`g${g}_scr`]||0, p1_rng: t1Pls[0]?.[`g${g}_rng`]||0, 
                     p2: t1Pls[1]?.name||'', p2_scr: t1Pls[1]?.[`g${g}_scr`]||0, p2_rng: t1Pls[1]?.[`g${g}_rng`]||0, 
@@ -960,7 +949,6 @@
                     p5: t1Pls[2]?.name||'', p5_scr: t1Pls[2]?.[`g${g}_scr`]||0, p5_rng: t1Pls[2]?.[`g${g}_rng`]||0,
                     p6: t2Pls[2]?.name||'', p6_scr: t2Pls[2]?.[`g${g}_scr`]||0, p6_rng: t2Pls[2]?.[`g${g}_rng`]||0
                 });
-                
                 players.forEach(p => { 
                     const scr = p[`g${g}_scr`];
                     if(scr !== null && cleanN(p.name) !== 'dummy' && cleanN(p.name) !== 'bye' && p.name !== '') {
@@ -1007,7 +995,6 @@
                         <p class="text-sky-400 font-black uppercase text-xs">Series Winner: ${mW}</p>
                     </div>
                 </div>
-                
                 <div class="overflow-x-auto bg-zinc-900 border border-zinc-800 rounded-lg p-2">
                     <table class="w-full text-center">
                         <thead>
@@ -1023,7 +1010,6 @@
         };
 
         /* TOURNAMENT SCORING LOGIC */
-
         window.tAddScore = (pts) => {
             const fNum = scoring.frames.length + 1; 
             let turn = (scoring.rotation === 'T1_FIRST') ? (fNum % 2 !== 0 ? ['p1', 'p3', 'p2', 'p4'] : ['p3', 'p1', 'p4', 'p2']) : (fNum % 2 !== 0 ? ['p3', 'p1', 'p4', 'p2'] : ['p1', 'p3', 'p2', 'p4']);
@@ -1032,11 +1018,9 @@
             if(scoring.pitcherIdx > 3) { 
                 scoring.frames.push({ ...scoring.currF, sh: fNum * 2 }); 
                 scoring.currF = { p1: null, p2: null, p3: null, p4: null }; scoring.pitcherIdx = 0; 
-                
                 const t1s = scoring.frames.reduce((a,b)=>a+(Number(b.p1)||0)+(Number(b.p2)||0),0) + scoring.h1; 
                 const t2s = scoring.frames.reduce((a,b)=>a+(Number(b.p3)||0)+(Number(b.p4)||0),0) + scoring.h2; 
                 const frameCount = scoring.frames.length;
-
                 if (frameCount >= 15) {
                     const extra = frameCount - 15;
                     if (extra % 2 === 0 && t1s !== t2s) { 
@@ -1056,17 +1040,13 @@
         window.saveTMatch = async (winOverride = null) => {
             const m = [...tState.bracket.winners, ...tState.bracket.losers].find(x => x.id === scoring.mid);
             if(!m) return window.smAlert("Error: Match ID not found.");
-
             const winT = scoring.final1 > scoring.final2 ? scoring.t1 : scoring.t2;
             const loser = scoring.final1 > scoring.final2 ? scoring.t2 : scoring.t1;
-            
             m.win = winT.name; 
             m.s1 = scoring.final1; 
             m.s2 = scoring.final2; 
-
             tState.bracketHistory[scoring.mid] = { ...scoring, s1: scoring.final1, s2: scoring.final2 }; 
             tState.matchHistory.push({ id: scoring.mid, date: new Date().toLocaleDateString(), timestamp: Date.now(), t1Name: scoring.t1.name, t2Name: scoring.t2.name, s1: scoring.final1, s2: scoring.final2, frames: JSON.parse(JSON.stringify(scoring.frames)), p1n: scoring.p1n, p2n: scoring.p2n, p3n: scoring.p3n, p4n: scoring.p4n, h1: scoring.h1, h2: scoring.h2 });
-            
             const tourneySessionId = Date.now();
             [{n: scoring.p1n, p: 'p1'}, {n: scoring.p2n, p: 'p2'}, {n: scoring.p3n, p: 'p3'}, {n: scoring.p4n, p: 'p4'}].forEach(pl => {
                 if(pl.n && !['BYE','DUMMY'].includes(cleanN(pl.n).toUpperCase())) {
@@ -1075,14 +1055,11 @@
                     state.history.push({ player: pl.n, score: pScore, ringers: pRingers, result: null, mode: mode, date: new Date().toLocaleDateString(), sessionId: tourneySessionId, gameNum: 1, timestamp: Date.now() });
                 }
             });
-
             tAdvance(scoring.mid, winT, loser);
             tState.tActiveMatches = tState.tActiveMatches.filter(m => m.sessionId !== scoring.sessionId);
             scoring.active = false;
-            
             document.getElementById('modal').style.display = 'none';
             tView = 'BRACKET';
-            
             await save(); 
             await tSave();
             render();
@@ -1091,13 +1068,10 @@
         window.showSummary = (mid) => {
             const h = tState.matchHistory.find(x => x.id === mid);
             if (!h) return window.smAlert("No history found for this match.");
-            
             const mod = document.getElementById('modal');
             mod.style.display = 'block';
-
             const getS = (pk) => h.frames.reduce((a, b) => a + (Number(b[pk]) || 0), 0);
             const getRings = (pk) => h.frames.reduce((a, b) => a + getR(b[pk]), 0);
-
             let rowsHtml = '';
             [{n: h.p1n, p: 'p1'}, {n: h.p2n, p: 'p2'}, {n: h.p3n, p: 'p3'}, {n: h.p4n, p: 'p4'}].forEach(pl => {
                 rowsHtml += `<tr>
@@ -1107,12 +1081,10 @@
                     <td class="p-4 border-b border-zinc-800 bg-sky-950 font-black text-sky-400">${getPlyrAvg(pl.n)}</td>
                 </tr>`;
             });
-
             mod.innerHTML = `
                 <div class="p-6 bg-zinc-950 min-h-screen text-white">
                     <h2 class="text-center text-sky-500 font-black uppercase italic text-2xl mb-2">Match History: ${mid}</h2>
                     <p class="text-center text-5xl font-black mb-8">${h.s1} - ${h.s2}</p>
-                    
                     <div class="bg-zinc-900 border border-zinc-800 mb-8">
                         <table class="w-full text-center border-collapse">
                             <thead>
@@ -1126,13 +1098,11 @@
                             <tbody>${rowsHtml}</tbody>
                         </table>
                     </div>
-                    
                     <button onclick="document.getElementById('modal').style.display='none'" class="w-full bg-zinc-800 text-white p-6 rounded-2xl font-black uppercase text-sm">Close Summary</button>
                 </div>`;
         };
 
         window.editTScoreCell = async (idx, pNum) => {
-            // FIX: Use appropriate button keypad for restricted scores
             const val = await window.smHorseKeypad(`Edit Points`, [0, 1, 2, 3, 4, 6]);
             if(val !== null) {
                 scoring.frames[idx]['p'+pNum] = Number(val);
@@ -1148,42 +1118,33 @@
         window.editPastGame = async (sId, sGameIdx) => {
             const sess = state.sessions.find(x => x.id === sId); if(!sess) return;
             const g = sess.fullData[sGameIdx];
-            
             const processEdit = async (pName, curS, curR, curH) => {
                 if(!pName || ['bye','dummy'].includes(cleanN(pName))) return {s:0, r:0, h:curH};
                 const ns = Number(await window.smPrompt(`${getFirst(pName)} - New Points:`, curS));
                 const nr = Number(await window.smPrompt(`${getFirst(pName)} - New Ringers:`, curR));
                 const nh = Number(await window.smPrompt(`${getFirst(pName)} - New Handicap:`, curH));
-                
                 const hRec = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pName));
                 if(hRec) { hRec.score = ns; hRec.ringers = nr; }
                 return {s: ns, r: nr, h: nh};
             };
-
             const d1 = await processEdit(g.p1, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p1||0),0) : g.p1_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p1),0) : g.p1_rng, g.h1);
             const d2 = (mode==='DOUBLES') ? await processEdit(g.p2, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p2||0),0) : g.p2_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p2),0) : g.p2_rng, g.h2) : {s:0, r:0, h:0};
             const d3 = await processEdit(g.p3, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p3||0),0) : g.p3_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p3),0) : g.p3_rng, g.h3);
             const d4 = (mode==='DOUBLES') ? await processEdit(g.p4, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p4||0),0) : g.p4_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p4),0) : g.p4_rng, g.h4) : {s:0, r:0, h:0};
-            
             g.h1=d1.h; g.h2=d2.h; g.h3=d3.h; g.h4=d4.h;
-            
             let s1raw = (cleanN(g.p1)==='dummy'?30:d1.s) + (cleanN(g.p2)==='dummy'?30:d2.s) + g.h1 + g.h2;
             let s2raw = (cleanN(g.p3)==='dummy'?30:d3.s) + (cleanN(g.p4)==='dummy'?30:d4.s) + g.h3 + g.h4;
-            
             const [t1n, t2n] = sess.name.split(' vs '); const target = sess.mode === 'SINGLES' ? 135 : 162;
             if (cleanN(t2n) === 'bye') { g.s1 = s1raw; g.s2 = (s1raw >= target) ? target - 1 : target; }
             else if (cleanN(t1n) === 'bye') { g.s2 = s2raw; g.s1 = (s2raw >= target) ? target - 1 : target; }
             else { g.s1 = s1raw; g.s2 = s2raw; }
-            
             const r1 = g.s1 > g.s2 ? 'W' : (g.s1 < g.s2 ? 'L' : 'T'), r2 = g.s2 > g.s1 ? 'W' : (g.s2 < g.s1 ? 'L' : 'T');
             const updH = (pN, res) => { const hR = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pN)); if(hR) hR.result = res; };
             updH(g.p1, r1); updH(g.p2, r1); updH(g.p3, r2); updH(g.p4, r2);
-            
             sess.agg1 = sess.fullData.reduce((s, gm)=> s + gm.s1, 0); sess.agg2 = sess.fullData.reduce((s, gm)=> s + gm.s2, 0);
             if (cleanN(t2n) === 'bye') { const wins = sess.fullData.filter(gm => gm.s1 >= target).length; sess.matchWinner = wins > 0 ? t1n : 'BYE'; }
             else if (cleanN(t1n) === 'bye') { const wins = sess.fullData.filter(gm => gm.s2 >= target).length; sess.matchWinner = wins > 0 ? t2n : 'BYE'; }
             else sess.matchWinner = sess.agg1 > sess.agg2 ? t1n : (sess.agg1 < sess.agg2 ? t2n : 'Tie');
-
             save(); render();
         };
 
@@ -1196,18 +1157,55 @@
         window.editRosterItem = async (idx) => { 
             if (mode === 'SINGLES') { 
                 let p = state.roster.SINGLES[idx]; 
-                p.name = await window.smPrompt("Edit Name:", p.name); 
+                p.name = await window.smPrompt("Edit Name:", p.name) || p.name; 
                 p.startAvg = Number(await window.smPrompt("Edit Start Avg:", p.startAvg)); 
-                p.currentHcp = Number(await window.smPrompt("Edit Current HCP:", p.currentHcp)); 
+                p.category = await window.smPrompt("Edit Category (e.g. Elders):", p.category || "");
+                p.cardNo = await window.smPrompt("Edit NHPA Card Number:", p.cardNo || "");
+                p.prevHighRinger = Number(await window.smPrompt("Edit Prev High Ringer %:", p.prevHighRinger || 0));
+                p.currentHcp = Number(await window.smPrompt("Edit Current Handicap:", p.currentHcp)); 
             } else { 
                 let t = state.roster.DOUBLES[idx]; 
-                t.teamName = await window.smPrompt("Edit Team Name:", t.teamName); 
+                t.teamName = await window.smPrompt("Edit Team Name:", t.teamName) || t.teamName; 
                 for(let i=0; i<t.members.length; i++) {
-                    t.members[i].name = await window.smPrompt(`Member ${i+1} Name:`, t.members[i].name);
-                    t.members[i].currentHcp = Number(await window.smPrompt(`Member ${i+1} HCP:`, t.members[i].currentHcp));
+                    const m = t.members[i];
+                    m.name = await window.smPrompt(`Member ${i+1} Name:`, m.name) || m.name;
+                    m.startAvg = Number(await window.smPrompt(`Member ${i+1} Start Avg:`, m.startAvg || 0));
+                    m.category = await window.smPrompt(`Member ${i+1} Category:`, m.category || "");
+                    m.cardNo = await window.smPrompt(`Member ${i+1} NHPA Card No:`, m.cardNo || "");
+                    m.prevHighRinger = Number(await window.smPrompt(`Member ${i+1} Prev High R%:`, m.prevHighRinger || 0));
+                    m.currentHcp = Number(await window.smPrompt(`Member ${i+1} Current HCP:`, m.currentHcp || 0));
                 }
             } 
             save(); render(); 
+        };
+
+        window.addRosterItem = async () => {
+            if (mode === 'SINGLES') {
+                const name = await window.smPrompt("Player Name:");
+                if (!name) return;
+                const startAvg = Number(await window.smPrompt("Start Avg:", 0));
+                const category = await window.smPrompt("Category (e.g. Elders):", "");
+                const cardNo = await window.smPrompt("NHPA Card #:", "");
+                const prevR = Number(await window.smPrompt("Prev High Ringer %:", 0));
+                const hcp = Number(await window.smPrompt("Starting HCP:", 0));
+                state.roster.SINGLES.push({ name, startAvg, category, cardNo, prevHighRinger: prevR, currentHcp: hcp });
+            } else {
+                const tName = await window.smPrompt("Team Name (e.g. Smith/Jones):");
+                if (!tName) return;
+                const members = [];
+                for (let i = 1; i <= 2; i++) {
+                    const mName = await window.smPrompt(`Member ${i} Name:`);
+                    if (!mName) return;
+                    const mAvg = Number(await window.smPrompt(`Member ${i} Start Avg:`, 0));
+                    const mCat = await window.smPrompt(`Member ${i} Category:`, "");
+                    const mCard = await window.smPrompt(`Member ${i} Card #:`, "");
+                    const mR = Number(await window.smPrompt(`Member ${i} Prev High Ringer %:`, 0));
+                    const mHcp = Number(await window.smPrompt(`Member ${i} Starting HCP:`, 0));
+                    members.push({ name: mName, startAvg: mAvg, category: mCat, cardNo: mCard, prevHighRinger: mR, currentHcp: mHcp });
+                }
+                state.roster.DOUBLES.push({ teamName: tName, members });
+            }
+            save(); window.smAlert("Entry Added Manually"); render();
         };
 
         window.importRoster = () => { 
@@ -1321,16 +1319,12 @@
             const p1 = getD('selP1'), p2 = getD('selP2'), p3 = getD('selP3'), p4 = getD('selP4');
             let b1 = (m.t1.id === 1) ? 10 : (m.t1.id === 2 ? 5 : 0), b2 = (m.t2.id === 1) ? 10 : (m.t2.id === 2 ? 5 : 0);
             scoring = { active: true, step: 'LIVE', mid: id, t1: m.t1, t2: m.t2, p1n: p1.n, p2n: p2.n, p3n: p3.n, p4n: p4.n, h1: p1.h+p2.h+b1, h2: p3.h+p4.h+b2, rotation: window.selRot, frames: [], currF: { p1: null, p2: null, p3: null, p4: null }, pitcherIdx: 0, sessionId: Date.now() };
-            
-            // 3. Trigger Fullscreen for tournament
             triggerFS();
-
             tState.tActiveMatches.push(scoring); tSave(); renderScorer();
         };
 
         window.resumeTMatch = (sessId) => { const found = tState.tActiveMatches.find(m => m.sessionId === sessId); if(found) { 
             scoring = JSON.parse(JSON.stringify(found)); 
-            // 3. Trigger Fullscreen for tournament resume
             triggerFS();
             renderScorer(); 
         } };
@@ -1383,7 +1377,6 @@
 
         window.setTView = (v) => { tView = v; render(); };
 
-        // 4. End Singles Half logic - UPDATED: DO NOT clear stats, ONLY the standings reset marker
         window.endSinglesHalf = async () => {
             if (!await window.smConfirm("Archive 1st Half? All standing data and HCPs will be stored. Standings will be reset for the 2nd half, but all Season stats will remain.")) return;
             const hList = (state.history || []).filter(h => h.mode === 'SINGLES');
@@ -1392,15 +1385,11 @@
                 hList.forEach(h => { if(cleanN(h.player) === cleanN(name)){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); 
                 return { name, w, l, ti, pts: (w*2)+ti, hcp: getH(t.name) }; 
             }).sort((a,b)=>b.pts-a.pts);
-            
             if (rankings.length > 0) {
                 state.singlesHalfWinner = rankings[0].name;
                 state.singlesHalfHcp = rankings[0].hcp;
                 state.singlesHalfArchive = rankings;
-                
-                // 4. SET RESET DATE: Do NOT clear history. Marker resets standings view.
                 state.singlesStandingsResetDate = Date.now();
-                
                 await save();
                 window.smAlert(`1st Half Archived. Standings Reset. All season stats preserved.`);
                 render();
@@ -1416,7 +1405,6 @@
             if (view === 'NEWS') {
                 content.innerHTML = `<div class="flex flex-col items-center py-8 px-4 max-w-2xl mx-auto"><img src="logo.jpg" class="w-48 h-48 object-contain mb-8 shadow-xl border-4 border-white"><div class="w-full bg-white p-8 shadow-2xl border-t-4 border-sky-500 min-h-[300px]"><h2 class="text-2xl font-black italic uppercase text-sky-500 mb-6 border-b pb-2 tracking-tighter">Club News & Announcements</h2><div class="prose prose-sky max-w-none text-zinc-800 font-medium leading-relaxed whitespace-pre-wrap">${state.news || '<p class="opacity-40 italic text-center py-10 text-zinc-400 font-normal">No news updates at this time.</p>'}</div></div></div>`;
             } else if (view === 'REPORT') {
-                // 2. Auto-fill logic for report
                 let aChamp = state.winners.champ, aRunner = state.winners.runner, aSeason = state.winners.season;
                 if (mode === 'DOUBLES') {
                     const standings = (state.roster.DOUBLES||[]).map(t => { 
@@ -1430,7 +1418,6 @@
                         if(gf && gf.win) { aChamp = gf.win; aRunner = gf.win === gf.t1.name ? gf.t2.name : gf.t1.name; }
                     }
                 }
-
                 const shoesPG = (mode === 'DOUBLES' ? 30 : 50);
                 const rList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
                 const pNames = [...new Set([...rList.map(p => p.name), ...state.history.filter(h => h.mode === mode).map(h => h.player)])];
@@ -1445,15 +1432,12 @@
                     const startAvg = (rList.find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0}).startAvg;
                     return { name: pN, avg, rPct, hiG: g.length ? Math.max(...g.map(x=>x.score)) : 0, hiR: g.length ? Math.max(...g.map(x=>(x.ringers/shoesPG)*100)) : 0, sPct, hoa: g.length ? Math.max(...g.map(x => x.score - avg)) : 0, imp: avg - startAvg, isRookie: startAvg === 0 && g.length > 0 };
                 });
-
                 const sort = (key) => [...stats].sort((a,b) => b[key] - a[key]).slice(0, 5);
                 const patches = stats.filter(s => {
                     const rRec = rList.find(p => cleanN(p.name) === cleanN(s.name));
                     return rRec && Math.floor(s.hiR / 10) > Math.floor(Number(rRec.prevHighRinger || 0) / 10);
                 }).map(s => `${s.name} (${Math.floor(s.hiR / 10) * 10}%)`).join(', ') || 'None';
-
                 const rookie = stats.filter(s => s.isRookie).sort((a,b) => b.avg - a.avg)[0]?.name || 'no rookie';
-
                 const renderT = (title, items, valKey, suffix = '') => `
                     <div class="report-card">
                         <div class="report-header">${title}</div>
@@ -1461,7 +1445,6 @@
                             ${items.map((it, i) => `<tr><td>${['First','Second','Third','Fourth','Fifth'][i]}</td><td>${it[valKey].toFixed(suffix==='%'?2:0)}${suffix}</td><td>${it.name}</td></tr>`).join('')}
                         </table>
                     </div>`;
-
                 content.innerHTML = `
                     <div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Season Report')" class="bg-black text-white px-4 py-2 font-black uppercase border">Print Report</button></div>
                     <div class="report-grid max-w-4xl mx-auto border-4 border-black">
@@ -1494,7 +1477,6 @@
                     const opts = (state.roster[mode] || []).map(r => `<option value="${r.teamName || r.name}">${r.teamName || r.name}</option>`).join('') + `<option value="BYE">BYE</option>`;
                     const allPlayers = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
                     const pOpts = allPlayers.map(p => `<option value="${p.name}">${p.name}</option>`).sort().join('');
-
                     content.innerHTML = `
                         <div class="p-2 bg-white shadow-xl max-w-5xl mx-auto mt-4">
                             <div class="flex gap-1 mb-4 no-print">
@@ -1502,7 +1484,6 @@
                                 <button class="flex-1 py-4 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Manual Entry</button>
                             </div>
                             <h2 class="text-sky-500 font-black italic uppercase text-center mb-6 text-xl">3-Game Manual Entry Results</h2>
-                            
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="space-y-4">
                                     <div class="bg-black text-white p-4 border-b-4 border-sky-500">
@@ -1521,11 +1502,11 @@
                                             <div class="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Score</p>
-                                                    <button id="ms${i}_g${g}" data-value="0" onclick="openManualPicker('ms${i}_g${g}', false)" class="manual-entry-btn">SCR: 0</button>
+                                                    <button id="ms${i}_g${g}" data-value="0" onclick="openManualPicker('ms${i}_g${g}', 'G${g} Score')" class="manual-entry-btn">SCR: 0</button>
                                                 </div>
                                                 <div>
                                                     <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Ringers</p>
-                                                    <button id="mr${i}_g${g}" data-value="0" onclick="openManualPicker('mr${i}_g${g}', true)" class="manual-entry-btn">RNG: 0</button>
+                                                    <button id="mr${i}_g${g}" data-value="0" onclick="openManualPicker('mr${i}_g${g}', 'G${g} Ringers')" class="manual-entry-btn">RNG: 0</button>
                                                 </div>
                                             </div>`).join('')}
                                         </div>
@@ -1548,11 +1529,11 @@
                                             <div class="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Score</p>
-                                                    <button id="ms${i}_g${g}" data-value="0" onclick="openManualPicker('ms${i}_g${g}', false)" class="manual-entry-btn">SCR: 0</button>
+                                                    <button id="ms${i}_g${g}" data-value="0" onclick="openManualPicker('ms${i}_g${g}', 'G${g} Score')" class="manual-entry-btn">SCR: 0</button>
                                                 </div>
                                                 <div>
                                                     <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Ringers</p>
-                                                    <button id="mr${i}_g${g}" data-value="0" onclick="openManualPicker('mr${i}_g${g}', true)" class="manual-entry-btn">RNG: 0</button>
+                                                    <button id="mr${i}_g${g}" data-value="0" onclick="openManualPicker('mr${i}_g${g}', 'G${g} Ringers')" class="manual-entry-btn">RNG: 0</button>
                                                 </div>
                                             </div>`).join('')}
                                         </div>
@@ -1563,49 +1544,23 @@
                             <div class="mt-12 pt-8 border-t-4 border-zinc-100 max-w-md mx-auto">
                                 <h3 class="text-center text-sky-500 font-black italic uppercase mb-4">Manual Four-Dead Log</h3>
                                 <div class="bg-zinc-900 text-white p-6 shadow-2xl space-y-4">
-                                    <div>
-                                        <label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Player Name</label>
-                                        <select id="mfdName" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white font-bold text-sm">
-                                            <option value="">--Select Player--</option>
-                                            ${pOpts}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Add Count</label>
-                                        <input id="mfdCount" type="number" placeholder="How many deads?" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white text-center font-black">
-                                    </div>
+                                    <div><label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Player Name</label><select id="mfdName" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white font-bold text-sm"><option value="">--Select Player--</option>${pOpts}</select></div>
+                                    <div><label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Add Count</label><input id="mfdCount" type="number" placeholder="How many deads?" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white text-center font-black" readonly onclick="window.openManualFourDeadPicker()"></div>
                                     <button onclick="submitManualFourDeads()" class="w-full bg-sky-500 text-black p-4 font-black uppercase text-xs hover:bg-sky-400">Log Four Deads</button>
                                 </div>
                             </div>
                         </div>`;
                     return;
                 }
-
                 if (!match.active) {
                     const activeMatchHtml = state.activeMatches.filter(m => m.mode === mode).map(m => `<div class="bg-amber-50 border-2 border-amber-200 p-3 mb-2 flex justify-between items-center"><div class="text-left"><p class="text-[10px] font-black uppercase text-amber-600">Game in Progress</p><p class="text-sm font-black uppercase text-black">${m.t1Name} vs ${m.t2Name}</p></div><div class="flex gap-2"><button onclick="resumeLeagueMatch(${m.sessionId})" class="bg-amber-500 text-white px-3 py-2 text-[10px] font-black uppercase">Resume</button><button onclick="deleteLeagueMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase">Del</button></div></div>`).join('');
                     const opts = [...(state.roster[mode]||[]).map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`), `<option value="BYE">BYE</option>`];
                     content.innerHTML = `<div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">
-                        <div class="flex gap-2 mb-6 no-print">
-                            <button class="flex-1 py-3 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Live Scorer</button>
-                            ${state.manualEntryEnabled ? `<button onclick="setScorerView('MANUAL')" class="flex-1 py-3 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Manual Entry</button>` : ''}
-                        </div>
+                        <div class="flex gap-2 mb-6 no-print"><button class="flex-1 py-3 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Live Scorer</button>${state.manualEntryEnabled ? `<button onclick="setScorerView('MANUAL')" class="flex-1 py-3 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Manual Entry</button>` : ''}</div>
                     ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black">${opts}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black">${opts}</select><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button></div>`;
                 } else if (match.step === 'PLAYERS') {
                     if (mode === 'SINGLES' && match.isPlayoff) {
-                        content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center">
-                            <h2 class="text-sky-500 font-black italic uppercase mb-6">Playoff HCP Setup</h2>
-                            <div class="space-y-4 text-left">
-                                <div class="p-4 bg-zinc-50 border flex justify-between items-center">
-                                    <label class="text-[11px] font-black uppercase text-zinc-500">${match.p1}</label>
-                                    <button onclick="editPlayoffHcp(1)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h1}</button>
-                                </div>
-                                <div class="p-4 bg-zinc-50 border flex justify-between items-center">
-                                    <label class="text-[11px] font-black uppercase text-zinc-500">${match.p3}</label>
-                                    <button onclick="editPlayoffHcp(3)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h3}</button>
-                                </div>
-                                <button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 font-black uppercase mt-6 shadow-xl">Begin Playoff Match</button>
-                            </div>
-                        </div>`;
+                        content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase mb-6">Playoff HCP Setup</h2><div class="space-y-4 text-left"><div class="p-4 bg-zinc-50 border flex justify-between items-center"><label class="text-[11px] font-black uppercase text-zinc-500">${match.p1}</label><button onclick="editPlayoffHcp(1)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h1}</button></div><div class="p-4 bg-zinc-50 border flex justify-between items-center"><label class="text-[11px] font-black uppercase text-zinc-500">${match.p3}</label><button onclick="editPlayoffHcp(3)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h3}</button></div><button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 font-black uppercase mt-6 shadow-xl">Begin Playoff Match</button></div></div>`;
                     } else {
                         const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = state.roster.DOUBLES.find(x => x.teamName === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
                         const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
@@ -1613,8 +1568,8 @@
                     }
                 } else if (match.step === 'GAME_SUMMARY' || match.step === 'MATCH_SUMMARY') {
                     const isMatch = match.step === 'MATCH_SUMMARY', players = [match.p1, match.p2, match.p3, match.p4].filter(x => x && !['BYE','DUMMY'].includes(cleanN(x).toUpperCase()));
-                    let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
-                    players.forEach(p => { let pS = []; for(let gN=1; gN<=match.gameNum; gN++) { const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); pS.push(h ? `${h.score}(${h.ringers})` : '-'); } while(pS.length < 3) pS.push('-'); const sTot = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p)).reduce((s,x)=>s+x.score, 0), statAvg = getPlyrAvg(p); tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pS[0]}</td><td>${pS[1]}</td><td>${pS[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black">${statAvg}</td></tr>`; });
+                    let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>Total</th><th>Avg</th><th>4D</th></tr></thead><tbody>`;
+                    players.forEach(p => { let pS = []; for(let gN=1; gN<=match.gameNum; gN++) { const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); pS.push(h ? `${h.score}(${h.ringers})` : '-'); } while(pS.length < 3) pS.push('-'); const sTot = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p)).reduce((s,x)=>s+x.score, 0), statAvg = getPlyrAvg(p); const deads = match.fourDeadLog[p] || 0; tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pS[0]}</td><td>${pS[1]}</td><td>${pS[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black">${statAvg}</td><td class="text-red-500 font-black">${deads}</td></tr>`; });
                     content.innerHTML = `<div class="p-4 bg-white shadow-2xl max-w-xl mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase">${isMatch ? 'Series Final' : 'Game Summary'}</h2><p class="text-4xl font-black my-4">${match.games[match.gameNum-1].s1} - ${match.games[match.gameNum-1].s2}</p>${tableHtml}<button onclick="${isMatch ? 'window.finalizeFullSeries()' : 'window.nextGame()'}" class="w-full bg-sky-500 text-black p-5 rounded-2xl font-black uppercase shadow-lg mt-6">${isMatch ? 'Save & Close' : 'Next Game'}</button></div>`;
                 } else {
                     const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
@@ -1622,45 +1577,45 @@
                     const rp1 = match.currGameFrames.reduce((s,f)=>s+getR(f.p1),0) + getR(match.currF.p1), rp2 = match.currGameFrames.reduce((s,f)=>s+getR(f.p2),0) + getR(match.currF.p2), rp3 = match.currGameFrames.reduce((s,f)=>s+getR(f.p3),0) + getR(match.currF.p3), rp4 = match.currGameFrames.reduce((s,f)=>s+getR(f.p4),0) + getR(match.currF.p4);
                     const s1C = sc1 + match.h1 + match.h2 + d1 + d2 + Number(match.currF.p1||0) + Number(match.currF.p2||0), s2C = sc2 + match.h3 + match.h4 + d3 + d4 + Number(match.currF.p3||0) + Number(match.currF.p4||0);
                     const target = mode === 'SINGLES' ? 135 : 162; const dS1 = cleanN(match.t1Name) === 'bye' ? target : s1C, dS2 = cleanN(match.t2Name) === 'bye' ? target : s2C;
-                    
                     content.innerHTML = `
-                    <div class="sticky top-[3.5rem] z-[60] bg-[#f1f5f9] -mx-2 px-2 shadow-md sticky-scorer">
-                        <div class="bg-black text-white p-2 flex justify-between px-10 text-xl font-black uppercase border-b-2 border-zinc-800">
-                            <span>Agg: ${match.sessionAgg.t1 + dS1}</span>
-                            <span class="text-sky-400">Game ${match.gameNum}</span>
-                            <span>Agg: ${match.sessionAgg.t2 + dS2}</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-1 mb-1">
-                            <div class="py-4 px-1 bg-white flex flex-col items-center justify-center shadow-inner relative ${isT1Active?'pitch-active':''}">
-                                <p class="text-[12px] font-black opacity-40 uppercase truncate w-full text-center">${match.t1Name}</p>
-                                <div class="flex justify-center gap-2 mt-1 mb-1 w-full"><span class="bg-zinc-100 text-zinc-600 text-[10px] px-2 py-0.5 font-black uppercase">${getFirst(match.p1)}: ${rp1}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[10px] px-2 py-0.5 font-black uppercase">${getFirst(match.p2)}: ${rp2}R</span>` : ''}</div>
-                                <p class="text-8xl font-black tracking-tighter leading-none my-2 text-center">${dS1}</p>
-                                <p class="text-[11px] font-black text-sky-600 mt-0.5 uppercase w-full text-center">${cleanN(match.t1Name)==='bye'?'TARGET':' + '+(match.h1+match.h2)+' HC'}</p>
+                    <div class="scorer-max-width">
+                        <div class="sticky top-[3.5rem] z-[60] bg-[#f1f5f9] -mx-2 px-2 shadow-md sticky-scorer">
+                            <div class="bg-black text-white p-2 flex justify-between px-10 text-xl font-black uppercase border-b-2 border-zinc-800">
+                                <span>AGG: ${match.sessionAgg.t1 + dS1}</span>
+                                <span class="text-sky-400">GAME ${match.gameNum}</span>
+                                <span>AGG: ${match.sessionAgg.t2 + dS2}</span>
                             </div>
-                            <div class="py-4 px-1 bg-white flex flex-col items-center justify-center shadow-inner relative ${isT2Active?'pitch-active':''}">
-                                <p class="text-[12px] font-black opacity-40 uppercase truncate w-full text-center">${match.t2Name}</p>
-                                <div class="flex justify-center gap-2 mt-1 mb-1 w-full"><span class="bg-zinc-100 text-zinc-600 text-[10px] px-2 py-0.5 font-black uppercase">${getFirst(match.p3)}: ${rp3}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[10px] px-2 py-0.5 font-black uppercase">${getFirst(match.p4)}: ${rp4}R</span>` : ''}</div>
-                                <p class="text-8xl font-black tracking-tighter leading-none my-2 text-center">${dS2}</p>
-                                <p class="text-[11px] font-black text-sky-600 mt-0.5 uppercase w-full text-center">${cleanN(match.t2Name)==='bye'?'TARGET':' + '+(match.h3+match.h4)+' HC'}</p>
+                            <div class="grid grid-cols-2 gap-1 mb-1">
+                                <div class="py-4 px-1 bg-white flex flex-col items-center justify-center shadow-inner relative ${isT1Active?'pitch-active':''}">
+                                    <p class="text-[12px] font-black opacity-40 uppercase truncate w-full text-center">${match.t1Name}</p>
+                                    <div class="flex justify-center gap-2 mt-1 mb-1 w-full"><span class="bg-zinc-100 text-zinc-600 text-[9px] px-1 py-0.5 font-black uppercase">${getFirst(match.p1)}: ${rp1}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[9px] px-1 py-0.5 font-black uppercase">${getFirst(match.p2)}: ${rp2}R</span>` : ''}</div>
+                                    <p class="text-8xl font-black tracking-tighter leading-none my-2 text-center">${dS1}</p>
+                                    <p class="text-[10px] font-black text-sky-600 mt-0.5 uppercase w-full text-center">${cleanN(match.t1Name)==='bye'?'TARGET':' + '+(match.h1+match.h2)+' HC'}</p>
+                                </div>
+                                <div class="py-4 px-1 bg-white flex flex-col items-center justify-center shadow-inner relative ${isT2Active?'pitch-active':''}">
+                                    <p class="text-[12px] font-black opacity-40 uppercase truncate w-full text-center">${match.t2Name}</p>
+                                    <div class="flex justify-center gap-2 mt-1 mb-1 w-full"><span class="bg-zinc-100 text-zinc-600 text-[9px] px-1 py-0.5 font-black uppercase">${getFirst(match.p3)}: ${rp3}R</span>${mode==='DOUBLES' ? `<span class="bg-zinc-100 text-zinc-600 text-[9px] px-1 py-0.5 font-black uppercase">${getFirst(match.p4)}: ${rp4}R</span>` : ''}</div>
+                                    <p class="text-8xl font-black tracking-tighter leading-none my-2 text-center">${dS2}</p>
+                                    <p class="text-[10px] font-black text-sky-600 mt-0.5 uppercase w-full text-center">${cleanN(match.t2Name)==='bye'?'TARGET':' + '+(match.h3+match.h4)+' HC'}</p>
+                                </div>
                             </div>
+                            <div class="flex items-stretch gap-1 mb-1">
+                                <div class="bg-sky-500 text-black p-2.5 flex-1 text-center text-[11px] font-black uppercase italic tracking-widest shadow-lg">UP: ${upP}</div>
+                                <button onclick="window.openExitModal()" class="bg-red-600 text-white px-8 font-black text-[10px] uppercase rounded">Exit</button>
+                            </div>
+                            <div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}" style="font-size:1.8rem;">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div>
+                            <table class="micro-table border-b border-sky-500">
+                                 <thead>${mode==='SINGLES'?'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th></tr>':'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T1</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t2">T2</th></tr>'}</thead>
+                            </table>
                         </div>
-                        <div class="flex items-stretch gap-1 mb-1">
-                            <div class="bg-sky-500 text-white p-2.5 flex-1 text-center text-[11px] font-black uppercase italic tracking-widest shadow-lg">UP: ${upP}</div>
-                            <button onclick="window.openExitModal()" class="bg-red-600 text-white px-8 font-black text-[10px] uppercase rounded">Exit</button>
+                        <div class="micro-container">
+                            <table class="micro-table">
+                                <tbody><tr class="curr-row"><td class="c-sh">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td class="c-r">${getSym(match.currF.p1, match.currF.p3)}</td><td class="c-p">${match.currF.p1??''}</td><td class="c-t"></td><td class="c-r">${getSym(match.currF.p3, match.currF.p1)}</td><td class="c-p">${match.currF.p3??''}</td><td class="c-t"></td>` : `<td class="c-r">${getSym(match.currF.p1, match.currF.p3)}</td><td class="c-p">${match.currF.p1??''}</td><td class="c-s"></td><td class="c-r">${getSym(match.currF.p2, match.currF.p4)}</td><td class="c-p">${match.currF.p2??''}</td><td class="c-s"></td><td class="c-t"></td><td class="c-r">${getSym(match.currF.p3, match.currF.p1)}</td><td class="c-p">${match.currF.p3??''}</td><td class="c-s"></td><td class="c-r">${getSym(match.currF.p4, match.currF.p2)}</td><td class="c-p">${match.currF.p4??''}</td><td class="c-s"></td><td class="c-t2"></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSym(f.p1,f.p3)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td class="c-t">${p1s+match.h1}</td><td class="c-r">${getSym(f.p3,f.p1)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td class="c-t">${p3s+match.h3}</td></tr>`; return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSym(f.p1,f.p3)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td class="c-s">${p1s}</td><td class="c-r">${getSym(f.p2,f.p4)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td class="c-s">${p2s}</td><td class="c-t">${p1s+p2s+match.h1+match.h2+d1+d2}</td><td class="c-r">${getSym(f.p3,f.p1)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td class="c-s">${p3s}</td><td class="c-r">${getSym(f.p4,f.p2)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td class="c-s">${p4s}</td><td class="c-t2">${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table>
                         </div>
-                        <div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}" style="font-size:1.8rem;">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div>
-                        <table class="micro-table border-b border-sky-500">
-                             <thead>${mode==='SINGLES'?'<tr><th style="width:30px;">SH</th><th>R</th><th>P</th><th>SC</th><th>R</th><th>P</th><th>SC</th></tr>':'<tr><th style="width:25px;">SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th style="background:#0c4a6e;color:white;">T1</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th style="background:#0c4a6e;color:white;">T2</th></tr>'}</thead>
-                        </table>
-                    </div>
-                    <div class="micro-container">
-                        <table class="micro-table">
-                            <tbody><tr class="curr-row"><td class="sh-cell" style="width:${mode==='SINGLES'?'30px':'25px'};">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td>` : `<td>${getSym(match.currF.p1, match.currF.p3)}</td><td>${match.currF.p1??''}</td><td></td><td>${getSym(match.currF.p2, match.currF.p4)}</td><td>${match.currF.p2??''}</td><td></td><td></td><td>${getSym(match.currF.p3, match.currF.p1)}</td><td>${match.currF.p3??''}</td><td></td><td>${getSym(match.currF.p4, match.currF.p2)}</td><td>${match.currF.p4??''}</td><td></td><td></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="sh-cell" style="width:30px;">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s+match.h1}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s+match.h3}</td></tr>`; return `<tr><td class="sh-cell" style="width:25px;">${f.sh}</td><td>${getSym(f.p1,f.p3)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td>${p1s}</td><td>${getSym(f.p2,f.p4)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td>${p2s}</td><td class="font-black">${p1s+p2s+match.h1+match.h2+d1+d2}</td><td>${getSym(f.p3,f.p1)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td>${p3s}</td><td>${getSym(f.p4,f.p2)}</td><td class="edit-cell" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td>${p4s}</td><td class="font-black">${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table>
                     </div>`;
                 }
             } else if (view === 'STANDINGS') {
                 let hList = (state.history || []).filter(h => h.mode === mode);
-                // 4. FILTER STANDINGS BY RESET DATE IF IN SINGLES
                 if (mode === 'SINGLES' && state.singlesStandingsResetDate) {
                     hList = hList.filter(h => h.timestamp > state.singlesStandingsResetDate);
                 }
@@ -1672,14 +1627,12 @@
                 const rosterNames = rosterList.map(p => p.name);
                 const historyNames = state.history.filter(h => h.mode === mode).map(h => h.player);
                 const pNames = [...new Set([...rosterNames, ...historyNames])];
-
                 const rows = pNames.map(pN => { 
                     const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode);
                     const playerAvg = getPlyrAvg(pN);
                     const totP = g.reduce((s,x)=>s+Number(x.score||0),0);
                     const totR = g.reduce((s,x)=>s+Number(x.ringers||0),0); 
                     const rRec = rosterList.find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0}; 
-                    
                     let scPctText = "0.0%";
                     if (g.length > 0) {
                         const tShoes = g.length * shoesPerGame;
@@ -1687,7 +1640,6 @@
                         const finalVal = Math.min(100, Math.max(0, rawVal));
                         scPctText = (Math.floor(finalVal * 10) / 10).toFixed(1) + "%";
                     }
-
                     const imp = Math.round(playerAvg - rRec.startAvg); 
                     const highGame = g.length ? Math.max(...g.map(x => x.score)) : 0; 
                     const hiOA = g.length ? (highGame - playerAvg) : 0; 
@@ -1702,7 +1654,6 @@
                     return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name} ${s.isManual ? '[M]' : ''}</span><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600 float-right no-print ml-2">Print Sheets</button>${gHtml}</div>`;
                 }).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No league history found</p>`;
                 const tHistoryHtml = (tState.matchHistory || []).slice().reverse().map(h => `<div class="bg-zinc-900 text-white p-3 shadow mb-3 font-black uppercase text-xs border-l-4 border-sky-500"><span><span class="text-sky-400">[TOURNAMENT]</span> ${h.date} - ${h.t1Name} vs ${h.t2Name} (${h.s1}-${h.s2})</span><button onclick="window.printTournamentScoreSheet('${h.timestamp}')" class="text-sky-400 float-right no-print ml-2">Print</button><button onclick="window.showSummary('${h.id}')" class="text-zinc-400 float-right no-print">View</button></div>`).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No tournament matches found</p>`;
-                
                 let archH = ''; 
                 if(mode === 'SINGLES' && state.singlesHalfArchive && state.singlesHalfArchive.length > 0) {
                     const archRows = state.singlesHalfArchive.map(a => `<tr class="border-b"><td class="p-2 text-left">${a.name}</td><td>${a.w}</td><td>${a.l}</td><td>${a.ti}</td><td class="font-black">${a.pts}</td><td>${a.hcp}</td></tr>`).join('');
@@ -1717,7 +1668,6 @@
                 content.innerHTML = `
                 <div class="p-4 space-y-4 no-print">
                     <div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div>
-                    
                     ${mode === 'SINGLES' ? `
                         <div class="bg-amber-100 p-4 border-2 border-amber-300 flex justify-between items-center mb-4">
                             <span class="text-[10px] font-black uppercase text-amber-800">Singles Playoff Mode (Manual HCP Override)</span>
@@ -1729,8 +1679,24 @@
                             <button onclick="window.endSinglesHalf()" class="w-full bg-sky-500 text-black p-4 font-black uppercase shadow-lg">Archive Standings Now</button>
                         </div>
                     ` : ''}
-
-                    <div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)"><div class="grid grid-cols-1 md:grid-cols-2 gap-2"><button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button><button onclick="window.toggleManualEntry()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.manualEntryEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Manual Entry: ${state.manualEntryEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button><button onclick="window.toggleReport()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.reportEnabled ? 'bg-purple-600 text-white' : 'bg-zinc-500 text-white'}">Report: ${state.reportEnabled ? 'ON' : 'OFF'}</button></div><div class="bg-white p-6 shadow mb-4"><h3 class="text-[10px] font-black uppercase mb-2">Club News Editor</h3><textarea id="newsInput" class="w-full h-40 border p-3 rounded-none text-sm mb-2" placeholder="Write club news here...">${state.news || ''}</textarea><button onclick="window.saveNews()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-lg">Save News Update</button></div><textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea><button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Sync Cloud</button><div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div></div>`;
+                    <div class="grid grid-cols-3 gap-2"><button onclick="window.resetSystem()" class="bg-red-600 text-white p-4 rounded-none font-black uppercase text-[10px] shadow-lg">Wipe Data</button><button onclick="window.backupData()" class="bg-zinc-800 text-white p-4 font-bold uppercase text-[10px]">Backup</button><button onclick="document.getElementById('restoreInput').click()" class="bg-white border-2 border-zinc-800 text-zinc-800 p-4 rounded-none font-bold uppercase text-[10px]">Restore</button></div><input type="file" id="restoreInput" class="hidden" onchange="window.handleRestore(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button>
+                        <button onclick="window.toggleManualEntry()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.manualEntryEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Manual Entry: ${state.manualEntryEnabled ? 'ON' : 'OFF'}</button>
+                        <button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button>
+                        <button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button>
+                        <button onclick="window.toggleReport()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.reportEnabled ? 'bg-purple-600 text-white' : 'bg-zinc-500 text-white'}">Report: ${state.reportEnabled ? 'ON' : 'OFF'}</button>
+                    </div>
+                    <div class="bg-sky-50 p-6 border-2 border-sky-200 shadow-lg">
+                        <h3 class="text-sky-600 font-black uppercase italic mb-4">Individual Entry</h3>
+                        <button onclick="window.addRosterItem()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-xl hover:bg-sky-400">Add New ${mode==='SINGLES'?'Player':'Team'}</button>
+                    </div>
+                    <div class="bg-white p-6 shadow mb-4"><h3 class="text-[10px] font-black uppercase mb-2">Club News Editor</h3><textarea id="newsInput" class="w-full h-40 border p-3 rounded-none text-sm mb-2" placeholder="Write club news here...">${state.news || ''}</textarea><button onclick="window.saveNews()" class="w-full bg-sky-500 text-white p-4 font-black uppercase shadow-lg">Save News Update</button></div>
+                    <h3 class="text-[10px] font-black uppercase mb-2 mt-4">Bulk Import</h3>
+                    <textarea id="rosterInput" class="w-full h-24 border p-3 rounded-none text-xs" placeholder="Import Roster..."></textarea>
+                    <button onclick="window.importRoster()" class="w-full bg-black text-white p-4 rounded-none font-black uppercase shadow-lg">Bulk Sync Cloud</button>
+                    <div class="mt-4"><h3 class="text-[10px] font-black uppercase mb-2">Roster Management</h3>${rH}</div>
+                </div>`;
             } else if (view === 'TOURNAMENT') {
                 let navHtml = `<nav class="flex flex-col bg-zinc-950 border-b border-zinc-900 sticky top-0 z-50"><div class="flex"><button onclick="setTView('BRACKET')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'BRACKET' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Bracket</button><button onclick="setTView('ROSTER')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'ROSTER' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Roster</button><button onclick="setTView('MANAGE')" class="flex-1 py-6 text-[11px] font-black uppercase tracking-widest ${tView === 'MANAGE' ? 'text-sky-500 border-b-2 border-sky-500' : 'text-zinc-500'}">Manage</button></div>${tView === 'BRACKET' && tState.bracket ? `<div class="flex gap-2 p-3 bg-zinc-900 border-t border-zinc-800 no-print justify-center items-center"><button onclick="window.zoomB(0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">+</button><button onclick="window.zoomB(-0.1)" class="bg-zinc-800 text-white px-5 py-2 text-sm font-black border border-zinc-700 hover:bg-zinc-700">-</button><button onclick="window.zoomB('reset')" class="bg-zinc-800 text-white px-5 py-2 text-[10px] uppercase font-black border border-zinc-700 hover:bg-zinc-700">Reset</button><button onclick="window.printBracket()" class="bg-sky-700 text-white px-5 py-2 text-[10px] uppercase font-black border border-sky-800 hover:bg-sky-600 ml-2">Print Bracket</button></div>` : ''}</nav>`;
                 if (tView === 'ROSTER') {
@@ -1753,7 +1719,7 @@
             }
         }
 
-        function renderCard(m) { return `<div class="match-card" onclick="openMatch('${m.id}')"><div class="team-line ${m.win === m.t1?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t1?.name || '?'} ${m.t1?.isBye ? '' : '(S' + (m.t1?.id || '?') + ')'}</span><span class="score-box">${m.s1}</span></div><div class="team-line ${m.win === m.t2?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t2?.name || '?'} ${m.t2?.isBye ? '' : '(S' + (m.t2?.id || '?') + ')'}</span><span class="score-box">${m.s2}</span></div></div>`; }
+        function renderCard(m) { return `<div class="match-card" onclick="openMatch('${m.id}')"><div class="team-line ${m.win === m.t1?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t1?.name || '?'} ${m.t1?.isBye ? '' : '(S' + (m.t1?.id || '?') + ')'}</span><span class="score-box">${m.s1}</span></div><div class="team-line ${m.win === m.t2?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t2?.name || '?'} ${m.t2?.id || '?'}</span><span class="score-box">${m.s2}</span></div></div>`; }
 
         function renderScorer() {
             const mod = document.getElementById('modal'); mod.style.display = 'block';
