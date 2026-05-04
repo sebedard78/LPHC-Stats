@@ -77,6 +77,21 @@
         .sum-stats-table td { border-bottom: 1px solid #222; padding: 12px 10px; text-align: left; font-size: 0.95rem; font-weight: bold; vertical-align: middle; white-space: normal !important; overflow-wrap: break-word; }
         .sum-stats-table .val-col { text-align: center; background: #0a0a0a; color: #0ea5e9; width: 60px; border-left: 1px solid #333; font-size: 1.1rem; }
 
+        /* WEEKLY LINEUP TABLE STYLING - FIXING COURT BOX SIZE */
+        .lineup-table { width: 100%; border-collapse: collapse; background: white; border: 4px solid #000; margin-top: 10px; table-layout: fixed; }
+        .lineup-header-bg { background-color: #0ea5e9 !important; color: #000 !important; }
+        .lineup-table th { padding: 15px; font-weight: 900; font-size: 1.4rem; border-bottom: 4px solid #000; text-align: center; text-transform: uppercase; font-style: italic; }
+        
+        /* ADJUSTED: FIT WORD "COURT" IN THE BOX */
+        .lineup-table th.lineup-court-col { font-size: 1rem !important; padding: 5px 2px; }
+
+        .lineup-table td { padding: 12px; border: 1px solid #e2e8f0; font-weight: 800; text-align: center; font-size: 1.1rem; color: #1e293b; overflow-wrap: break-word; vertical-align: middle; }
+        .lineup-row-even { background-color: #f8fafc; }
+        .lineup-row-odd { background-color: #ffffff; }
+        /* IMPORTANT: PRE-LINE RESPECTS THE NEWLINES IN OUR PROCESSED DATA */
+        .lineup-matchup-col { text-align: center !important; line-height: 1.4; white-space: pre-line; letter-spacing: -0.5px; }
+        .lineup-court-col { width: 80px; background: #1e293b; color: #38bdf8 !important; border-right: 4px solid #000 !important; font-size: 1.5rem; font-weight: 900; }
+
         #printZone { display: none; }
 
         @media print {
@@ -91,6 +106,9 @@
             .pts-col, .val-col { background: #f0f0f0 !important; font-weight: bold !important; }
             .grid { display: flex !important; gap: 10px !important; align-items: flex-start !important; }
             .grid > div { flex: 1 !important; }
+            .lineup-table { width: 100% !important; border: 2px solid black !important; }
+            .lineup-header-bg { background-color: #0ea5e9 !important; -webkit-print-color-adjust: exact; }
+            .lineup-court-col { background-color: #eee !important; color: black !important; border-right: 2px solid black !important; }
         }
 
         .btn-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; background: #000; }
@@ -207,6 +225,7 @@
         <button onclick="window.setTab('NEWS')" id="tabNEWS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">News</button>
         <button onclick="window.setTab('STANDINGS')" id="tabSTANDINGS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Standings</button>
         <button onclick="window.setTab('STATS')" id="tabSTATS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Club Stats</button>
+        <button onclick="window.setTab('LINEUP')" id="tabLINEUP" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Lineup</button>
         <button onclick="window.setTab('REPORT')" id="tabREPORT" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Report</button>
         <button onclick="window.setTab('SCORER')" id="tabSCORER" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap text-red-500">Scorer</button>
         <button onclick="window.setTab('TOURNAMENT')" id="tabTOURNAMENT" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-sky-500 text-nowrap" style="display:none;">Tournament</button>
@@ -242,7 +261,8 @@
         const docRefTourney = doc(db, "tournament_final_v1", "data");
 
         // state updated to include 4. Singles Half logic storage
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null };
+        // LOGGING FIX: Ensure fourDeads DOUBLES is initialized as an object {}
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null, weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
         let mode = 'DOUBLES';
         let view = 'NEWS';
         let scorerMode = 'LIVE'; 
@@ -335,11 +355,11 @@
                 if(state.manualEntryEnabled === undefined) state.manualEntryEnabled = true;
                 if(!state.weeklyHoa) state.weeklyHoa = { SINGLES: [], DOUBLES: [] };
                 
-                // FIX: Initialization for Four Deads structure
-                if (!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
-                if (Array.isArray(state.fourDeads.SINGLES)) state.fourDeads.SINGLES = {};
-                if (Array.isArray(state.fourDeads.DOUBLES)) state.fourDeads.DOUBLES = {};
-                
+                // LOGGING FIX: Safety recovery if fourDeads is an array in DB
+                if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
+                if(Array.isArray(state.fourDeads.SINGLES)) state.fourDeads.SINGLES = {};
+                if(Array.isArray(state.fourDeads.DOUBLES)) state.fourDeads.DOUBLES = {};
+
                 if(state.news === undefined) state.news = '';
                 if(state.scorerEnabled === undefined) state.scorerEnabled = true;
                 if(state.tournamentEnabled === undefined) state.tournamentEnabled = false;
@@ -351,6 +371,19 @@
                 if(!state.singlesHalfArchive) state.singlesHalfArchive = [];
                 if(state.singlesPlayoffActive === undefined) state.singlesPlayoffActive = false;
                 if(state.singlesStandingsResetDate === undefined) state.singlesStandingsResetDate = null;
+                
+                // LINEUP FIX: Ensure weeklyLineup is an object with mode keys
+                if(!state.weeklyLineup || typeof state.weeklyLineup.rawPaste === 'string') {
+                    const oldRaw = state.weeklyLineup?.rawPaste || '';
+                    const oldTitle = state.weeklyLineup?.weekTitle || 'Week 1';
+                    state.weeklyLineup = { 
+                        SINGLES: { weekTitle: 'Singles ' + oldTitle, rawPaste: '' }, 
+                        DOUBLES: { weekTitle: 'Doubles ' + oldTitle, rawPaste: oldRaw } 
+                    };
+                }
+                
+                // KEYBOARD FIX: Don't render if user is typing
+                if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
                 render(); 
             } 
         });
@@ -360,6 +393,7 @@
                 tState = snap.data(); 
                 if(!tState.matchHistory) tState.matchHistory = [];
                 if(!tState.tActiveMatches) tState.tActiveMatches = [];
+                if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
                 render(); 
             } 
         });
@@ -685,11 +719,11 @@
                 html += `
                         <tr>
                             <td class="sh-col">${f.sh}</td>
-                            <td class="ringer-sym-col">${getSym(f.p1, f.p3)}</td><td>${f.p1||0}</td><td>${f1}</td>
-                            <td class="ringer-sym-col">${getSym(f.p2, f.p4)}</td><td>${f.p2||0}</td><td>${f2}</td>
+                            <td class="ringer-sym-col">${getSym(f.p1, h.mode === 'SINGLES' ? f.p3 : 0)}</td><td>${f.p1||0}</td><td>${f1}</td>
+                            <td class="ringer-sym-col">${getSym(f.p2, 0)}</td><td>${f.p2||0}</td><td>${f2}</td>
                             <td class="team-agg-col">${f1+f2+h.h1}</td>
-                            <td class="ringer-sym-col">${getSym(f.p3, f.p1)}</td><td>${f.p3||0}</td><td>${f3}</td>
-                            <td class="ringer-sym-col">${getSym(f.p4, f.p2)}</td><td>${f.p4||0}</td><td>${f4}</td>
+                            <td class="ringer-sym-col">${getSym(f.p3, h.mode === 'SINGLES' ? f.p1 : 0)}</td><td>${f.p3||0}</td><td>${f3}</td>
+                            <td class="ringer-sym-col">${getSym(f.p4, 0)}</td><td>${f.p4||0}</td><td>${f4}</td>
                             <td class="team-agg-col">${f3+f4+h.h2}</td>
                         </tr>`;
             });
@@ -819,7 +853,7 @@
             let mW; const target = mode === 'SINGLES' ? 135 : 162;
             if (cleanN(match.t2Name) === 'bye') { const wins = match.games.filter(g => g.s1 >= target).length; mW = wins > 0 ? match.t1Name : 'BYE'; }
             else if (cleanN(match.t1Name) === 'bye') { const wins = match.games.filter(g => g.s2 >= target).length; mW = wins > 0 ? match.t2Name : 'BYE'; }
-            else mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie');
+            else mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.t2Name ? match.t2Name : 'Tie');
             const today = new Date().toLocaleDateString(); 
             if (!match.isPlayoff) {
                 state.history.push(...match.seriesBuffer);
@@ -829,7 +863,11 @@
                     if (idx !== -1) { if (hoa > state.weeklyHoa[mode][idx].hoa) state.weeklyHoa[mode][idx] = { date: today, player: entry.player, hoa: hoa }; }
                     else state.weeklyHoa[mode].push({ date: today, player: entry.player, hoa: hoa });
                 });
-                if(!state.fourDeads[mode]) state.fourDeads[mode] = {};
+                
+                // LOGGING FIX: Safety check for fourDeads Object
+                if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
+                if(!state.fourDeads[mode] || Array.isArray(state.fourDeads[mode])) state.fourDeads[mode] = {};
+                
                 Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
             }
             state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now(), isPlayoff: match.isPlayoff });
@@ -878,22 +916,19 @@
             if(val !== null) document.getElementById('mfdCount').value = val;
         };
 
-        // FIXED: Manual Four Deads Logic
+        // FIXED: Manual Four Dead Logic with safety checks
         window.submitManualFourDeads = async () => {
             const name = document.getElementById('mfdName').value;
-            const countStr = document.getElementById('mfdCount').value;
-            const count = parseInt(countStr);
+            const count = parseInt(document.getElementById('mfdCount').value);
+            if(!name || isNaN(count)) return smAlert("Select name and enter count");
             
-            if(!name || isNaN(count)) return window.smAlert("Select name and enter count");
-            
-            // Critical Safety: Initialize state path if broken
+            // Logic Fix: Force fourDeads structure to Object for the database
             if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
             if(!state.fourDeads[mode] || Array.isArray(state.fourDeads[mode])) state.fourDeads[mode] = {};
             
             state.fourDeads[mode][name] = (state.fourDeads[mode][name] || 0) + count;
-            
             await save();
-            await window.smAlert(`Success: ${count} Four-Deads added to ${name}'s stats.`);
+            await smAlert(`Success: ${count} Four-Deads added to ${name}'s stats.`);
             document.getElementById('mfdCount').value = ""; // Clear input
             render();
         };
@@ -1231,7 +1266,7 @@
             const p = await window.smPrompt("Enter PIN to WIPE DATA:"); 
             if(p === state.managePin) { 
                 if(await window.smConfirm("Confirm Wipe? This is permanent.")) { 
-                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: [] }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [] }; 
+                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } }; 
                     await save(); location.reload(); 
                 } 
             } else if (p !== null) await window.smAlert("Incorrect PIN");
@@ -1396,14 +1431,62 @@
             }
         };
 
+        /* UPDATED: LINEUP BULK SAVE FOR MODE-SPECIFIC */
+        window.saveWeeklyLineupBulk = async () => {
+            state.weeklyLineup[mode].weekTitle = document.getElementById('lineupWeekTitle').value;
+            state.weeklyLineup[mode].rawPaste = document.getElementById('lineupPasteInput').value;
+            await save(); window.smAlert("Lineup Updated Successfully"); render();
+        };
+
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
-            ['NEWS', 'STANDINGS', 'STATS', 'REPORT', 'SCORER', 'TOURNAMENT', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { const el = document.getElementById('tab'+t); if(el) { el.className = `flex-1 py-4 text-[8px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled ? 'block' : 'none'; if(t === 'REPORT') el.style.display = state.reportEnabled ? 'block' : 'none'; } });
+            ['NEWS', 'STANDINGS', 'STATS', 'LINEUP', 'REPORT', 'SCORER', 'TOURNAMENT', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { const el = document.getElementById('tab'+t); if(el) { el.className = `flex-1 py-4 text-[9px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled ? 'block' : 'none'; if(t === 'REPORT') el.style.display = state.reportEnabled ? 'block' : 'none'; } });
             const content = document.getElementById('viewContent');
 
             if (view === 'NEWS') {
                 content.innerHTML = `<div class="flex flex-col items-center py-8 px-4 max-w-2xl mx-auto"><img src="logo.jpg" class="w-48 h-48 object-contain mb-8 shadow-xl border-4 border-white"><div class="w-full bg-white p-8 shadow-2xl border-t-4 border-sky-500 min-h-[300px]"><h2 class="text-2xl font-black italic uppercase text-sky-500 mb-6 border-b pb-2 tracking-tighter">Club News & Announcements</h2><div class="prose prose-sky max-w-none text-zinc-800 font-medium leading-relaxed whitespace-pre-wrap">${state.news || '<p class="opacity-40 italic text-center py-10 text-zinc-400 font-normal">No news updates at this time.</p>'}</div></div></div>`;
+            } else if (view === 'LINEUP') {
+                const currentLineup = state.weeklyLineup[mode] || { weekTitle: 'Weekly Lineup', rawPaste: '' };
+                const rawLines = currentLineup.rawPaste.split('\n');
+                
+                let processedRows = [];
+                let currentItem = null;
+
+                rawLines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return;
+
+                    // SMART PARSER: Check if line starts with a number (e.g., "1 Evan & Regina")
+                    const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
+                    
+                    if (courtMatch) {
+                        // Start of a new court row
+                        if (currentItem) processedRows.push(currentItem);
+                        
+                        let data = (courtMatch[2] || "").replace(/"/g, '').trim();
+                        // If pasted text contains " vs " on one line, we split it for stacking
+                        data = data.replace(/\s+vs\s+/gi, '\n');
+
+                        currentItem = {
+                            court: courtMatch[1],
+                            matchup: data
+                        };
+                    } else if (currentItem) {
+                        // Continuation line (e.g. Pic 1 where "BYE" is on line 2)
+                        currentItem.matchup += "\n" + trimmed.replace(/"/g, '').trim();
+                    }
+                });
+                if (currentItem) processedRows.push(currentItem);
+
+                const rowsHtml = processedRows.map((row, i) => {
+                    return `<tr class="${i % 2 === 0 ? 'lineup-row-odd' : 'lineup-row-even'}">
+                        <td class="lineup-court-col">${row.court}</td>
+                        <td class="lineup-matchup-col font-black uppercase text-center">${row.matchup}</td>
+                    </tr>`;
+                }).join('');
+
+                content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Weekly Lineup')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Lineup</button></div><div class="max-w-xl mx-auto mt-6 shadow-2xl overflow-hidden"><table class="lineup-table"><thead><tr class="lineup-header-bg"><th class="lineup-court-col text-white">Court</th><th>${currentLineup.weekTitle || 'Weekly Lineup'}</th></tr></thead><tbody>${rowsHtml || '<tr><td colspan="2" class="p-10 opacity-30 italic">No data found. Switch to Manage tab to paste the lineup.</td></tr>'}</tbody></table></div>`;
             } else if (view === 'REPORT') {
                 let aChamp = state.winners.champ, aRunner = state.winners.runner, aSeason = state.winners.season;
                 if (mode === 'DOUBLES') {
@@ -1662,11 +1745,26 @@
                 content.innerHTML = `<div class="p-4"><h2 class="text-sky-500 font-black italic uppercase mb-4">Series History</h2>${sessionHtml}${archH}<h2 class="text-sky-500 font-black italic uppercase mb-4 mt-8">Tournament Match History</h2>${tHistoryHtml}</div>`;
             } else if (view === 'NHPA') {
                 const cfg = state.nhpa[mode] || {};
-                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div></div><div class="mt-6 flex gap-2"><button onclick="window.smAlert('Settings Saved'); window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button></div></div></div>`;
+                content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div></div><div class="mt-6 flex gap-2"><button onclick="window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save Settings</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button></div></div></div>`;
             } else if (view === 'MANAGE') {
                 const rH = (state.roster[mode]||[]).map((t, i) => `<div class="bg-white p-3 shadow mb-2 flex justify-between items-center text-xs font-bold uppercase"><span>${t.teamName||t.name}</span><div class="flex gap-2"><button onclick="window.editRosterItem(${i})" class="text-sky-500 font-black">EDIT</button><button onclick="window.delR(${i})" class="text-red-500 font-black">DEL</button></div></div>`).join('');
+                
                 content.innerHTML = `
                 <div class="p-4 space-y-4 no-print">
+                    <div class="bg-black text-white p-6 shadow-2xl border-t-4 border-sky-500">
+                        <h3 class="text-sky-500 font-black italic uppercase mb-2">Weekly Lineup - ${mode}</h3>
+                        <p class="text-[10px] text-sky-300 mb-4 uppercase">Paste Court # and Teams from your sheet.</p>
+                        <div class="mb-4">
+                            <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Week Title</label>
+                            <input id="lineupWeekTitle" type="text" class="w-full p-3 bg-zinc-900 border border-zinc-700 text-white font-black" value="${state.weeklyLineup[mode].weekTitle}">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-[10px] font-black uppercase text-zinc-400 mb-1">Raw Paste (Excel Format)</label>
+                            <textarea id="lineupPasteInput" class="w-full h-40 p-3 bg-zinc-900 border border-zinc-700 text-white font-mono text-xs" placeholder="1 [Tab] Team A vs Team B">${state.weeklyLineup[mode].rawPaste}</textarea>
+                        </div>
+                        <button onclick="saveWeeklyLineupBulk()" class="w-full bg-sky-500 text-black p-4 font-black uppercase shadow-lg">Save ${mode} Lineup</button>
+                    </div>
+
                     <div class="bg-white p-4 shadow flex justify-between items-center"><span class="text-[10px] font-black uppercase tracking-widest">PIN: ${state.managePin}</span><button onclick="window.updatePin()" class="bg-sky-500 text-white px-4 py-2 text-[10px] font-black">CHANGE PIN</button></div>
                     ${mode === 'SINGLES' ? `
                         <div class="bg-amber-100 p-4 border-2 border-amber-300 flex justify-between items-center mb-4">
@@ -1719,7 +1817,7 @@
             }
         }
 
-        function renderCard(m) { return `<div class="match-card" onclick="openMatch('${m.id}')"><div class="team-line ${m.win === m.t1?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t1?.name || '?'} ${m.t1?.isBye ? '' : '(S' + (m.t1?.id || '?') + ')'}</span><span class="score-box">${m.s1}</span></div><div class="team-line ${m.win === m.t2?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t2?.name || '?'} ${m.t2?.id || '?'}</span><span class="score-box">${m.s2}</span></div></div>`; }
+        function renderCard(m) { return `<div class="match-card" onclick="openMatch('${m.id}')"><div class="team-line ${m.win === m.t1?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t1?.name || '?'} ${m.t1?.isBye ? '' : '(S' + (m.t1?.id || '?') + ')'}</span><span class="score-box">${m.s1}</span></div><div class="team-line ${m.win === m.t2?.name ? 'win' : (m.win ? 'loss' : '')}"><span>${m.t2?.name || '?'} ${m.t2?.isBye ? '' : '(S' + (m.t2?.id || '?') + ')'}</span><span class="score-box">${m.s2}</span></div></div>`; }
 
         function renderScorer() {
             const mod = document.getElementById('modal'); mod.style.display = 'block';
@@ -1766,11 +1864,15 @@
             }).sort((a,b) => a.last.localeCompare(b.last));
             let rows = pData.map(d => `<tr style="text-align:center; font-size: 7.5pt; height: 18px;"><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.last}</td><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.first}</td><td style="border:1.5px solid black;">${d.div}</td><td style="border:1.5px solid black;">${d.card}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c1}</td><td style="border:1.5px solid black;">${d.c2}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c3}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c4}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c5}</td><td style="border:1.5px solid black;">${d.c6}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c7}</td><td style="border:1.5px solid black;">${d.elig}</td></tr>`).join('');
             for(let i=0; i<5; i++) rows += `<tr style="height: 18px;"><td style="border:1.5px solid black;" colspan="12"></td></tr>`;
-            const html = `<div style="font-family: 'Arial Narrow', Arial, sans-serif; padding: 10px; color: black; background: white; width: 7.5in; margin: auto;"><div style="display:flex; justify-content:center; align-items:center; position: relative; margin-bottom: 5px;"><div style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; border: 1.5px solid black; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width: 50px; max-height: 50px;"></div><div style="text-align:center;"><h1 style="margin:0; font-size:16pt; font-weight:900; font-style:italic;">National Horseshoe Pitchers Association</h1><h2 style="margin:0; font-size:11pt; font-weight:900; text-transform:uppercase;">Sanctioned Club/League Program - FINAL Stat Sheet</h2><p style="margin:0; font-size: 7.5pt;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p><p style="margin:0; font-size: 7.5pt; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH  Ohio 44070 Bcarson848@gmail.com</p></div></div><div style="border-top: 2.5px solid black; border-bottom: 2.5px solid black; padding: 5px 0; margin-bottom: 10px;"><div style="display: grid; grid-template-columns: 1.5fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Club Name:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.clubName || ''}</span></div><div><b>Phone#:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.phone || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Sanction Number:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.sanctionNum || ''}</span></div><div><b>Director:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.director || ''}</span></div><div><b>Date Submitted:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.dateSubmitted || ''}</span></div></div><div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>State:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.state || ''}</span></div><div><b>Address:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.address || ''}</span></div><div><b>City:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.city || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-size: 9pt;"><div><b>Dates: Start</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.startDate || ''}</span></div><div><b>End</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.endDate || ''}</span></div><div><b>Cancellation:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.cancellation || ''}</span></div><div><b>Count All:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.countAll || ''}</span></div></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 6.5pt; font-weight: bold; margin-bottom: 5px; line-height: 1.1;"><div>Column Number:<br>1. Total League Pts, No Handicap<br>2. High Game Points, No Handicap<br>3. Total League Shoes</div><div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div><div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div></div><table style="width:100%; border-collapse: collapse; border: 2.5px solid black;"><thead><tr style="font-size: 6.5pt; background: #eee;"><th colspan="2" style="border:1.5px solid black;">Player Name</th><th rowspan="2" style="border:1.5px solid black; width: 30px;">Div.</th><th rowspan="2" style="border:1.5px solid black; width: 60px;">NHPA<br>Card No.</th><th style="border:1.5px solid black;">1</th><th style="border:1.5px solid black;">2</th><th style="border:1.5px solid black;">3</th><th style="border:1.5px solid black;">4</th><th style="border:1.5px solid black;">5</th><th style="border:1.5px solid black;">6</th><th style="border:1.5px solid black;">7</th><th rowspan="2" style="border:1.5px solid black; width: 25px;">Elig</th></tr><tr style="font-size: 5pt; background: #eee;"><th style="border:1.5px solid black; width: 70px;">Last</th><th style="border:1.5px solid black; width: 60px;">First</th><th colspan="7" style="border:1.5px solid black;">NHPA COLUMNS</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px; font-size: 8pt; font-weight: bold; display: flex; justify-content: space-between; align-items: flex-end;"><div style="width: 60%;">Signed <span style="border-bottom: 2px solid black; display: inline-block; width: 80%;"></span></div><div style="text-align: center; font-size: 6pt; width: 30%;">Club Officer / League Director</div></div></div>`;
+            const html = `<div style="font-family: 'Arial Narrow', Arial, sans-serif; padding: 10px; color: black; background: white; width: 7.5in; margin: auto;"><div style="display:flex; justify-content:center; align-items:center; position: relative; margin-bottom: 5px;"><div style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; border: 1.5px solid black; display: flex; align-items: center; justify-content: center;"><img src="logo.jpg" style="max-width: 50px; max-height: 50px;"></div><div style="text-align:center;"><h1 style="margin:0; font-size:16pt; font-weight:900; font-style:italic;">National Horseshoe Pitchers Association</h1><h2 style="margin:0; font-size:11pt; font-weight:900; text-transform:uppercase;">Sanctioned Club/League Program - FINAL Stat Sheet</h2><p style="margin:0; font-size: 7.5pt;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p><p style="margin:0; font-size: 7.5pt; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH  Ohio 44070 Bcarson848@gmail.com</p></div></div><div style="border-top: 2.5px solid black; border-bottom: 2.5px solid black; padding: 5px 0; margin-bottom: 10px;"><div style="display: grid; grid-template-columns: 1.5fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Club Name:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.clubName || ''}</span></div><div><b>Phone#:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.phone || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Sanction Number:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.sanctionNum || ''}</span></div><div><b>Director:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.director || ''}</span></div><div><b>Date Submitted:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.dateSubmitted || ''}</span></div></div><div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>State:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.state || ''}</span></div><div><b>Address:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.address || ''}</span></div><div><b>City:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.city || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-size: 9pt;"><div><b>Dates: Start</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.startDate || ''}</span></div><div><b>End</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.endDate || ''}</span></div><div><b>Cancellation:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.cancellation || ''}</span></div><div><b>Count All:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.countAll || ''}</span></div></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 6.5pt; font-weight: bold; margin-bottom: 5px; line-height: 1.1;"><div>Column Number:<br>1. Total League Pts, No Handicap<br>2. High Game Points, No Handicap<br>3. Total League Shoes</div><div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div><div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div></div><table style="width:100%; border-collapse: collapse; border: 2.5px solid black;"><thead><tr style="font-size: 6.5pt; background: #eee;"><th colspan="2" style="border:1.5px solid black;">Player Name</th><th rowspan="2" style="border:1.5px solid black; width: 30px;">Div.</th><th rowspan="2" style="border:1.5px solid black; width: 60px;">NHPA<br>Card No.</th><th style="border:1.5px solid black;">1</th><th style="border:1.5px solid black;">2</th><th style="border:1.5px solid black;">3</th><th style="border:1.5px solid black;">4</th><th style="border:1.5px solid black;">5</th><th style="border:1.5px solid black;">6</th><th style="border:1.5px solid black;">7</th><th rowspan="2" style="border:1.5px solid black; width: 25px;">Elig</th></tr><tr style="font-size: 5pt; background: #eee;"><th style="border:1.5px solid black; width: 70px;">Last</th><th style="border:1.5px solid black; width: 60px;">First</th><th colspan="7" style="border:1.5px solid black;">NHPA COLUMNS</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px; font-size: 8pt; font-weight: bold; display: flex; justify-content: space-between; align-items: flex-end;"><div style="width: 60%;">Signed <span style="border-bottom: 2px solid black; display: inline-block; width: 80%;"></span></div><div style="text-align: center; font-size: 6pt; width: 30%;">Club Officer / League Director</div></div></div>`;
             window.executePrint("NHPA Final Stat Sheet", html, true);
         };
 
-        window.addEventListener('resize', render);
+        window.addEventListener('resize', () => {
+            if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+            render();
+        });
+
         render();
     </script>
 </body>
