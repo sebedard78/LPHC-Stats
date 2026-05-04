@@ -262,7 +262,7 @@
 
         // state updated to include 4. Singles Half logic storage
         // LOGGING FIX: Ensure fourDeads DOUBLES is initialized as an object {}
-        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null, weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
+        let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null, weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
         let mode = 'DOUBLES';
         let view = 'NEWS';
         let scorerMode = 'LIVE'; 
@@ -364,6 +364,9 @@
                 if(state.scorerEnabled === undefined) state.scorerEnabled = true;
                 if(state.tournamentEnabled === undefined) state.tournamentEnabled = false;
                 if(state.reportEnabled === undefined) state.reportEnabled = true;
+                if(state.historyEnabled === undefined) state.historyEnabled = true;
+                if(state.nhpaEnabled === undefined) state.nhpaEnabled = true;
+
                 if(!state.winners) state.winners = {champ:'', runner:'', season:''};
                 if(!state.activeMatches) state.activeMatches = [];
                 // 4. Half Logic State Check
@@ -505,6 +508,18 @@
         window.toggleReport = async () => {
             state.reportEnabled = !state.reportEnabled;
             if(!state.reportEnabled && view === 'REPORT') view = 'STANDINGS';
+            await save(); render();
+        }
+
+        window.toggleHistory = async () => {
+            state.historyEnabled = !state.historyEnabled;
+            if(!state.historyEnabled && view === 'HISTORY') view = 'STANDINGS';
+            await save(); render();
+        }
+
+        window.toggleNHPA = async () => {
+            state.nhpaEnabled = !state.nhpaEnabled;
+            if(!state.nhpaEnabled && view === 'NHPA') view = 'STANDINGS';
             await save(); render();
         }
 
@@ -1266,7 +1281,7 @@
             const p = await window.smPrompt("Enter PIN to WIPE DATA:"); 
             if(p === state.managePin) { 
                 if(await window.smConfirm("Confirm Wipe? This is permanent.")) { 
-                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } }; 
+                    state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: state.managePin, hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } }; 
                     await save(); location.reload(); 
                 } 
             } else if (p !== null) await window.smAlert("Incorrect PIN");
@@ -1441,7 +1456,17 @@
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 rounded transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
-            ['NEWS', 'STANDINGS', 'STATS', 'LINEUP', 'REPORT', 'SCORER', 'TOURNAMENT', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { const el = document.getElementById('tab'+t); if(el) { el.className = `flex-1 py-4 text-[9px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled ? 'block' : 'none'; if(t === 'REPORT') el.style.display = state.reportEnabled ? 'block' : 'none'; } });
+            ['NEWS', 'STANDINGS', 'STATS', 'LINEUP', 'REPORT', 'SCORER', 'TOURNAMENT', 'HISTORY', 'NHPA', 'MANAGE'].forEach(t => { 
+                const el = document.getElementById('tab'+t); 
+                if(el) { 
+                    el.className = `flex-1 py-4 text-[9px] font-black uppercase tracking-widest ${view===t?'tab-active':'text-gray-400'}`; 
+                    if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; 
+                    if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled ? 'block' : 'none'; 
+                    if(t === 'REPORT') el.style.display = state.reportEnabled ? 'block' : 'none'; 
+                    if(t === 'HISTORY') el.style.display = state.historyEnabled ? 'block' : 'none'; 
+                    if(t === 'NHPA') el.style.display = state.nhpaEnabled ? 'block' : 'none'; 
+                } 
+            });
             const content = document.getElementById('viewContent');
 
             if (view === 'NEWS') {
@@ -1784,6 +1809,8 @@
                         <button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button>
                         <button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button>
                         <button onclick="window.toggleReport()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.reportEnabled ? 'bg-purple-600 text-white' : 'bg-zinc-500 text-white'}">Report: ${state.reportEnabled ? 'ON' : 'OFF'}</button>
+                        <button onclick="window.toggleHistory()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.historyEnabled ? 'bg-zinc-800 text-white' : 'bg-zinc-400 text-white'}">History: ${state.historyEnabled ? 'ON' : 'OFF'}</button>
+                        <button onclick="window.toggleNHPA()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.nhpaEnabled ? 'bg-zinc-800 text-white' : 'bg-zinc-400 text-white'}">NHPA: ${state.nhpaEnabled ? 'ON' : 'OFF'}</button>
                     </div>
                     <div class="bg-sky-50 p-6 border-2 border-sky-200 shadow-lg">
                         <h3 class="text-sky-600 font-black uppercase italic mb-4">Individual Entry</h3>
