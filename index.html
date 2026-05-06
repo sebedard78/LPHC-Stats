@@ -99,14 +99,14 @@
             .no-print, header, nav, main, #exitModal, button { display: none !important; }
             body { background: white !important; color: black !important; overflow: visible !important; }
             #printZone { display: block !important; position: absolute; top: 0; left: 0; width: 100%; z-index: 99999; background: white !important; }
-            #printZone * { position: static !important; overflow: visible !important; color: black !important; background: transparent !important; border-color: black !important; border-radius: 0 !important; }
+            #printZone * { position: static !important; overflow: visible !important; color: black !important; background: transparent !important; border-color: black !important; border-radius: 0 !important; box-shadow: none !important; text-shadow: none !important; }
             .std-table, .sum-stats-table { width: 100% !important; border: 1px solid black !important; border-collapse: collapse !important; table-layout: fixed !important; margin-bottom: 20px !important; }
             .std-table th, .std-table td, .sum-stats-table th, .sum-stats-table td { border: 1px solid black !important; padding: 6px 3px !important; font-size: 11pt !important; color: black !important; line-height: 1.2 !important; }
             .stats-name-col { width: 25% !important; border-right: 1px solid black !important; text-align: left !important; padding-left: 6px !important; font-size: 10pt !important; }
             .pts-col, .val-col { background: #f0f0f0 !important; font-weight: bold !important; border-left: 1px solid black !important; }
             .grid { display: flex !important; gap: 10px !important; align-items: flex-start !important; }
             .grid > div { flex: 1 !important; }
-            .lineup-table { width: 100% !important; border: 2px solid black !important; }
+            .lineup-table { width: 100% !important; border: 2px solid black !important; box-shadow: none !important; }
             .lineup-header-bg { background-color: #0ea5e9 !important; -webkit-print-color-adjust: exact; }
             .lineup-court-col { background-color: #eee !important; color: black !important; border-right: 2px solid black !important; }
         }
@@ -1158,21 +1158,7 @@
                 <div class="p-6 bg-zinc-950 min-h-screen text-white">
                     <h2 class="text-center text-sky-500 font-black uppercase italic text-2xl mb-2">Match History: ${mid}</h2>
                     <p class="text-center text-5xl font-black mb-8">${h.s1} - ${h.s2}</p>
-                    <div class="bg-zinc-900 border border-zinc-800 mb-8">
-                        <table class="w-full text-center border-collapse">
-                            <thead>
-                                <tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400">
-                                    <th class="text-left p-4">Player</th>
-                                    <th class="p-4">Pts</th>
-                                    <th class="p-4">Rng</th>
-                                    <th class="p-4">Stat Avg</th>
-                                </tr>
-                            </thead>
-                            <tbody>${rowsHtml}</tbody>
-                        </table>
-                    </div>
-                    <button onclick="document.getElementById('modal').style.display='none'" class="w-full bg-zinc-800 text-white p-6 rounded-2xl font-black uppercase text-sm">Close Summary</button>
-                </div>`;
+                    <div class="bg-zinc-900 border border-zinc-800 mb-8"><table class="w-full text-center border-collapse"><thead><tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400"><th class="text-left p-4">Player</th><th class="p-4">Pts</th><th class="p-4">Rng</th><th class="p-4">Stat Avg</th></tr></thead><tbody>${rowsHtml}</tbody></table></div><button onclick="document.getElementById('modal').style.display='none'" class="w-full bg-zinc-800 text-white p-6 rounded-2xl font-black uppercase text-sm">Close Summary</button></div>`;
         };
 
         window.editTScoreCell = async (idx, pNum) => {
@@ -1337,6 +1323,7 @@
                     state.activeMatches = state.activeMatches.filter(m => m.mode !== mode);
                     if (mode === 'SINGLES') {
                         state.singlesHalfWinner = null;
+                        state.singlesHalfHcp = null;
                         state.singlesHalfArchive = [];
                     }
                     await save(); location.reload(); 
