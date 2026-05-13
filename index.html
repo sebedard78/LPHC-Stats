@@ -167,7 +167,21 @@
         /* LANDSCAPE SPECIFIC ADJUSTMENTS - HUGE SCORE RESTORED */
         @media (orientation: landscape) {
             .sticky-scorer { position: relative !important; top: 0 !important; width: 100% !important; max-width: none !important; }
+            
+            /* INCREASE TEXT OF FRAMED SCORES */
             .micro-container { height: auto !important; min-height: 250px; overflow-y: visible !important; }
+            .micro-table td { font-size: 1.6rem !important; padding: 15px 0 !important; }
+            .micro-table th { font-size: 0.8rem !important; }
+            
+            .t-micro-container { height: auto !important; min-height: 200px; }
+            .t-micro-table td { font-size: 1.4rem !important; padding: 12px 0 !important; }
+            .t-micro-table th { font-size: 0.7rem !important; }
+
+            /* INCREASE TEXT OF END GAME SUMMARY */
+            .sum-row-table { font-size: 1.4rem !important; }
+            .sum-row-table th { font-size: 1rem !important; }
+            .sum-row-table td { font-size: 1.4rem !important; padding: 15px 5px !important; }
+
             .btn-score-grid { grid-template-columns: repeat(6, 1fr) !important; padding: 5px !important; }
             .btn-score { height: 90px !important; background: #fff !important; }
             .btn-score .num { font-size: 3rem !important; }
@@ -176,7 +190,7 @@
             .sticky-scorer .py-4 { padding: 1.5rem !important; }
             .sticky-scorer .text-[12px] { font-size: 1.2rem !important; }
             .sticky-scorer .text-[11px] { font-size: 1rem !important; }
-            .t-micro-container { height: auto !important; min-height: 200px; }
+            
             .t-btn-score-grid { grid-template-columns: repeat(6, 1fr) !important; padding: 8px !important; }
             .t-btn-score { height: 100px !important; }
             .t-btn-score .num { font-size: 3rem !important; }
@@ -875,14 +889,13 @@
             }
             const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
             const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
-            const s1C = sc1 + match.h1 + match.h2 + d1 + d2, s2C = sc2 + match.h3 + match.h4 + d3 + d4;
-            const target = mode === 'SINGLES' ? 135 : 162;
-            const finalG1 = cleanN(match.t1Name) === 'bye' ? target : s1C, finalG2 = cleanN(match.t2Name) === 'bye' ? target : s2C;
-            match.sessionAgg.t1 += finalG1; match.sessionAgg.t2 += finalG2;
-            const r1 = finalG1 > finalG2 ? 'W' : (finalG1 < finalG2 ? 'L' : 'T'), r2 = finalG2 > finalG1 ? 'W' : (finalG2 < finalG1 ? 'L' : 'T');
+            const s1C = sc1 + match.h1 + match.h2 + d1 + d2 + Number(match.currF.p1||0) + Number(match.currF.p2||0), s2C = sc2 + match.h3 + match.h4 + d3 + d4 + Number(match.currF.p3||0) + Number(match.currF.p4||0);
+            const target = mode === 'SINGLES' ? 135 : 162; const dS1 = cleanN(match.t1Name) === 'bye' ? target : s1C, dS2 = cleanN(match.t2Name) === 'bye' ? target : s2C;
+            match.sessionAgg.t1 += dS1; match.sessionAgg.t2 += dS2;
+            const r1 = dS1 > dS2 ? 'W' : (dS1 < dS2 ? 'L' : 'T'), r2 = dS2 > dS1 ? 'W' : (dS2 < dS1 ? 'L' : 'T');
             const pls = [{n:match.p1,p:'p1',r:r1,d:d1},{n:match.p2,p:'p2',r:r1,d:d2},{n:match.p3,p:'p3',r:r2,d:d3},{n:match.p4,p:'p4',r:r2,d:d4}];
             pls.forEach(pl => { if(pl.n && !['bye','dummy'].includes(cleanN(pl.n))) { match.seriesBuffer.push({ player: pl.n, score: match.currGameFrames.reduce((s,f)=>s+Number(f[pl.p]||0), 0) + pl.d, ringers: match.currGameFrames.reduce((s,f)=>s+getR(f[pl.p]), 0), result: pl.r, sessionId: match.sessionId, gameNum: match.gameNum, mode, date: new Date().toLocaleDateString(), timestamp: Date.now() }); } });
-            match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, s1: finalG1, s2: finalG2, frames: [...match.currGameFrames], isPlayoff: match.isPlayoff });
+            match.games.push({ gameNum: match.gameNum, p1: match.p1, p2: match.p2, p3: match.p3, p4: match.p4, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, s1: dS1, s2: dS2, frames: [...match.currGameFrames], isPlayoff: match.isPlayoff });
             match.step = (match.gameNum >= 3) ? 'MATCH_SUMMARY' : 'GAME_SUMMARY'; updateActiveMatchRef(); render();
         }
 
@@ -891,7 +904,7 @@
             let mW; const target = mode === 'SINGLES' ? 135 : 162;
             if (cleanN(match.t2Name) === 'bye') { const wins = match.games.filter(g => g.s1 >= target).length; mW = wins > 0 ? match.t1Name : 'BYE'; }
             else if (cleanN(match.t1Name) === 'bye') { const wins = match.games.filter(g => g.s2 >= target).length; mW = wins > 0 ? match.t2Name : 'BYE'; }
-            else mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.t2Name ? match.t2Name : 'Tie');
+            else mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.sessionAgg.t2 ? match.t2Name : 'Tie');
             const today = new Date().toLocaleDateString(); 
             if (!match.isPlayoff) {
                 state.history.push(...match.seriesBuffer);
@@ -1945,7 +1958,7 @@
                 const getRings = (pk) => scoring.frames.reduce((a, b) => a + getR(b[pk]), 0);
                 let rowsHtml = '';
                 [{n: scoring.p1n, p: 'p1'}, {n: scoring.p2n, p: 'p2'}, {n: scoring.p3n, p: 'p3'}, {n: scoring.p4n, p: 'p4'}].forEach(pl => {
-                    rowsHtml += `<tr><td class="text-left font-black uppercase text-[10px] p-4 border-b border-zinc-800">${pl.n}</td><td class="p-4 border-b border-zinc-800">${getS(pl.p)}</td><td class="p-4 border-b border-zinc-800">${getRings(pl.p)}</td><td class="p-4 border-b border-zinc-800 bg-sky-950 font-black text-sky-400">${getPlyrAvg(pl.n)}</td></tr>`;
+                    rowsHtml += `<tr><td class="text-left font-black uppercase p-4 border-b border-zinc-800">${pl.n}</td><td class="p-4 border-b border-zinc-800">${getS(pl.p)}</td><td class="p-4 border-b border-zinc-800">${getRings(pl.p)}</td><td class="p-4 border-b border-zinc-800 bg-sky-950 font-black text-sky-400">${getPlyrAvg(pl.n)}</td></tr>`;
                 });
                 mod.innerHTML = `<div class="p-6 bg-zinc-950 min-h-screen text-white"><h2 class="text-center text-sky-500 font-black uppercase italic text-2xl mb-2">Series Final</h2><p class="text-center text-5xl font-black mb-8">${scoring.final1} - ${scoring.final2}</p><div class="bg-zinc-900 border border-zinc-800 mb-8"><table class="w-full text-center border-collapse"><thead><tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400"><th class="text-left p-4">Player</th><th class="p-4">Pts</th><th class="p-4">Rng</th><th class="p-4">Stat Avg</th></tr></thead><tbody>${rowsHtml}</tbody></table></div><button onclick="saveTMatch()" class="w-full bg-sky-500 text-black p-6 rounded-2xl font-black uppercase text-lg shadow-2xl">Finish & Close</button><button onclick="scoring.step='LIVE'; renderScorer();" class="w-full mt-4 text-zinc-500 font-bold uppercase text-xs">Back to Match</button></div>`;
                 return;
