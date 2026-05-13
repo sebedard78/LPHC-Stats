@@ -150,7 +150,7 @@
 
         .round-col { display: flex; flex-direction: column; gap: 20px; min-width: 180px; }
         .round-title { font-size: 9px; font-weight: 900; color: #64748b; text-transform: uppercase; text-align: center; border-bottom: 1px solid #1e293b; margin-bottom: 8px; }
-        .match-card { background: #111827; border: 1.5px solid #1e293b; border-radius: 12px; overflow: hidden; cursor: pointer; }
+        .match-card { background: #111827; border: 1.5 solid #1e293b; border-radius: 12px; overflow: hidden; cursor: pointer; }
         .match-card:hover { border-color: #0ea5e9; }
         .team-line { display: flex; justify-content: space-between; padding: 12px; font-size: 11px; font-weight: 800; border-bottom: 1px solid #020617; color: white; }
         .team-line.win { background: #083344; color: #22d3ee; }
@@ -343,7 +343,17 @@
         window.smKeypad = (msg) => {
             return new Promise(res => {
                 dBox.style.display = 'flex';
-                dBox.innerHTML = `<div class="dialog-box text-center"><p class="font-black italic uppercase text-sky-500 mb-4">${msg}</p><div class="grid grid-cols-3 gap-2">${[0,1,2,3,4,5,6,7,8,9].map(n => `<button class="kp-btn bg-zinc-800 text-white p-6 font-black text-2xl hover:bg-sky-500 hover:text-black" data-val="${n}">${n}</button>`).join('')}<button id="kpClear" class="bg-zinc-700 text-white p-6 font-black text-xs uppercase">Clear</button><button id="kpGo" class="bg-sky-500 text-black p-6 font-black text-xs uppercase col-span-2">Enter</button></div><button id="smCancel" class="w-full mt-4 text-zinc-500 font-bold uppercase text-[10px]">Cancel</button></div>`;
+                dBox.innerHTML = `
+                <div class="dialog-box text-center">
+                    <p class="font-black italic uppercase text-sky-500 mb-4">${msg}</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button class="kp-btn bg-zinc-800 text-white p-6 font-black text-2xl hover:bg-sky-500 hover:text-black" data-val="${n}">${n}</button>`).join('')}
+                        <button id="kpClear" class="bg-zinc-700 text-white p-6 font-black text-xs uppercase">Clear</button>
+                        <button class="kp-btn bg-zinc-800 text-white p-6 font-black text-2xl hover:bg-sky-500 hover:text-black" data-val="0">0</button>
+                        <button id="kpGo" class="bg-sky-500 text-black p-6 font-black text-xs uppercase">Enter</button>
+                    </div>
+                    <button id="smCancel" class="w-full mt-4 text-zinc-500 font-bold uppercase text-[10px]">Cancel</button>
+                </div>`;
                 let currentVal = "";
                 const updateUI = () => { document.querySelector('#customDialog p').innerText = `${msg}: ${currentVal}`; };
                 document.querySelectorAll('.kp-btn').forEach(btn => {
