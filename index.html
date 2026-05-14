@@ -935,7 +935,7 @@
                 
                 Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
             }
-            state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now(), isPlayoff: match.isPlayoff });
+            state.sessions.push({ id: match.sessionId, name: `${match.t1Name} vs ${match.t2Name}`, t1Name: match.t1Name, t2Name: match.t2Name, date: today, mode, matchWinner: mW, agg1: match.sessionAgg.t1, agg2: match.sessionAgg.t2, fullData: [...match.games], timestamp: Date.now(), isPlayoff: match.isPlayoff });
             state.activeMatches = state.activeMatches.filter(x => x.sessionId !== match.sessionId);
             match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {}, isPlayoff: false, selectedSlot: null };
             view = 'STANDINGS'; 
@@ -1072,7 +1072,7 @@
             else if (cleanN(t1) === 'bye') mW = games.filter(g => g.s2 >= target).length > 0 ? t2 : 'BYE';
             else mW = agg1 > agg2 ? t1 : (agg1 < agg2 ? t2 : 'Tie');
 
-            state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster });
+            state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster });
             await save(); 
             
             const summaryRows = players.map(p => `
@@ -1107,6 +1107,98 @@
                 </div>
                 <button onclick="document.getElementById('modal').style.display='none'; view='STANDINGS'; render();" class="w-full bg-sky-500 text-black p-6 mt-10 font-black uppercase rounded-2xl shadow-xl hover:bg-sky-400">Finish & Exit</button>
             </div>`;
+        };
+
+        // NEW: Corrected Game-by-Game Detailed Report Builder
+        window.printDateReport = () => {
+            const sortedSessions = [...state.sessions].filter(s => s.mode === mode).sort((a,b) => b.timestamp - a.timestamp);
+            if (!sortedSessions.length) return window.smAlert("No session history found.");
+
+            let reportHtml = `
+            <style>
+                .dr-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; font-family: Arial, sans-serif; table-layout: fixed; }
+                .dr-table th, .dr-table td { border: 1px solid #000; padding: 6px; font-size: 8.5pt; text-align: center; }
+                .dr-table th { background: #f0f0f0; font-weight: bold; text-transform: uppercase; font-size: 7.5pt; }
+                .dr-date-header { font-size: 13pt; font-weight: 900; background: #0ea5e9; color: #000; padding: 8px; margin-top: 30px; border: 2px solid black; text-transform: uppercase; }
+                .dr-match-info { background: #eee; font-weight: 900; text-align: left !important; padding-left: 10px !important; border-bottom: 2px solid black; }
+                .dr-win { font-weight: 900; background-color: #dcfce7 !important; }
+                .dr-loss { background-color: #fee2e2 !important; }
+                .dr-mp { font-weight: 900; background-color: #e0f2fe !important; text-decoration: underline; }
+            </style>
+            `;
+
+            const uniqueDates = [...new Set(sortedSessions.map(s => s.date))];
+
+            uniqueDates.forEach(date => {
+                reportHtml += `<div class="dr-date-header">DATE: ${date}</div>`;
+                const sessionsOnDate = sortedSessions.filter(s => s.date === date);
+
+                sessionsOnDate.forEach(sess => {
+                    reportHtml += `
+                    <table class="dr-table">
+                        <thead>
+                            <tr><th colspan="${mode === 'DOUBLES' ? 7 : 6}" class="dr-match-info">${sess.name} (Series Winner: ${sess.matchWinner})</th></tr>
+                            <tr>
+                                <th style="text-align:left; width: 30%;">Player</th>
+                                <th style="width: 10%;">G#</th>
+                                <th style="width: 15%;">Scratch</th>
+                                <th style="width: 15%;">Ringers</th>
+                                <th style="width: 15%;">Result</th>
+                                ${mode === 'DOUBLES' ? '<th style="width: 15%;">Match Pt?</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                    sess.fullData.forEach(game => {
+                        const keys = sess.isManual ? ['p1','p2','p3','p4','p5','p6'] : ['p1','p2','p3','p4'];
+                        
+                        keys.forEach(pk => {
+                            const pName = game[pk];
+                            if (!pName || ['BYE', 'DUMMY'].includes(cleanN(pName).toUpperCase())) return;
+
+                            let scr = 0, rng = 0;
+                            if (sess.isManual) {
+                                scr = game[pk + '_scr'] || 0;
+                                rng = game[pk + '_rng'] || 0;
+                            } else {
+                                scr = (game.frames || []).reduce((s, f) => s + (Number(f[pk]) || 0), 0);
+                                rng = (game.frames || []).reduce((s, f) => s + getR(f[pk]), 0);
+                            }
+
+                            // Corrected Win/Loss logic based on game.s1 and game.s2
+                            const isT1 = ['p1','p2','p5'].includes(pk);
+                            let resTxt = 'LOSS';
+                            let resClass = 'dr-loss';
+                            
+                            if (game.s1 === game.s2) {
+                                resTxt = 'TIE';
+                                resClass = '';
+                            } else if (isT1 && game.s1 > game.s2) {
+                                resTxt = 'WIN';
+                                resClass = 'dr-win';
+                            } else if (!isT1 && game.s2 > game.s1) {
+                                resTxt = 'WIN';
+                                resClass = 'dr-win';
+                            }
+
+                            const playerTeamName = isT1 ? sess.t1Name : sess.t2Name;
+                            const isSeriesWinner = cleanN(playerTeamName) === cleanN(sess.matchWinner);
+
+                            reportHtml += `
+                            <tr>
+                                <td style="text-align:left; font-weight:bold;">${pName}</td>
+                                <td>${game.gameNum}</td>
+                                <td>${scr}</td>
+                                <td>${rng}</td>
+                                <td class="${resClass}">${resTxt}</td>
+                                ${mode === 'DOUBLES' ? `<td class="${isSeriesWinner ? 'dr-mp' : ''}">${isSeriesWinner ? 'YES' : 'NO'}</td>` : ''}
+                            </tr>`;
+                        });
+                    });
+                    reportHtml += `</tbody></table>`;
+                });
+            });
+            window.executePrint("Session Results By Date", reportHtml, true);
         };
 
         /* TOURNAMENT SCORING LOGIC */
@@ -1524,6 +1616,98 @@
             await save(); window.smAlert("Lineup Updated Successfully"); render();
         };
 
+        // NEW: Corrected Game-by-Game Detailed Report Builder
+        window.printDateReport = () => {
+            const sortedSessions = [...state.sessions].filter(s => s.mode === mode).sort((a,b) => b.timestamp - a.timestamp);
+            if (!sortedSessions.length) return window.smAlert("No history found.");
+
+            let reportHtml = `
+            <style>
+                .dr-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; font-family: Arial, sans-serif; table-layout: fixed; }
+                .dr-table th, .dr-table td { border: 1px solid #000; padding: 6px; font-size: 8.5pt; text-align: center; }
+                .dr-table th { background: #f0f0f0; font-weight: bold; text-transform: uppercase; font-size: 7.5pt; }
+                .dr-date-header { font-size: 13pt; font-weight: 900; background: #0ea5e9; color: #000; padding: 8px; margin-top: 30px; border: 2px solid black; text-transform: uppercase; }
+                .dr-match-info { background: #eee; font-weight: 900; text-align: left !important; padding-left: 10px !important; border-bottom: 2px solid black; }
+                .dr-win { font-weight: 900; background-color: #dcfce7 !important; }
+                .dr-loss { background-color: #fee2e2 !important; }
+                .dr-mp { font-weight: 900; background-color: #e0f2fe !important; text-decoration: underline; }
+            </style>
+            `;
+
+            const uniqueDates = [...new Set(sortedSessions.map(s => s.date))];
+
+            uniqueDates.forEach(date => {
+                reportHtml += `<div class="dr-date-header">DATE: ${date}</div>`;
+                const sessionsOnDate = sortedSessions.filter(s => s.date === date);
+
+                sessionsOnDate.forEach(sess => {
+                    reportHtml += `
+                    <table class="dr-table">
+                        <thead>
+                            <tr><th colspan="${mode === 'DOUBLES' ? 7 : 6}" class="dr-match-info">${sess.name} (Series Winner: ${sess.matchWinner})</th></tr>
+                            <tr>
+                                <th style="text-align:left; width: 30%;">Player</th>
+                                <th style="width: 10%;">G#</th>
+                                <th style="width: 15%;">Scratch</th>
+                                <th style="width: 15%;">Ringers</th>
+                                <th style="width: 15%;">Result</th>
+                                ${mode === 'DOUBLES' ? '<th style="width: 15%;">Match Pt?</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                    sess.fullData.forEach(game => {
+                        const keys = sess.isManual ? ['p1','p2','p3','p4','p5','p6'] : ['p1','p2','p3','p4'];
+                        
+                        keys.forEach(pk => {
+                            const pName = game[pk];
+                            if (!pName || ['BYE', 'DUMMY'].includes(cleanN(pName).toUpperCase())) return;
+
+                            let scr = 0, rng = 0;
+                            if (sess.isManual) {
+                                scr = game[pk + '_scr'] || 0;
+                                rng = game[pk + '_rng'] || 0;
+                            } else {
+                                scr = (game.frames || []).reduce((s, f) => s + (Number(f[pk]) || 0), 0);
+                                rng = (game.frames || []).reduce((s, f) => s + getR(f[pk]), 0);
+                            }
+
+                            // Corrected Win/Loss logic based on game.s1 and game.s2
+                            const isT1 = ['p1','p2','p5'].includes(pk);
+                            let resTxt = 'LOSS';
+                            let resClass = 'dr-loss';
+                            
+                            if (game.s1 === game.s2) {
+                                resTxt = 'TIE';
+                                resClass = '';
+                            } else if (isT1 && game.s1 > game.s2) {
+                                resTxt = 'WIN';
+                                resClass = 'dr-win';
+                            } else if (!isT1 && game.s2 > game.s1) {
+                                resTxt = 'WIN';
+                                resClass = 'dr-win';
+                            }
+
+                            const playerTeamName = isT1 ? sess.t1Name : sess.t2Name;
+                            const isSeriesWinner = cleanN(playerTeamName) === cleanN(sess.matchWinner);
+
+                            reportHtml += `
+                            <tr>
+                                <td style="text-align:left; font-weight:bold;">${pName}</td>
+                                <td>${game.gameNum}</td>
+                                <td>${scr}</td>
+                                <td>${rng}</td>
+                                <td class="${resClass}">${resTxt}</td>
+                                ${mode === 'DOUBLES' ? `<td class="${isSeriesWinner ? 'dr-mp' : ''}">${isSeriesWinner ? 'YES' : 'NO'}</td>` : ''}
+                            </tr>`;
+                        });
+                    });
+                    reportHtml += `</tbody></table>`;
+                });
+            });
+            window.executePrint("Session Results By Date", reportHtml, true);
+        };
+
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
@@ -1553,15 +1737,12 @@
                     const trimmed = line.trim();
                     if (!trimmed) return;
 
-                    // SMART PARSER: Check if line starts with a number (e.g., "1 Evan & Regina")
                     const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
                     
                     if (courtMatch) {
-                        // Start of a new court row
                         if (currentItem) processedRows.push(currentItem);
                         
                         let data = (courtMatch[2] || "").replace(/"/g, '').trim();
-                        // If pasted text contains " vs " on one line, we split it for stacking
                         data = data.replace(/\s+vs\s+/gi, '\n');
 
                         currentItem = {
@@ -1569,7 +1750,6 @@
                             matchup: data
                         };
                     } else if (currentItem) {
-                        // Continuation line (e.g. Pic 1 where "BYE" is on line 2)
                         currentItem.matchup += "\n" + trimmed.replace(/"/g, '').trim();
                     }
                 });
@@ -1616,7 +1796,6 @@
                     return { name: pN, avg, rPct, hiG: g.length ? Math.max(...g.map(x=>x.score)) : 0, hiR: g.length ? Math.max(...g.map(x=>(x.ringers/shoesPG)*100)) : 0, sPct, hoa: g.length ? Math.max(...g.map(x => x.score - avg)) : 0, imp: avg - startAvg, isNew };
                 });
                 const sort = (key) => [...stats].sort((a,b) => b[key] - a[key]).slice(0, 5);
-                // Filtering out new members from most improved rankings
                 const sortImproved = () => stats.filter(s => !s.isNew).sort((a,b) => b.imp - a.imp).slice(0, 5);
 
                 const patches = stats.filter(s => {
@@ -1633,7 +1812,10 @@
                         </table>
                     </div>`;
                 content.innerHTML = `
-                    <div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Season Report')" class="bg-black text-white px-4 py-2 font-black uppercase border">Print Report</button></div>
+                    <div class="action-bar flex justify-end p-2 gap-2 no-print">
+                        <button onclick="window.printDateReport()" class="bg-sky-600 text-white px-4 py-2 font-black uppercase border">Print Report By Date</button>
+                        <button onclick="window.printActive('Season Report')" class="bg-black text-white px-4 py-2 font-black uppercase border">Print Season Report</button>
+                    </div>
                     <div class="report-grid max-w-4xl mx-auto border-4 border-black">
                         <div class="col-span-2 border-b-2 border-black p-4 space-y-2">
                             <div class="flex items-center"><span class="w-40 font-bold uppercase text-sm">League Champion</span><input id="win-champ" value="${aChamp}" onchange="window.saveWinners()" class="flex-1 border-b border-black outline-none px-2"></div>
@@ -1804,7 +1986,7 @@
                         </div>
                         <div class="micro-container">
                             <table class="micro-table">
-                                <tbody><tr class="curr-row"><td class="c-sh">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td class="c-r">${getSym(match.currF.p1, match.currF.p3)}</td><td class="c-p">${match.currF.p1??''}</td><td class="c-t"></td><td class="c-r">${getSym(match.currF.p3, match.currF.p1)}</td><td class="c-p">${match.currF.p3??''}</td><td class="c-t"></td>` : `<td class="c-r">${getSym(match.currF.p1, match.currF.p3)}</td><td class="c-p">${match.currF.p1??''}</td><td class="c-s"></td><td class="c-r">${getSym(match.currF.p2, match.currF.p4)}</td><td class="c-p">${match.currF.p2??''}</td><td class="c-s"></td><td class="c-t"></td><td class="c-r">${getSym(match.currF.p3, match.currF.p1)}</td><td class="c-p">${match.currF.p3??''}</td><td class="c-s"></td><td class="c-r">${getSym(match.currF.p4, match.currF.p2)}</td><td class="c-p">${match.currF.p4??''}</td><td class="c-s"></td><td class="c-t2"></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSym(f.p1,f.p3)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td class="c-t">${p1s+match.h1}</td><td class="c-r">${getSym(f.p3,f.p1)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td class="c-t">${p3s+match.h3}</td></tr>`; return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSym(f.p1,f.p3)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td class="c-s">${p1s}</td><td class="c-r">${getSym(f.p2,f.p4)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td class="c-s">${p2s}</td><td class="c-t">${p1s+p2s+match.h1+match.h2+d1+d2}</td><td class="c-r">${getSym(f.p3,f.p1)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td class="c-s">${p3s}</td><td class="c-r">${getSym(f.p4,f.p2)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td class="c-s">${p4s}</td><td class="c-t2">${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table>
+                                <tbody><tr class="curr-row"><td class="c-sh">${(match.currGameFrames.length+1)*2}</td>${mode==='SINGLES' ? `<td class="c-r">${getSym(match.currF.p1, match.currF.p3)}</td><td class="c-p">${match.currF.p1??''}</td><td class="c-t"></td><td class="c-r">${getSym(match.currF.p3, match.currF.p1)}</td><td class="c-p">${match.currF.p3??''}</td><td class="c-t"></td>` : `<td class="c-r">${getSym(match.currF.p1, match.currF.p3)}</td><td class="c-p">${match.currF.p1??''}</td><td class="c-s"></td><td class="c-r">${getSym(match.currF.p2, match.currF.p4)}</td><td class="c-p">${match.currF.p2??''}</td><td class="c-s"></td><td class="c-t"></td><td class="c-r">${getSym(match.currF.p3, match.currF.p1)}</td><td class="c-p">${match.currF.p3??''}</td><td class="c-s"></td><td class="c-r">${getSym(match.currF.p4, match.currF.p2)}</td><td class="c-p">${match.currF.p2??''}</td><td class="c-s"></td><td class="c-t2"></td>`}</tr>${match.currGameFrames.map((f,i)=>{ const sl=match.currGameFrames.slice(0,i+1), p1s=sl.reduce((s,x)=>s+Number(x.p1||0),0), p2s=sl.reduce((s,x)=>s+Number(x.p2||0),0), p3s=sl.reduce((s,x)=>s+Number(x.p3||0),0), p4s=sl.reduce((s,x)=>s+Number(x.p4||0),0); if(mode==='SINGLES') return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSym(f.p1,f.p3)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td class="c-t">${p1s+match.h1}</td><td class="c-r">${getSym(f.p3,f.p1)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td class="c-t">${p3s+match.h3}</td></tr>`; return `<tr><td class="c-sh">${f.sh}</td><td class="c-r">${getSym(f.p1,f.p3)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},1)">${f.p1}</td><td class="c-s">${p1s}</td><td class="c-r">${getSym(f.p2,f.p4)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},2)">${f.p2}</td><td class="c-s">${p2s}</td><td class="c-t">${p1s+p2s+match.h1+match.h2+d1+d2}</td><td class="c-r">${getSym(f.p3,f.p1)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},3)">${f.p3}</td><td class="c-s">${p3s}</td><td class="c-r">${getSym(f.p4,f.p2)}</td><td class="edit-cell c-p" onclick="window.editLiveScoreCell(${i},4)">${f.p4}</td><td class="c-s">${p4s}</td><td class="c-t2">${p3s+p4s+match.h3+match.h4+d3+d4}</td></tr>`; }).reverse().join('')}</tbody></table>
                         </div>
                     </div>`;
                 }
@@ -1816,7 +1998,7 @@
                 const rows = (state.roster[mode]||[]).map(t => { const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0, l=0; hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col">${d.w}</td><td class="st-num-col">${d.l}</td><td class="st-num-col">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
                 content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             } else if (view === 'STATS') {
-                const shoesPerGame = (mode === 'DOUBLES' ? 30 : 50);
+                const shoesPerG = (mode === 'DOUBLES' ? 30 : 50);
                 const rosterList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
                 const rosterNames = rosterList.map(p => p.name);
                 const historyNames = state.history.filter(h => h.mode === mode).map(h => h.player);
@@ -1829,7 +2011,7 @@
                     const rRec = rosterList.find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0, prevHighRinger:0}; 
                     let scPctText = "0.0%";
                     if (g.length > 0) {
-                        const tShoes = g.length * shoesPerGame;
+                        const tShoes = g.length * shoesPerG;
                         const rawVal = ((totP - (2 * totR)) / tShoes) * 100;
                         const finalVal = Math.min(100, Math.max(0, rawVal));
                         scPctText = (Math.floor(finalVal * 10) / 10).toFixed(1) + "%";
@@ -1842,7 +2024,7 @@
                     const impText = isNewMember ? 'NEW' : (imp >= 0 ? '+' + imp : imp);
                     const impColor = isNewMember ? '#38bdf8' : (imp >= 0 ? '#4ade80' : '#f87171');
 
-                    return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td style="width:7.5%">${getH(pN)}</td><td style="width:7.5%">${playerAvg}</td><td style="width:7.5%">${g.length ? ((totR/(g.length*shoesPerGame))*100).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${g.length ? (Math.max(...g.map(x=>(x.ringers/shoesPerGame)*100))).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${scPctText}</td><td style="width:7.5%">${totP}</td><td style="width:7.5%">${highGame}</td><td style="width:7.5%; color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td style="width:7.5%">${rRec.startAvg}</td><td class="pts-col font-black" style="width:8%; color:${impColor}">${impText}</td></tr>`; 
+                    return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td style="width:7.5%">${getH(pN)}</td><td style="width:7.5%">${playerAvg}</td><td style="width:7.5%">${g.length ? ((totR/(g.length*shoesPerG))*100).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${g.length ? (Math.max(...g.map(x=>(x.ringers/shoesPerG)*100))).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${scPctText}</td><td style="width:7.5%">${totP}</td><td style="width:7.5%">${highGame}</td><td style="width:7.5%; color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td style="width:7.5%">${rRec.startAvg}</td><td class="pts-col font-black" style="width:8%; color:${impColor}">${impText}</td></tr>`; 
                 }).sort((a,b)=>b.totP-a.totP).join('');
                 const weeklyHoaRows = (state.weeklyHoa[mode] || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map(entry => `<tr><td style="width: 85px;">${entry.date}</td><td>${entry.player}</td><td class="val-col">${entry.hoa >= 0 ? '+' : ''}${entry.hoa}</td></tr>`).join('');
                 const fdSource = state.fourDeads[mode] || {}; const fourDeadRows = Object.keys(fdSource).map(name => ({ name: name, val: fdSource[name] })).sort((a,b) => b.val - a.val).map(d => `<tr><td>${d.name}</td><td class="val-col">${d.val}</td></tr>`).join('');
