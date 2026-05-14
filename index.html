@@ -775,9 +775,40 @@
             window.executePrint("Tournament Score Sheet", html, true);
         };
 
-        window.pickLiveTeams = () => {
+        window.pickLiveTeams = async () => {
             const t1 = document.getElementById('lt1').value, t2 = document.getElementById('lt2').value;
             if(!t1 || !t2) return window.smAlert("Select teams");
+            
+            // Check for No Show
+            const ns1 = document.getElementById('ns1').checked;
+            const ns2 = document.getElementById('ns2').checked;
+
+            if (ns1 || ns2) {
+                if(!await window.smConfirm("Finalize this as a No-Show match? Team with no-show gets 3 losses.")) return;
+                
+                const target = mode === 'SINGLES' ? 135 : 162;
+                const s1Total = ns1 ? 0 : (ns2 ? target * 3 : 0);
+                const s2Total = ns2 ? 0 : (ns1 ? target * 3 : 0);
+                const mW = ns1 ? t2 : t1;
+                const today = new Date().toLocaleDateString();
+                const sId = Date.now();
+
+                // Create games for history following bye rule
+                const games = [1, 2, 3].map(gNum => ({
+                    gameNum: gNum, p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0,
+                    s1: ns1 ? 0 : target, s2: ns2 ? 0 : target, frames: [], isPlayoff: false
+                }));
+
+                state.sessions.push({ 
+                    id: sId, name: `${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, 
+                    matchWinner: mW, agg1: s1Total, agg2: s2Total, fullData: games, timestamp: sId, isNoShow: true 
+                });
+                await save();
+                view = 'STANDINGS';
+                render();
+                return;
+            }
+
             match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode, isPlayoff: (mode === 'SINGLES' && state.singlesPlayoffActive), selectedSlot: null };
             
             if (mode === 'SINGLES') {
@@ -873,7 +904,7 @@
             ['p1', 'p2', 'p3', 'p4'].forEach(k => {
                 if (match[k] === 'DUMMY') match.currF[k] = 30;
             });
-            match.currGameFrames.push({ ...match.currF, sh: (match.currGameFrames.length + 1) * 2 });
+            match.currGameFrames.push({ ...match.currF, h1: match.h1, h2: match.h2, h3: match.h3, h4: match.h4, sh: (match.currGameFrames.length + 1) * 2 });
             match.currF = { p1: null, p2: null, p3: null, p4: null }; 
             match.selectedSlot = null;
             if (match.currGameFrames.length >= (mode === 'DOUBLES' ? 15 : 25)) showInterSummary();
@@ -1003,12 +1034,19 @@
             if(!t1 || !t2) return window.smAlert("Select both teams");
             if(cleanN(t1) === 'bye' && cleanN(t2) === 'bye') return window.smAlert("Both teams cannot be BYE");
             
+            const mns1 = document.getElementById('mns1').checked;
+            const mns2 = document.getElementById('mns2').checked;
+            const target = mode === 'SINGLES' ? 135 : 162;
+
             const players = [];
             for(let i=1; i<=6; i++) {
                 const el = document.getElementById('mp'+i);
                 if (!el) continue;
                 const n = el.value;
-                if(n && n !== '') {
+                const isTeam1 = i <= 3;
+                const isNoShow = (isTeam1 && mns1) || (!isTeam1 && mns2);
+
+                if(!isNoShow && n && n !== '') {
                     players.push({ pIdx: i, name: n, hcp: Number(document.getElementById('mh'+i).value || 0), 
                         g1_scr: Number(document.getElementById(`ms${i}_g1`).dataset.value || 0), g1_rng: Number(document.getElementById(`mr${i}_g1`).dataset.value || 0),
                         g2_scr: Number(document.getElementById(`ms${i}_g2`).dataset.value || 0), g2_rng: Number(document.getElementById(`mr${i}_g2`).dataset.value || 0),
@@ -1017,38 +1055,28 @@
                 }
             }
 
-            const t1Pls = players.filter(p => p.pIdx <= 3), t2Pls = players.filter(p => p.pIdx > 3);
-            const t1Hcp = t1Pls.reduce((a,b)=>a+b.hcp, 0), t2Hcp = t2Pls.reduce((a,b)=>a+b.hcp, 0);
-            
-            const target = mode === 'SINGLES' ? 135 : 162;
             const games = []; let agg1 = 0, agg2 = 0;
             const sIdMaster = Date.now();
             const today = new Date().toLocaleDateString();
             
             for(let g=1; g<=3; g++) {
-                let s1 = t1Pls.reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + t1Hcp;
-                let s2 = t2Pls.reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + t2Hcp;
+                let s1 = mns1 ? 0 : players.filter(p=>p.pIdx<=3).reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + players.filter(p=>p.pIdx<=3).reduce((a,b)=>a+b.hcp, 0);
+                let s2 = mns2 ? 0 : players.filter(p=>p.pIdx>3).reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + players.filter(p=>p.pIdx>3).reduce((a,b)=>a+b.hcp, 0);
                 
-                let r1, r2;
-                if (cleanN(t2) === 'bye') {
-                    r1 = s1 >= target ? 'W' : 'L'; r2 = s1 >= target ? 'L' : 'W';
-                    s2 = target; 
-                } else if (cleanN(t1) === 'bye') {
-                    r2 = s2 >= target ? 'W' : 'L'; r1 = s2 >= target ? 'L' : 'W';
-                    s1 = target;
-                } else {
-                    r1 = s1 > s2 ? 'W' : (s1 < s2 ? 'L' : 'T');
-                    r2 = s2 > s1 ? 'W' : (s2 < s1 ? 'L' : 'T');
-                }
+                // No show or bye rules
+                if (mns1 || cleanN(t1) === 'bye') { s1 = (mns1) ? 0 : target; s2 = (mns1) ? target : s2; }
+                else if (mns2 || cleanN(t2) === 'bye') { s2 = (mns2) ? 0 : target; s1 = (mns2) ? target : s1; }
+
+                const r1 = s1 > s2 ? 'W' : (s1 < s2 ? 'L' : 'T'), r2 = s2 > s1 ? 'W' : (s2 < s1 ? 'L' : 'T');
                 agg1 += s1; agg2 += s2;
-                games.push({ gameNum: g, s1, s2, h1: t1Hcp, h2: t2Hcp, 
-                    p1: t1Pls[0]?.name||'', p1_scr: t1Pls[0]?.[`g${g}_scr`]||0, p1_rng: t1Pls[0]?.[`g${g}_rng`]||0, 
-                    p2: t1Pls[1]?.name||'', p2_scr: t1Pls[1]?.[`g${g}_scr`]||0, p2_rng: t1Pls[1]?.[`g${g}_rng`]||0, 
-                    p3: t2Pls[0]?.name||'', p3_scr: t2Pls[0]?.[`g${g}_scr`]||0, p3_rng: t2Pls[0]?.[`g${g}_rng`]||0, 
-                    p4: t2Pls[1]?.name||'', p4_scr: t2Pls[1]?.[`g${g}_scr`]||0, p4_rng: t2Pls[1]?.[`g${g}_rng`]||0,
-                    p5: t1Pls[2]?.name||'', p5_scr: t1Pls[2]?.[`g${g}_scr`]||0, p5_rng: t1Pls[2]?.[`g${g}_rng`]||0,
-                    p6: t2Pls[2]?.name||'', p6_scr: t2Pls[2]?.[`g${g}_scr`]||0, p6_rng: t2Pls[2]?.[`g${g}_rng`]||0
+                
+                games.push({ gameNum: g, s1, s2, h1: 0, h2: 0, 
+                    p1: players.find(p=>p.pIdx===1)?.name||'', p2: players.find(p=>p.pIdx===2)?.name||'', 
+                    p3: players.find(p=>p.pIdx===4)?.name||'', p4: players.find(p=>p.pIdx===5)?.name||'', 
+                    p5: players.find(p=>p.pIdx===3)?.name||'', p6: players.find(p=>p.pIdx===6)?.name||'' 
                 });
+
+                // Only log history for those who showed
                 players.forEach(p => { 
                     const scr = p[`g${g}_scr`];
                     if(scr !== null && cleanN(p.name) !== 'dummy' && cleanN(p.name) !== 'bye' && p.name !== '') {
@@ -1067,12 +1095,8 @@
                 });
             }
 
-            let mW;
-            if (cleanN(t2) === 'bye') mW = games.filter(g => g.s1 >= target).length > 0 ? t1 : 'BYE';
-            else if (cleanN(t1) === 'bye') mW = games.filter(g => g.s2 >= target).length > 0 ? t2 : 'BYE';
-            else mW = agg1 > agg2 ? t1 : (agg1 < agg2 ? t2 : 'Tie');
-
-            state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster });
+            const mW = agg1 > agg2 ? t1 : (agg1 < agg2 ? t2 : 'Tie');
+            state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, isNoShow: (mns1 || mns2), timestamp: sIdMaster });
             await save(); 
             
             const summaryRows = players.map(p => `
@@ -1089,7 +1113,7 @@
             <div class="p-4 bg-zinc-950 text-white min-h-screen">
                 <h2 class="text-sky-500 font-black italic uppercase text-2xl mb-6 text-center">Manual Match Confirmation</h2>
                 <div class="bg-zinc-900 border-2 border-zinc-700 p-6 text-center mb-6 shadow-2xl">
-                    <p class="text-[10px] uppercase opacity-50 mb-2 tracking-[0.2em]">${t1} vs ${t2}</p>
+                    <p class="text-[10px] uppercase opacity-50 mb-2 tracking-[0.2em]">${t1} vs ${t2} ${mns1||mns2 ? '(NO SHOW)' : ''}</p>
                     <p class="text-6xl font-black mb-2">${agg1} - ${agg2}</p>
                     <div class="bg-black py-2 px-4 inline-block border border-sky-500/30">
                         <p class="text-sky-400 font-black uppercase text-xs">Series Winner: ${mW}</p>
@@ -1274,10 +1298,7 @@
                 </tr>`;
             });
             mod.innerHTML = `
-                <div class="p-6 bg-zinc-950 min-h-screen text-white">
-                    <h2 class="text-center text-sky-500 font-black uppercase italic text-2xl mb-2">Match History: ${mid}</h2>
-                    <p class="text-center text-5xl font-black mb-8">${h.s1} - ${h.s2}</p>
-                    <div class="bg-zinc-900 border border-zinc-800 mb-8"><table class="w-full text-center border-collapse"><thead><tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400"><th class="text-left p-4">Player</th><th class="p-4">Pts</th><th class="p-4">Rng</th><th class="p-4">Stat Avg</th></tr></thead><tbody>${rowsHtml}</tbody></table></div><button onclick="document.getElementById('modal').style.display='none'" class="w-full bg-zinc-800 text-white p-6 rounded-2xl font-black uppercase text-sm">Close Summary</button></div>`;
+                <div class="p-6 bg-zinc-950 min-h-screen text-white"><h2 class="text-center text-sky-500 font-black uppercase italic text-2xl mb-2">Match History: ${mid}</h2><p class="text-center text-5xl font-black mb-8">${h.s1} - ${h.s2}</p><div class="bg-zinc-900 border border-zinc-800 mb-8"><table class="w-full text-center border-collapse"><thead><tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400"><th class="text-left p-4">Player</th><th class="p-4">Pts</th><th class="p-4">Rng</th><th class="p-4">Stat Avg</th></tr></thead><tbody>${rowsHtml}</tbody></table></div><button onclick="document.getElementById('modal').style.display='none'" class="w-full bg-zinc-800 text-white p-6 rounded-2xl font-black uppercase text-sm">Close Summary</button></div>`;
         };
 
         window.editTScoreCell = async (idx, pNum) => {
@@ -1616,98 +1637,6 @@
             await save(); window.smAlert("Lineup Updated Successfully"); render();
         };
 
-        // NEW: Corrected Game-by-Game Detailed Report Builder
-        window.printDateReport = () => {
-            const sortedSessions = [...state.sessions].filter(s => s.mode === mode).sort((a,b) => b.timestamp - a.timestamp);
-            if (!sortedSessions.length) return window.smAlert("No history found.");
-
-            let reportHtml = `
-            <style>
-                .dr-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; font-family: Arial, sans-serif; table-layout: fixed; }
-                .dr-table th, .dr-table td { border: 1px solid #000; padding: 6px; font-size: 8.5pt; text-align: center; }
-                .dr-table th { background: #f0f0f0; font-weight: bold; text-transform: uppercase; font-size: 7.5pt; }
-                .dr-date-header { font-size: 13pt; font-weight: 900; background: #0ea5e9; color: #000; padding: 8px; margin-top: 30px; border: 2px solid black; text-transform: uppercase; }
-                .dr-match-info { background: #eee; font-weight: 900; text-align: left !important; padding-left: 10px !important; border-bottom: 2px solid black; }
-                .dr-win { font-weight: 900; background-color: #dcfce7 !important; }
-                .dr-loss { background-color: #fee2e2 !important; }
-                .dr-mp { font-weight: 900; background-color: #e0f2fe !important; text-decoration: underline; }
-            </style>
-            `;
-
-            const uniqueDates = [...new Set(sortedSessions.map(s => s.date))];
-
-            uniqueDates.forEach(date => {
-                reportHtml += `<div class="dr-date-header">DATE: ${date}</div>`;
-                const sessionsOnDate = sortedSessions.filter(s => s.date === date);
-
-                sessionsOnDate.forEach(sess => {
-                    reportHtml += `
-                    <table class="dr-table">
-                        <thead>
-                            <tr><th colspan="${mode === 'DOUBLES' ? 7 : 6}" class="dr-match-info">${sess.name} (Series Winner: ${sess.matchWinner})</th></tr>
-                            <tr>
-                                <th style="text-align:left; width: 30%;">Player</th>
-                                <th style="width: 10%;">G#</th>
-                                <th style="width: 15%;">Scratch</th>
-                                <th style="width: 15%;">Ringers</th>
-                                <th style="width: 15%;">Result</th>
-                                ${mode === 'DOUBLES' ? '<th style="width: 15%;">Match Pt?</th>' : ''}
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-                    sess.fullData.forEach(game => {
-                        const keys = sess.isManual ? ['p1','p2','p3','p4','p5','p6'] : ['p1','p2','p3','p4'];
-                        
-                        keys.forEach(pk => {
-                            const pName = game[pk];
-                            if (!pName || ['BYE', 'DUMMY'].includes(cleanN(pName).toUpperCase())) return;
-
-                            let scr = 0, rng = 0;
-                            if (sess.isManual) {
-                                scr = game[pk + '_scr'] || 0;
-                                rng = game[pk + '_rng'] || 0;
-                            } else {
-                                scr = (game.frames || []).reduce((s, f) => s + (Number(f[pk]) || 0), 0);
-                                rng = (game.frames || []).reduce((s, f) => s + getR(f[pk]), 0);
-                            }
-
-                            // Corrected Win/Loss logic based on game.s1 and game.s2
-                            const isT1 = ['p1','p2','p5'].includes(pk);
-                            let resTxt = 'LOSS';
-                            let resClass = 'dr-loss';
-                            
-                            if (game.s1 === game.s2) {
-                                resTxt = 'TIE';
-                                resClass = '';
-                            } else if (isT1 && game.s1 > game.s2) {
-                                resTxt = 'WIN';
-                                resClass = 'dr-win';
-                            } else if (!isT1 && game.s2 > game.s1) {
-                                resTxt = 'WIN';
-                                resClass = 'dr-win';
-                            }
-
-                            const playerTeamName = isT1 ? sess.t1Name : sess.t2Name;
-                            const isSeriesWinner = cleanN(playerTeamName) === cleanN(sess.matchWinner);
-
-                            reportHtml += `
-                            <tr>
-                                <td style="text-align:left; font-weight:bold;">${pName}</td>
-                                <td>${game.gameNum}</td>
-                                <td>${scr}</td>
-                                <td>${rng}</td>
-                                <td class="${resClass}">${resTxt}</td>
-                                ${mode === 'DOUBLES' ? `<td class="${isSeriesWinner ? 'dr-mp' : ''}">${isSeriesWinner ? 'YES' : 'NO'}</td>` : ''}
-                            </tr>`;
-                        });
-                    });
-                    reportHtml += `</tbody></table>`;
-                });
-            });
-            window.executePrint("Session Results By Date", reportHtml, true);
-        };
-
         function render() {
             document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
             document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
@@ -1856,7 +1785,12 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="space-y-4">
                                     <div class="bg-black text-white p-4 border-b-4 border-sky-500">
-                                        <p class="text-[10px] font-black mb-1 uppercase tracking-widest text-sky-300">Team 1 Selection</p>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-sky-300">Team 1 Selection</p>
+                                            <label class="text-[10px] font-black text-red-400 uppercase flex items-center gap-1 cursor-pointer">
+                                                <input type="checkbox" id="mns1" class="w-3 h-3"> No Show
+                                            </label>
+                                        </div>
                                         <select id="mt1" class="w-full p-3 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(1)"><option value="">Select Team</option>${opts}</select>
                                     </div>
                                     ${(mode === 'SINGLES' ? [1] : [1,2,3]).map(i => `
@@ -1883,7 +1817,12 @@
                                 </div>
                                 <div class="space-y-4">
                                     <div class="bg-black text-white p-4 border-b-4 border-sky-500">
-                                        <p class="text-[10px] font-black mb-1 uppercase tracking-widest text-sky-300">Team 2 Selection</p>
+                                        <div class="flex justify-between items-center mb-1">
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-sky-300">Team 2 Selection</p>
+                                            <label class="text-[10px] font-black text-red-400 uppercase flex items-center gap-1 cursor-pointer">
+                                                <input type="checkbox" id="mns2" class="w-3 h-3"> No Show
+                                            </label>
+                                        </div>
                                         <select id="mt2" class="w-full p-3 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(2)"><option value="">Select Team</option>${opts}</select>
                                     </div>
                                     ${(mode === 'SINGLES' ? [4] : [4,5,6]).map(i => `
@@ -1910,14 +1849,6 @@
                                 </div>
                             </div>
                             <button onclick="submitManualMatch()" class="w-full bg-black text-white p-6 mt-10 font-black uppercase text-lg shadow-2xl hover:bg-sky-600 transition-colors">Submit 3-Game Series Results</button>
-                            <div class="mt-12 pt-8 border-t-4 border-zinc-100 max-w-md mx-auto">
-                                <h3 class="text-center text-sky-500 font-black italic uppercase mb-4">Manual Four-Dead Log</h3>
-                                <div class="bg-zinc-900 text-white p-6 shadow-2xl space-y-4">
-                                    <div><label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Player Name</label><select id="mfdName" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white font-bold text-sm"><option value="">--Select Player--</option>${pOpts}</select></div>
-                                    <div><label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Add Count</label><input id="mfdCount" type="number" placeholder="How many deads?" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white text-center font-black" readonly onclick="window.openManualFourDeadPicker()"></div>
-                                    <button onclick="submitManualFourDeads()" class="w-full bg-sky-500 text-black p-4 font-black uppercase text-xs hover:bg-sky-400">Log Four Deads</button>
-                                </div>
-                            </div>
                         </div>`;
                     return;
                 }
@@ -1926,7 +1857,23 @@
                     const opts = [...(state.roster[mode]||[]).map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`), `<option value="BYE">BYE</option>`];
                     content.innerHTML = `<div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">
                         <div class="flex gap-2 mb-6 no-print"><button class="flex-1 py-3 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Live Scorer</button>${state.manualEntryEnabled ? `<button onclick="setScorerView('MANUAL')" class="flex-1 py-3 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Manual Entry</button>` : ''}</div>
-                    ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black">${opts}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black">${opts}</select><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button></div>`;
+                    ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2>
+                        <div class="space-y-4">
+                            <div class="relative">
+                                <select id="lt1" class="w-full p-4 border font-bold text-sm text-black">${opts}</select>
+                                <label class="mt-2 text-[10px] font-black text-red-500 uppercase flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" id="ns1" class="w-3 h-3"> Mark as No-Show
+                                </label>
+                            </div>
+                            <div class="relative">
+                                <select id="lt2" class="w-full p-4 border font-bold text-sm text-black">${opts}</select>
+                                <label class="mt-2 text-[10px] font-black text-red-500 uppercase flex items-center gap-1 cursor-pointer">
+                                    <input type="checkbox" id="ns2" class="w-3 h-3"> Mark as No-Show
+                                </label>
+                            </div>
+                        </div>
+                        <button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg mt-6">Start Match</button>
+                    </div>`;
                 } else if (match.step === 'PLAYERS') {
                     if (mode === 'SINGLES' && match.isPlayoff) {
                         content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase mb-6">Playoff HCP Setup</h2><div class="space-y-4 text-left"><div class="p-4 bg-zinc-50 border flex justify-between items-center"><label class="text-[11px] font-black uppercase text-zinc-500">${match.p1}</label><button onclick="editPlayoffHcp(1)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h1}</button></div><div class="p-4 bg-zinc-50 border flex justify-between items-center"><label class="text-[11px] font-black uppercase text-zinc-500">${match.p3}</label><button onclick="editPlayoffHcp(3)" class="bg-white border-2 border-sky-500 text-sky-600 px-8 py-3 font-black text-xl shadow-sm">HCP: ${match.h3}</button></div><button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 font-black uppercase mt-6 shadow-xl">Begin Playoff Match</button></div></div>`;
@@ -2031,7 +1978,7 @@
                 content.innerHTML = `<div class="action-bar flex justify-end pt-2 no-print"><button onclick="window.printActive('Club Stats')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Stats</button></div><div class="relative shadow-2xl rounded-none border border-zinc-800 bg-black overflow-x-auto mt-2"><table class="std-table w-full" style="min-width: 1100px; table-layout: auto;"><thead><tr class="bg-zinc-900"><th class="stats-name-col">Player</th><th>Hcp</th><th>Avg</th><th>R%</th><th>Hi R%</th><th>Scr %</th><th>Tot P</th><th>Hi G</th><th>HOA</th><th>S.Avg</th><th class="pts-col">Imp</th></tr></thead><tbody>${rows}</tbody></table></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"><div><h3 class="text-sky-500 font-black uppercase italic mb-2 text-sm tracking-widest">Weekly High Over Average</h3><div class="bg-black border border-zinc-800 shadow-xl"><table class="sum-stats-table"><thead><tr><th style="width:85px;">Date</th><th>Player</th><th class="val-col">HOA</th></tr></thead><tbody>${weeklyHoaRows || '<tr><td colspan="3" class="text-center opacity-40">No weekly records found</td></tr>'}</tbody></table></div></div><div><h3 class="text-sky-500 font-black uppercase italic mb-2 text-sm tracking-widest">Season Four Deads</h3><div class="bg-black border border-zinc-800 shadow-xl"><table class="sum-stats-table"><thead><tr><th>Player</th><th class="val-col">Count</th></tr></thead><tbody>${fourDeadRows || '<tr><td colspan="2" class="text-center opacity-40">No 4-deads logged</td></tr>'}</tbody></table></div></div></div>`;
             } else if (view === 'HISTORY') {
                 const sessionHtml = (state.sessions || []).filter(s => s.mode === mode).reverse().map(s => {
-                    let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2} ${g.isPlayoff ? '(PLAYOFF)' : ''}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
+                    let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2} ${g.isPlayoff ? '(PLAYOFF)' : ''} ${s.isNoShow ? '(NO SHOW)' : ''}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
                     return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name} ${s.isManual ? '[M]' : ''}</span><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600 float-right no-print ml-2">Print Sheets</button>${gHtml}</div>`;
                 }).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No league history found</p>`;
                 const tHistoryHtml = (tState.matchHistory || []).slice().reverse().map(h => `<div class="bg-zinc-900 text-white p-3 shadow mb-3 font-black uppercase text-xs border-l-4 border-sky-500"><span><span class="text-sky-400">[TOURNAMENT]</span> ${h.date} - ${h.t1Name} vs ${h.t2Name} (${h.s1}-${h.s2})</span><button onclick="window.printTournamentScoreSheet('${h.timestamp}')" class="text-sky-400 float-right no-print ml-2">Print</button><button onclick="window.showSummary('${h.id}')" class="text-zinc-400 float-right no-print">View</button></div>`).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No tournament matches found</p>`;
