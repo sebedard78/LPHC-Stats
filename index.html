@@ -116,6 +116,15 @@
     .btn-score .num { font-size: 2.2rem; font-weight: 900; color: #111; line-height: 1; }
     .btn-score .sym { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
 
+// Add this function to the <script> section of your main app
+window.openPrintSystem = () => {
+    localStorage.setItem('lphc_print_data', JSON.stringify(state));
+    window.open('scoresheets.html', '_blank');
+};
+
+// And add this button in your HTML (inside the viewContent for LINEUP)
+// <button onclick="window.openPrintSystem()" class="bg-red-600 text-white px-6 py-2 font-black uppercase shadow-lg">Generate Sheets</button>
+
     /* BUTTON SCORER STYLES */
     .manual-entry-btn { background: white; border: 2px solid #e2e8f0; height: 44px; width: 100%; font-weight: 900; display: flex; align-items: center; justify-content: center; color: #000; border-radius: 6px !important; transition: background 0.2s; }
     .manual-entry-btn.active { border-color: #0ea5e9; background: #f0f9ff; }
