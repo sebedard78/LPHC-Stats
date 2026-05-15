@@ -1010,24 +1010,33 @@
                 const n = el.value;
                 if(n && n !== '') {
                     players.push({ pIdx: i, name: n, hcp: Number(document.getElementById('mh'+i).value || 0), 
-                        g1_scr: Number(document.getElementById(`ms${i}_g1`).dataset.value || 0), g1_rng: Number(document.getElementById(`mr${i}_g1`).dataset.value || 0),
-                        g2_scr: Number(document.getElementById(`ms${i}_g2`).dataset.value || 0), g2_rng: Number(document.getElementById(`mr${i}_g2`).dataset.value || 0),
-                        g3_scr: Number(document.getElementById(`ms${i}_g3`).dataset.value || 0), g3_rng: Number(document.getElementById(`mr${i}_g3`).dataset.value || 0)
+                        g1_scr: document.getElementById(`ms${i}_g1`).dataset.value !== undefined ? Number(document.getElementById(`ms${i}_g1`).dataset.value) : null, 
+                        g1_rng: document.getElementById(`mr${i}_g1`).dataset.value !== undefined ? Number(document.getElementById(`mr${i}_g1`).dataset.value) : 0,
+                        g2_scr: document.getElementById(`ms${i}_g2`).dataset.value !== undefined ? Number(document.getElementById(`ms${i}_g2`).dataset.value) : null, 
+                        g2_rng: document.getElementById(`mr${i}_g2`).dataset.value !== undefined ? Number(document.getElementById(`mr${i}_g2`).dataset.value) : 0,
+                        g3_scr: document.getElementById(`ms${i}_g3`).dataset.value !== undefined ? Number(document.getElementById(`ms${i}_g3`).dataset.value) : null, 
+                        g3_rng: document.getElementById(`mr${i}_g3`).dataset.value !== undefined ? Number(document.getElementById(`mr${i}_g3`).dataset.value) : 0
                     });
                 }
             }
 
-            const t1Pls = players.filter(p => p.pIdx <= 3), t2Pls = players.filter(p => p.pIdx > 3);
-            const t1Hcp = t1Pls.reduce((a,b)=>a+b.hcp, 0), t2Hcp = t2Pls.reduce((a,b)=>a+b.hcp, 0);
-            
             const target = mode === 'SINGLES' ? 135 : 162;
             const games = []; let agg1 = 0, agg2 = 0;
             const sIdMaster = Date.now();
             const today = new Date().toLocaleDateString();
             
             for(let g=1; g<=3; g++) {
-                let s1 = t1Pls.reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + t1Hcp;
-                let s2 = t2Pls.reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + t2Hcp;
+                // FEATURE: Calculate per-game handicap using ONLY playing players
+                let hcp1 = 0, hcp2 = 0;
+                players.forEach(p => {
+                    if (p[`g${g}_scr`] !== null) {
+                        if (p.pIdx <= 3) hcp1 += p.hcp;
+                        else hcp2 += p.hcp;
+                    }
+                });
+
+                let s1 = players.filter(p => p.pIdx <= 3).reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + hcp1;
+                let s2 = players.filter(p => p.pIdx > 3).reduce((a,b)=>a+(b[`g${g}_scr`]||0), 0) + hcp2;
                 
                 let r1, r2;
                 if (cleanN(t2) === 'bye') {
@@ -1041,13 +1050,13 @@
                     r2 = s2 > s1 ? 'W' : (s2 < s1 ? 'L' : 'T');
                 }
                 agg1 += s1; agg2 += s2;
-                games.push({ gameNum: g, s1, s2, h1: t1Hcp, h2: t2Hcp, 
-                    p1: t1Pls[0]?.name||'', p1_scr: t1Pls[0]?.[`g${g}_scr`]||0, p1_rng: t1Pls[0]?.[`g${g}_rng`]||0, 
-                    p2: t1Pls[1]?.name||'', p2_scr: t1Pls[1]?.[`g${g}_scr`]||0, p2_rng: t1Pls[1]?.[`g${g}_rng`]||0, 
-                    p3: t2Pls[0]?.name||'', p3_scr: t2Pls[0]?.[`g${g}_scr`]||0, p3_rng: t2Pls[0]?.[`g${g}_rng`]||0, 
-                    p4: t2Pls[1]?.name||'', p4_scr: t2Pls[1]?.[`g${g}_scr`]||0, p4_rng: t2Pls[1]?.[`g${g}_rng`]||0,
-                    p5: t1Pls[2]?.name||'', p5_scr: t1Pls[2]?.[`g${g}_scr`]||0, p5_rng: t1Pls[2]?.[`g${g}_rng`]||0,
-                    p6: t2Pls[2]?.name||'', p6_scr: t2Pls[2]?.[`g${g}_scr`]||0, p6_rng: t2Pls[2]?.[`g${g}_rng`]||0
+                games.push({ gameNum: g, s1, s2, h1: hcp1, h2: hcp2, 
+                    p1: players.find(p=>p.pIdx===1)?.name||'', p1_scr: players.find(p=>p.pIdx===1)?.[`g${g}_scr`]||0, p1_rng: players.find(p=>p.pIdx===1)?.[`g${g}_rng`]||0, 
+                    p2: players.find(p=>p.pIdx===2)?.name||'', p2_scr: players.find(p=>p.pIdx===2)?.[`g${g}_scr`]||0, p2_rng: players.find(p=>p.pIdx===2)?.[`g${g}_rng`]||0, 
+                    p3: players.find(p=>p.pIdx===4)?.name||'', p3_scr: players.find(p=>p.pIdx===4)?.[`g${g}_scr`]||0, p3_rng: players.find(p=>p.pIdx===4)?.[`g${g}_rng`]||0, 
+                    p4: players.find(p=>p.pIdx===5)?.name||'', p4_scr: players.find(p=>p.pIdx===5)?.[`g${g}_scr`]||0, p4_rng: players.find(p=>p.pIdx===5)?.[`g${g}_rng`]||0,
+                    p5: players.find(p=>p.pIdx===3)?.name||'', p5_scr: players.find(p=>p.pIdx===3)?.[`g${g}_scr`]||0, p5_rng: players.find(p=>p.pIdx===3)?.[`g${g}_rng`]||0,
+                    p6: players.find(p=>p.pIdx===6)?.name||'', p6_scr: players.find(p=>p.pIdx===6)?.[`g${g}_scr`]||0, p6_rng: players.find(p=>p.pIdx===6)?.[`g${g}_rng`]||0
                 });
                 players.forEach(p => { 
                     const scr = p[`g${g}_scr`];
@@ -1296,8 +1305,18 @@
         window.editPastGame = async (sId, sGameIdx) => {
             const sess = state.sessions.find(x => x.id === sId); if(!sess) return;
             const g = sess.fullData[sGameIdx];
-            const processEdit = async (pName, curS, curR, curH) => {
+            const processEdit = async (pName, curS, curR, curH, key) => {
                 if(!pName || ['bye','dummy'].includes(cleanN(pName))) return {s:0, r:0, h:curH};
+                
+                // FEATURE: Only show players who actually played in this game
+                // Manual check: If scratch is null/0 and ringers is 0, they didn't play (3-man rotation)
+                // Live check: If no frames contain data for this key, they didn't play
+                const playedInGame = sess.isManual ? 
+                    (g[key + '_scr'] !== null && g[key + '_scr'] !== undefined) : 
+                    (g.frames || []).some(f => f[key] !== null && f[key] !== undefined);
+
+                if (!playedInGame) return {s:0, r:0, h:curH, skipped: true};
+
                 const ns = Number(await window.smPrompt(`${getFirst(pName)} - New Points:`, curS));
                 const nr = Number(await window.smPrompt(`${getFirst(pName)} - New Ringers:`, curR));
                 const nh = Number(await window.smPrompt(`${getFirst(pName)} - New Handicap:`, curH));
@@ -1305,20 +1324,30 @@
                 if(hRec) { hRec.score = ns; hRec.ringers = nr; }
                 return {s: ns, r: nr, h: nh};
             };
-            const d1 = await processEdit(g.p1, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p1||0),0) : g.p1_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p1),0) : g.p1_rng, g.h1);
-            const d2 = (mode==='DOUBLES') ? await processEdit(g.p2, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p2||0),0) : g.p2_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p2),0) : g.p2_rng, g.h2) : {s:0, r:0, h:0};
-            const d3 = await processEdit(g.p3, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p3||0),0) : g.p3_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p3),0) : g.p3_rng, g.h3);
-            const d4 = (mode==='DOUBLES') ? await processEdit(g.p4, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p4||0),0) : g.p4_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p4),0) : g.p4_rng, g.h4) : {s:0, r:0, h:0};
-            g.h1=d1.h; g.h2=d2.h; g.h3=d3.h; g.h4=d4.h;
-            let s1raw = (cleanN(g.p1)==='dummy'?30:d1.s) + (cleanN(g.p2)==='dummy'?30:d2.s) + g.h1 + g.h2;
-            let s2raw = (cleanN(g.p3)==='dummy'?30:d3.s) + (cleanN(g.p4)==='dummy'?30:d4.s) + g.h3 + g.h4;
+
+            const d1 = await processEdit(g.p1, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p1||0),0) : g.p1_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p1),0) : g.p1_rng, g.h1, 'p1');
+            const d2 = await processEdit(g.p2, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p2||0),0) : g.p2_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p2),0) : g.p2_rng, g.h2, 'p2');
+            const d3 = await processEdit(g.p3, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p3||0),0) : g.p3_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p3),0) : g.p3_rng, g.h3, 'p3');
+            const d4 = await processEdit(g.p4, g.frames ? g.frames.reduce((s,f)=>s+Number(f.p4||0),0) : g.p4_scr, g.frames ? g.frames.reduce((s,f)=>s+getR(f.p4),0) : g.p4_rng, g.h4, 'p4');
+            const d5 = await processEdit(g.p5, g.p5_scr || 0, g.p5_rng || 0, 0, 'p5');
+            const d6 = await processEdit(g.p6, g.p6_scr || 0, g.p6_rng || 0, 0, 'p6');
+
+            // Recalculate handicaps based on the edited (or skipped) data
+            g.h1 = (d1.skipped ? 0 : d1.h) + (d2.skipped ? 0 : d2.h) + (d5.skipped ? 0 : 0); // Manual 3rd man doesn't have individual stored hcp field here, usually added to p1/p2
+            g.h2 = (d3.skipped ? 0 : d3.h) + (d4.skipped ? 0 : d4.h) + (d6.skipped ? 0 : 0);
+
+            let s1raw = (cleanN(g.p1)==='dummy'?30:d1.s) + (cleanN(g.p2)==='dummy'?30:d2.s) + (d5.s || 0) + g.h1;
+            let s2raw = (cleanN(g.p3)==='dummy'?30:d3.s) + (cleanN(g.p4)==='dummy'?30:d4.s) + (d6.s || 0) + g.h2;
+            
             const [t1n, t2n] = sess.name.split(' vs '); const target = sess.mode === 'SINGLES' ? 135 : 162;
             if (cleanN(t2n) === 'bye') { g.s1 = s1raw; g.s2 = (s1raw >= target) ? target - 1 : target; }
             else if (cleanN(t1n) === 'bye') { g.s2 = s2raw; g.s1 = (s2raw >= target) ? target - 1 : target; }
             else { g.s1 = s1raw; g.s2 = s2raw; }
+
             const r1 = g.s1 > g.s2 ? 'W' : (g.s1 < g.s2 ? 'L' : 'T'), r2 = g.s2 > g.s1 ? 'W' : (g.s2 < g.s1 ? 'L' : 'T');
             const updH = (pN, res) => { const hR = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pN)); if(hR) hR.result = res; };
-            updH(g.p1, r1); updH(g.p2, r1); updH(g.p3, r2); updH(g.p4, r2);
+            updH(g.p1, r1); updH(g.p2, r1); updH(g.p3, r2); updH(g.p4, r2); updH(g.p5, r1); updH(g.p6, r2);
+
             sess.agg1 = sess.fullData.reduce((s, gm)=> s + gm.s1, 0); sess.agg2 = sess.fullData.reduce((s, gm)=> s + gm.s2, 0);
             if (cleanN(t2n) === 'bye') { const wins = sess.fullData.filter(gm => gm.s1 >= target).length; sess.matchWinner = wins > 0 ? t1n : 'BYE'; }
             else if (cleanN(t1n) === 'bye') { const wins = sess.fullData.filter(gm => gm.s2 >= target).length; sess.matchWinner = wins > 0 ? t2n : 'BYE'; }
@@ -1660,98 +1689,6 @@
             state.weeklyLineup[mode].weekTitle = document.getElementById('lineupWeekTitle').value;
             state.weeklyLineup[mode].rawPaste = document.getElementById('lineupPasteInput').value;
             await save(); window.smAlert("Lineup Updated Successfully"); render();
-        };
-
-        // NEW: Corrected Game-by-Game Detailed Report Builder
-        window.printDateReport = () => {
-            const sortedSessions = [...state.sessions].filter(s => s.mode === mode).sort((a,b) => b.timestamp - a.timestamp);
-            if (!sortedSessions.length) return window.smAlert("No history found.");
-
-            let reportHtml = `
-            <style>
-                .dr-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; font-family: Arial, sans-serif; table-layout: fixed; }
-                .dr-table th, .dr-table td { border: 1px solid #000; padding: 6px; font-size: 8.5pt; text-align: center; }
-                .dr-table th { background: #f0f0f0; font-weight: bold; text-transform: uppercase; font-size: 7.5pt; }
-                .dr-date-header { font-size: 13pt; font-weight: 900; background: #0ea5e9; color: #000; padding: 8px; margin-top: 30px; border: 2px solid black; text-transform: uppercase; }
-                .dr-match-info { background: #eee; font-weight: 900; text-align: left !important; padding-left: 10px !important; border-bottom: 2px solid black; }
-                .dr-win { font-weight: 900; background-color: #dcfce7 !important; }
-                .dr-loss { background-color: #fee2e2 !important; }
-                .dr-mp { font-weight: 900; background-color: #e0f2fe !important; text-decoration: underline; }
-            </style>
-            `;
-
-            const uniqueDates = [...new Set(sortedSessions.map(s => s.date))];
-
-            uniqueDates.forEach(date => {
-                reportHtml += `<div class="dr-date-header">DATE: ${date}</div>`;
-                const sessionsOnDate = sortedSessions.filter(s => s.date === date);
-
-                sessionsOnDate.forEach(sess => {
-                    reportHtml += `
-                    <table class="dr-table">
-                        <thead>
-                            <tr><th colspan="${mode === 'DOUBLES' ? 7 : 6}" class="dr-match-info">${sess.name} (Series Winner: ${sess.matchWinner})</th></tr>
-                            <tr>
-                                <th style="text-align:left; width: 30%;">Player</th>
-                                <th style="width: 10%;">G#</th>
-                                <th style="width: 15%;">Scratch</th>
-                                <th style="width: 15%;">Ringers</th>
-                                <th style="width: 15%;">Result</th>
-                                ${mode === 'DOUBLES' ? '<th style="width: 15%;">Match Pt?</th>' : ''}
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-                    sess.fullData.forEach(game => {
-                        const keys = sess.isManual ? ['p1','p2','p3','p4','p5','p6'] : ['p1','p2','p3','p4'];
-                        
-                        keys.forEach(pk => {
-                            const pName = game[pk];
-                            if (!pName || ['BYE', 'DUMMY'].includes(cleanN(pName).toUpperCase())) return;
-
-                            let scr = 0, rng = 0;
-                            if (sess.isManual) {
-                                scr = game[pk + '_scr'] || 0;
-                                rng = game[pk + '_rng'] || 0;
-                            } else {
-                                scr = (game.frames || []).reduce((s, f) => s + (Number(f[pk]) || 0), 0);
-                                rng = (game.frames || []).reduce((s, f) => s + getR(f[pk]), 0);
-                            }
-
-                            // Corrected Win/Loss logic based on game.s1 and game.s2
-                            const isT1 = ['p1','p2','p5'].includes(pk);
-                            let resTxt = 'LOSS';
-                            let resClass = 'dr-loss';
-                            
-                            if (game.s1 === game.s2) {
-                                resTxt = 'TIE';
-                                resClass = '';
-                            } else if (isT1 && game.s1 > game.s2) {
-                                resTxt = 'WIN';
-                                resClass = 'dr-win';
-                            } else if (!isT1 && game.s2 > game.s1) {
-                                resTxt = 'WIN';
-                                resClass = 'dr-win';
-                            }
-
-                            const playerTeamName = isT1 ? sess.t1Name : sess.t2Name;
-                            const isSeriesWinner = cleanN(playerTeamName) === cleanN(sess.matchWinner);
-
-                            reportHtml += `
-                            <tr>
-                                <td style="text-align:left; font-weight:bold;">${pName}</td>
-                                <td>${game.gameNum}</td>
-                                <td>${scr}</td>
-                                <td>${rng}</td>
-                                <td class="${resClass}">${resTxt}</td>
-                                ${mode === 'DOUBLES' ? `<td class="${isSeriesWinner ? 'dr-mp' : ''}">${isSeriesWinner ? 'YES' : 'NO'}</td>` : ''}
-                            </tr>`;
-                        });
-                    });
-                    reportHtml += `</tbody></table>`;
-                });
-            });
-            window.executePrint("Session Results By Date", reportHtml, true);
         };
 
         function render() {
