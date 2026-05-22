@@ -2,231 +2,282 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loon Pond - Professional Scoresheets</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>LPHC Official Scoresheet Generator</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap');
-
-        body { font-family: 'Arial', sans-serif; background: #f1f5f9; }
-
         @media print {
-            .no-print { display: none !important; }
-            body { background: white; margin: 0; padding: 0; }
+            .no-print { display: none; }
+            @page { margin: 0.3cm; size: portrait; }
             .page-break { page-break-after: always; }
         }
 
-        .sheet-page {
-            width: 8.5in;
-            height: 11in;
-            margin: 0 auto;
-            background: white;
-            padding: 0.2in 0.4in;
-            color: black;
+        body { font-family: 'Arial Narrow', Arial, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; }
+        .print-area { width: 8.5in; margin: 0 auto; padding: 10px; box-sizing: border-box; }
+
+        .sheet {
+            border: 1.5px solid black;
+            padding: 8px;
+            margin-bottom: 12px;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            height: 3.4in; /* Fits exactly 3 per page */
+            position: relative;
         }
 
-        .main-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .main-table th, .main-table td { border: 1px solid black; height: 24px; text-align: center; font-size: 8pt; padding: 0; }
-        
-        /* Column Widths */
-        .col-stats { width: 45px; }
-        .col-total { width: 55px; background-color: #f3f4f6; font-weight: bold; }
-        .col-shoes { width: 50px; font-size: 12pt; font-weight: 900; border-left: 2px solid black !important; border-right: 2px solid black !important; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid black;
+            padding-bottom: 2px;
+            margin-bottom: 3px;
+        }
+        .header h1 { margin: 0; font-size: 14pt; font-weight: 900; letter-spacing: 0.5px; }
+        .court-box { border: 2.5px solid black; padding: 2px 12px; font-weight: 900; font-size: 12pt; }
 
-        .gray-bg { background-color: #d1d5db !important; -webkit-print-color-adjust: exact; }
-        
-        .header-box { border: 2px solid black; padding: 5px; text-align: center; margin-bottom: 10px; }
-        .court-box { border: 2px solid black; width: 120px; margin: 0 auto 10px; text-align: center; }
-        
-        .wlt-section { display: flex; justify-content: space-around; padding: 10px 0; border: 1px solid black; border-top: none; }
-        .wlt-box { border: 2px solid black; width: 40px; height: 35px; line-height: 35px; font-size: 18pt; font-weight: 900; text-align: center; }
+        .info-bar { 
+            font-size: 7.5pt; 
+            text-align: center; 
+            font-weight: bold; 
+            margin-bottom: 3px; 
+            border-bottom: 1px solid black; 
+            padding-bottom: 1px; 
+        }
 
-        .roster-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .roster-table th, .roster-table td { border: 1px solid black; padding: 4px; font-size: 9pt; height: 30px; }
-        .roster-table th { background: #eee; font-weight: bold; }
+        .sub-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8.5pt;
+            font-weight: 900;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        /* 15-Column Scoring Table */
+        .score-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 8pt;
+        }
+        .score-table th, .score-table td {
+            border: 1px solid black;
+            text-align: center;
+            height: 12px;
+        }
+        .score-table th { background: #f0f0f0; font-weight: 900; height: 14px; font-size: 7pt; }
+        
+        .col-sh { width: 32px; font-weight: 900; background: #f0f0f0; }
+        .col-team { width: 50px; font-weight: 900; background: #fff; }
+        .row-label { text-align: right; padding-right: 5px; font-weight: 900; font-size: 7.5pt; }
+
+        /* Footer Section */
+        .footer-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 4px;
+        }
+        .stats-box { width: 49%; }
+        .wlt-header { font-size: 18pt; font-weight: 900; letter-spacing: 15px; text-align: center; margin-bottom: 1px; }
+        
+        .player-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid black;
+        }
+        .player-table th, .player-table td {
+            border: 1px solid black;
+            padding: 1px 3px;
+            font-size: 8.5pt;
+            text-align: center;
+            height: 16px;
+        }
+        .player-table th { font-size: 7pt; font-weight: 900; background: #f0f0f0; }
+        .name-col { text-align: left !important; width: 60%; font-weight: 900; overflow: hidden; white-space: nowrap; }
+        
+        .btn-print {
+            background: #0ea5e9;
+            color: #fff;
+            padding: 15px 40px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="no-print p-6 bg-white border-b-4 border-sky-500 flex justify-between items-center shadow-xl">
-        <div>
-            <h1 class="text-2xl font-black italic uppercase">Scoresheet Entity</h1>
-            <p class="text-xs text-gray-500 uppercase font-bold">Automatic Data Link Active</p>
-        </div>
-        <button onclick="window.print()" class="bg-red-600 text-white px-10 py-4 font-black uppercase text-lg hover:bg-red-700 shadow-lg">Print All Courts</button>
-    </div>
+<div class="no-print" style="text-align: center; background: #111; padding: 20px; border-bottom: 4px solid #0ea5e9;">
+    <h2 style="color:white; margin:0 0 10px 0;">Loon Pond Scoresheet System</h2>
+    <button class="btn-print" onclick="window.print()">Print Pre-Filled Sheets</button>
+</div>
 
-    <div id="container"></div>
+<div id="render-target" class="print-area"></div>
 
 <script>
+    // 1. Grab data from main app
+    const state = JSON.parse(localStorage.getItem('lphc_print_data'));
+    const mode = state.mode || 'DOUBLES';
+
+    // 2. Helper Logic (Mirrored from main app for accuracy)
     const cleanN = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
-
-    function getPrintData() {
-        const raw = localStorage.getItem('lphc_print_data');
-        if (!raw) return null;
-        return JSON.parse(raw);
-    }
-
-    function getPlyrAvg(state, pName) {
-        const n = cleanN(pName); if(!pName || ['bye','dummy'].includes(n)) return 0;
-        const rList = (state.roster.SINGLES || []).concat(state.roster.DOUBLES.flatMap(t => t.members));
+    
+    function getPlyrAvg(pName) {
+        const n = cleanN(pName); 
+        if(!pName || ['bye','dummy'].includes(n)) return 0;
+        const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanN(x.name) === n);
-        const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === 'DOUBLES').slice(-9);
-        return hist.length ? Math.round(hist.reduce((s, g) => s + g.score, 0) / hist.length) : (p ? Number(p.startAvg) : 0);
+        const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode).slice(-9);
+        const rawAvg = hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0);
+        return Math.round(rawAvg);
     }
 
-    function getH(state, pName) {
-        const n = cleanN(pName); if(!pName || n === 'bye') return 0; if(n === 'dummy') return 54;
-        const rList = (state.roster.SINGLES || []).concat(state.roster.DOUBLES.flatMap(t => t.members));
+    function getH(pName) {
+        const n = cleanN(pName); 
+        if(!pName || n === 'bye') return 0; 
+        if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
+        const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanN(x.name) === n);
-        if (state.hcpLocked && state.hcpLocked['DOUBLES']) return Number(p?.currentHcp || 0);
-        const avg = getPlyrAvg(state, pName);
-        return Math.max(0, Math.floor((90 - avg) * 0.9));
-    }
-
-    function generate() {
-        const state = getPrintData();
-        if (!state) {
-            document.getElementById('container').innerHTML = `<div class="p-20 text-center font-bold text-red-500">NO DATA FOUND. Open this from the main app using the "Generate Sheets" button.</div>`;
-            return;
-        }
-
-        const lineupRaw = state.weeklyLineup['DOUBLES'].rawPaste;
-        const courts = [];
-        lineupRaw.split('\n').forEach(line => {
-            const match = line.match(/^(\d+)\s+(.*)/);
-            if (match) {
-                const teams = match[2].split(/\s+vs\s+/gi);
-                courts.push({ court: match[1], t1: teams[0].trim(), t2: teams[1].trim() });
-            }
-        });
-
-        let html = '';
-        courts.forEach(c => {
-            for (let g = 1; g <= 3; g++) {
-                html += renderSheet(state, c, g);
-            }
-        });
-        document.getElementById('container').innerHTML = html;
-    }
-
-    function renderSheet(state, court, gameNum) {
-        const t1 = (state.roster.DOUBLES || []).find(x => x.teamName === court.t1);
-        const t2 = (state.roster.DOUBLES || []).find(x => x.teamName === court.t2);
         
-        let grid = '';
-        for (let i = 2; i <= 30; i += 2) {
-            const rowIndex = (i / 2);
-            let shoeClass = '';
-            
-            // Shading Logic
-            // G1 & G3: Start Gray (2, 6, 10...)
-            // G2: Start White (4, 8, 12...)
-            if (gameNum === 1 || gameNum === 3) {
-                if (rowIndex % 2 !== 0) shoeClass = 'gray-bg';
-            } else {
-                if (rowIndex % 2 === 0) shoeClass = 'gray-bg';
-            }
-
-            grid += `
-                <tr>
-                    <td></td><td></td><td></td><td></td><td></td><td></td><td class="col-total"></td>
-                    <td class="col-shoes ${shoeClass}">${i}</td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td><td class="col-total"></td>
-                </tr>`;
+        let currentCalc = 0;
+        if (state.hcpLocked && state.hcpLocked[mode]) {
+            currentCalc = Number(p ? (p.currentHcp || 0) : 0);
+        } else {
+            const avg = getPlyrAvg(pName);
+            currentCalc = Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
         }
 
-        const getMemberRows = (team) => {
-            if (!team) return Array(3).fill('<tr><td>&nbsp;</td><td></td><td></td></tr>').join('');
-            let rows = team.members.map(m => `
-                <tr>
-                    <td style="text-align:left; padding-left:10px; font-weight:bold;">${m.name}</td>
-                    <td style="text-align:center;">${getH(state, m.name)}</td>
-                    <td style="text-align:center;">${getPlyrAvg(state, m.name)}</td>
-                </tr>
-            `).join('');
-            while(team.members.length < 3) { rows += '<tr><td>&nbsp;</td><td></td><td></td></tr>'; team.members.push({}); }
-            return rows;
-        };
-
-        return `
-        <div class="sheet-page page-break">
-            <div style="text-align:center; font-weight:900; font-size:16pt; text-decoration:underline;">LOON POND HORSESHOE CLUB</div>
-            <div style="text-align:center; font-size:9pt; font-weight:bold; margin-bottom:5px;">
-                1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.
-            </div>
-
-            <div class="court-box">
-                <div style="font-size:8pt; border-bottom:1px solid black; background:#eee; font-weight:bold;">Court</div>
-                <div style="font-size:20pt; font-weight:900;">${court.court}</div>
-            </div>
-
-            <table class="main-table">
-                <thead>
-                    <tr>
-                        <th colspan="3" style="font-size:10pt;">Team: ${court.t1}</th>
-                        <th colspan="3"></th>
-                        <th class="col-total" style="background:white; font-size:12pt;">Game</th>
-                        <th class="col-shoes" style="background:white;">${gameNum}</th>
-                        <th colspan="3" style="font-size:10pt;">Team: ${court.t2}</th>
-                        <th colspan="3"></th>
-                        <th class="col-total" style="background:white; font-size:12pt;"></th>
-                    </tr>
-                    <tr style="height:35px; background:#eee;">
-                        <th class="col-stats">Ringers</th><th class="col-stats">Points</th><th class="col-stats">Score</th>
-                        <th class="col-stats">Ringers</th><th class="col-stats">Points</th><th class="col-stats">Score</th>
-                        <th class="col-total">Total</th>
-                        <th class="col-shoes" style="background:black; color:white; font-size:10pt;">VS</th>
-                        <th class="col-stats">Ringers</th><th class="col-stats">Points</th><th class="col-stats">Score</th>
-                        <th class="col-stats">Ringers</th><th class="col-stats">Points</th><th class="col-stats">Score</th>
-                        <th class="col-total">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${grid}
-                    <tr style="height:30px; font-weight:bold;">
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Points:</td><td class="col-total"></td>
-                        <td class="col-shoes"></td>
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Points:</td><td class="col-total"></td>
-                    </tr>
-                    <tr style="height:30px; font-weight:bold;">
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Total Hcap:</td><td class="col-total"></td>
-                        <td class="col-shoes"></td>
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Total Hcap:</td><td class="col-total"></td>
-                    </tr>
-                    <tr style="height:30px; font-weight:bold;">
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Total:</td><td class="col-total"></td>
-                        <td class="col-shoes"></td>
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Total:</td><td class="col-total"></td>
-                    </tr>
-                    <tr style="height:30px; font-weight:bold;">
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Ringers:</td><td class="col-total"></td>
-                        <td class="col-shoes"></td>
-                        <td colspan="6" style="text-align:right; padding-right:10px;">Ringers:</td><td class="col-total"></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="wlt-section">
-                <div style="display:flex; gap:10px;"><div class="wlt-box">W</div><div class="wlt-box">L</div><div class="wlt-box">T</div></div>
-                <div style="display:flex; gap:10px;"><div class="wlt-box">W</div><div class="wlt-box">L</div><div class="wlt-box">T</div></div>
-            </div>
-
-            <div style="display:flex; gap:20px;">
-                <table class="roster-table" style="flex:1;">
-                    <thead><tr><th>Name</th><th>Handicap</th><th>Point Avg</th></tr></thead>
-                    <tbody>${getMemberRows(t1)}</tbody>
-                </table>
-                <table class="roster-table" style="flex:1;">
-                    <thead><tr><th>Name</th><th>Handicap</th><th>Point Avg</th></tr></thead>
-                    <tbody>${getMemberRows(t2)}</tbody>
-                </table>
-            </div>
-        </div>`;
+        // Apply half-season winner logic if applicable
+        if (mode === 'SINGLES' && state.singlesHalfWinner && cleanN(state.singlesHalfWinner) === n) {
+            return Math.min(currentCalc, state.singlesHalfHcp || currentCalc);
+        }
+        return currentCalc;
     }
 
-    generate();
+    // 3. Lineup Parser
+    function parseLineup() {
+        const raw = state.weeklyLineup[mode].rawPaste;
+        const lines = raw.split('\n');
+        const matchups = [];
+        let current = null;
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+            const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
+            
+            if (courtMatch) {
+                if (current) matchups.push(current);
+                let teamStr = (courtMatch[2] || "").replace(/"/g, '').trim();
+                let teams = teamStr.split(/\s+vs\s+/i);
+                current = { 
+                    court: courtMatch[1], 
+                    t1Name: (teams[0] || "Team A").trim(), 
+                    t2Name: (teams[1] || "Team B").trim() 
+                };
+            } else if (current) {
+                // Handle multi-line team names if "vs" wasn't found on the first line
+                current.t2Name = trimmed.replace(/"/g, '').trim();
+            }
+        });
+        if (current) matchups.push(current);
+        return matchups;
+    }
+
+    // 4. Score Sheet Renderer
+    function generate() {
+        const matchups = parseLineup();
+        const target = document.getElementById('render-target');
+        let fullHtml = '';
+
+        matchups.forEach(m => {
+            // Find Team Data for Footer
+            const findT = (name) => (state.roster[mode] || []).find(t => cleanN(t.teamName || t.name) === cleanN(name));
+            const team1 = findT(m.t1Name);
+            const team2 = findT(m.t2Name);
+
+            // Extract members (handling 3-man teams)
+            const p1List = mode === 'SINGLES' ? [team1] : (team1 ? team1.members : []);
+            const p2List = mode === 'SINGLES' ? [team2] : (team2 ? team2.members : []);
+
+            // Loop 3 games per match
+            for (let g = 1; g <= 3; g++) {
+                fullHtml += `
+                <div class="sheet">
+                    <div class="header">
+                        <h1>LOON POND HORSESHOE CLUB</h1>
+                        <div class="court-box">COURT: ${m.court}</div>
+                    </div>
+                    <div class="info-bar">1 = 1 PT. 2 = 2 PTS. 0 = 1 RINGER 3 PTS. O' = 1 RINGER 4 PTS. 00 = 2 RINGERS 6 PTS.</div>
+                    <div class="sub-header">
+                        <span>Team: ${m.t1Name}</span>
+                        <span>Game ${g}</span>
+                        <span>Team: ${m.t2Name}</span>
+                    </div>
+
+                    <table class="score-table">
+                        <thead>
+                            <tr>
+                                <th colspan="3"></th><th colspan="3"></th><th class="col-team">Score</th><th class="col-sh">VS</th><th class="col-team">Score</th><th colspan="3"></th><th colspan="3"></th>
+                            </tr>
+                            <tr>
+                                <th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th><th>SH</th><th>Team</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${[2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map(sh => `
+                                <tr>
+                                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">${sh}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                                </tr>
+                            `).join('')}
+                            <tr><td colspan="6" class="row-label">Points</td><td></td><td class="col-sh">Pts</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Points</td></tr>
+                            <tr><td colspan="6" class="row-label">Total Hcap</td><td></td><td class="col-sh">Hcap</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Total Hcap</td></tr>
+                            <tr><td colspan="6" class="row-label">Total</td><td></td><td class="col-sh">Total</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Total</td></tr>
+                            <tr><td colspan="6" class="row-label">Ringers</td><td></td><td class="col-sh">Ring</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Ringers</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="footer-container">
+                        <div class="stats-box">
+                            <div class="wlt-header">W L T</div>
+                            <table class="player-table">
+                                <thead><tr><th class="name-col">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
+                                <tbody>
+                                    ${Array.from({length: 3}).map((_, i) => {
+                                        const p = p1List[i];
+                                        return `<tr><td class="name-col">${p ? p.name : '&nbsp;'}</td><td>${p ? getH(p.name) : ''}</td><td>${p ? getPlyrAvg(p.name) : ''}</td></tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="stats-box">
+                            <div class="wlt-header">W L T</div>
+                            <table class="player-table">
+                                <thead><tr><th class="name-col">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
+                                <tbody>
+                                    ${Array.from({length: 3}).map((_, i) => {
+                                        const p = p2List[i];
+                                        return `<tr><td class="name-col">${p ? p.name : '&nbsp;'}</td><td>${p ? getH(p.name) : ''}</td><td>${p ? getPlyrAvg(p.name) : ''}</td></tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+
+                if (g === 3) fullHtml += '<div class="page-break"></div>';
+            }
+        });
+
+        target.innerHTML = fullHtml;
+    }
+
+    if (state) { generate(); } 
+    else { document.body.innerHTML = "<h2 style='text-align:center; padding-top:100px;'>Error: Open this from the main app's Manage tab.</h2>"; }
 </script>
 </body>
 </html>
