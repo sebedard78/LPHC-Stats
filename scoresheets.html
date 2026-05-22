@@ -5,7 +5,7 @@
     <title>LPHC Official Scoresheets</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: "Arial Narrow", Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
+        body { font-family: "Arial Narrow", Arial, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; }
         
         .no-print { 
             background: #111; padding: 15px; text-align: center; 
@@ -18,58 +18,54 @@
 
         .print-container { width: 8.5in; margin: 0 auto; padding: 10px; }
 
-        /* The Scoresheet Card */
         .sheet {
-            border: 2px solid black;
-            padding: 10px;
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-            background: white;
+            border: 2px solid black; padding: 10px; margin-bottom: 25px;
+            page-break-inside: avoid; background: white;
+            display: block; position: relative;
         }
 
-        /* Top Header Area */
-        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid black; padding-bottom: 4px; }
-        .top-row h1 { margin: 0; font-size: 16pt; font-weight: 900; letter-spacing: 1px; }
-        .court-box { border: 3px solid black; padding: 2px 15px; font-weight: 900; font-size: 13pt; }
+        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid black; padding-bottom: 2px; }
+        .top-row h1 { margin: 0; font-size: 17pt; font-weight: 900; letter-spacing: 0.5px; }
+        .court-box { border: 3px solid black; padding: 1px 12px; font-weight: 900; font-size: 13pt; }
 
-        .scoring-rules { font-size: 7.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 2px 0; margin-bottom: 4px; }
+        .scoring-rules { font-size: 7.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 1px 0; margin-bottom: 2px; }
 
-        .team-header { display: flex; justify-content: space-between; font-size: 9pt; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; }
+        .team-header { display: flex; justify-content: space-between; font-size: 9pt; font-weight: 900; margin-bottom: 3px; text-transform: uppercase; }
 
-        /* The 15 Column Scoring Grid */
-        .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid black; }
-        .score-grid th, .score-grid td { border: 1px solid black; height: 16px; text-align: center; font-size: 8.5pt; }
-        .score-grid thead th { background: #eee; font-size: 7pt; font-weight: 900; }
+        /* THE 15 COLUMN GRID */
+        .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid black; }
+        .score-grid th, .score-grid td { border: 1.2px solid black; height: 14.5px; text-align: center; font-size: 8pt; overflow: hidden; }
+        .score-grid thead th { background: #fff; font-size: 6.5pt; font-weight: 900; height: 14px; }
         
-        .col-sh { width: 35px; background: #eee; font-weight: 900; }
-        .col-score-label { width: 55px; font-weight: 900; font-size: 8pt; }
-        .summary-row { font-weight: 900; font-size: 8pt; }
-        .summary-row td:nth-child(1) { text-align: right; padding-right: 5px; border-right: none; }
-        .summary-row td:nth-child(10) { text-align: left; padding-left: 5px; border-left: none; }
+        .col-sh { width: 32px; font-weight: 900; }
+        .col-score { width: 48px; font-weight: 900; } 
+        .bg-gray { background-color: #ccc !important; -webkit-print-color-adjust: exact; }
 
-        /* Bottom Player Boxes */
+        .summary-row { font-weight: 900; font-size: 7.5pt; }
+        .summary-row .label-cell { text-align: right; padding-right: 5px; border-right: none; white-space: nowrap; }
+
         .footer { display: flex; justify-content: space-between; margin-top: 10px; }
-        .team-box { width: 49%; border: 1px solid black; }
-        .wlt-header { font-size: 22pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 2px solid black; padding: 2px 0; margin-left: 20px; }
+        .team-box { width: 49%; border: 2px solid black; }
+        .wlt-header { font-size: 24pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 2.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
         
         .p-table { width: 100%; border-collapse: collapse; }
-        .p-table th, .p-table td { border: 1px solid black; height: 20px; text-align: center; font-size: 9pt; }
-        .p-table th { background: #eee; font-size: 7.5pt; font-weight: 900; }
-        .name-cell { text-align: left; padding-left: 5px; width: 60%; font-weight: 900; }
+        .p-table th, .p-table td { border: 1px solid black; height: 20px; text-align: center; font-size: 8.5pt; }
+        .p-table th { background: #fff; font-size: 7pt; font-weight: 900; border-bottom: 1.5px solid black; }
+        .name-cell { text-align: left; padding-left: 5px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
 
         @media print {
             .no-print { display: none; }
             body { background: white; }
             .print-container { width: 100%; padding: 0; }
-            .sheet { margin-bottom: 10px; border-width: 1.5pt; }
-            @page { margin: 0.4cm; }
+            .sheet { margin-bottom: 20px; }
+            @page { margin: 0.3cm; }
         }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <button class="btn-print" onclick="window.print()">PRINT PRE-FILLED SCORESHEETS</button>
+    <button class="btn-print" onclick="window.print()">PRINT SCORESHEETS</button>
 </div>
 
 <div id="render-target" class="print-container"></div>
@@ -77,36 +73,68 @@
 <script>
     const state = JSON.parse(localStorage.getItem('lphc_print_data'));
     const mode = state.mode || 'DOUBLES';
-    const cleanN = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
+    
+    // Aggressive cleaning for matching
+    const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
     function getPlyrAvg(pName) {
-        const n = cleanN(pName); if(!pName || ['bye','dummy'].includes(n)) return 0;
+        const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return 0;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
-        const p = rList.find(x => cleanN(x.name) === n);
-        const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode).slice(-9);
+        const p = rList.find(x => clean(x.name) === n);
+        const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode).slice(-9);
         return Math.round(hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0));
     }
 
     function getH(pName) {
-        const n = cleanN(pName); if(!pName || n === 'bye') return 0; if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
+        const n = clean(pName); if(!n || n === 'bye') return 0; if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
-        const p = rList.find(x => cleanN(x.name) === n);
+        const p = rList.find(x => clean(x.name) === n);
         if (state.hcpLocked && state.hcpLocked[mode]) return Number(p ? (p.currentHcp || 0) : 0);
         const avg = getPlyrAvg(pName);
         return Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
+    }
+
+    // Advanced search: Finds teams by splitting the lineup name and checking members
+    function findTeamDeep(searchStr) {
+        if (!searchStr) return null;
+        const searchClean = clean(searchStr);
+        const roster = state.roster[mode] || [];
+
+        // 1. Exact/Clean Match on Team Name
+        let found = roster.find(t => clean(t.teamName || t.name) === searchClean);
+        if (found) return found;
+
+        // 2. Split searchStr (e.g., "Robinson, John & Hannah") and match members
+        const parts = searchStr.split(/[&/]| vs | VS /i).map(p => clean(p.trim())).filter(p => p.length > 2);
+        found = roster.find(t => {
+            const mems = mode === 'SINGLES' ? [clean(t.name)] : t.members.map(m => clean(m.name));
+            return parts.some(p => mems.some(m => m.includes(p)));
+        });
+        
+        return found;
     }
 
     function parseLineup() {
         const raw = state.weeklyLineup[mode].rawPaste;
         const lines = raw.split('\n');
         const matchups = []; let current = null;
+
         lines.forEach(line => {
-            const trimmed = line.trim(); if (!trimmed) return;
+            const trimmed = line.trim().replace(/^"|"$/g, '');
+            if (!trimmed) return;
             const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
             if (courtMatch) {
                 if (current) matchups.push(current);
-                let teamStr = (courtMatch[2] || "").split(/\s+vs\s+/i);
-                current = { court: courtMatch[1], t1: (teamStr[0]||"").trim(), t2: (teamStr[1]||"").trim() };
+                let teamPart = (courtMatch[2] || "").split(/\s+vs\s+|\s+VS\s+|\s+Vs\s+/);
+                let t1 = (teamPart[0]||"").trim();
+                let t2 = (teamPart[1]||"").trim();
+                
+                // Force BYE to the right side
+                if (clean(t1) === 'bye') { [t1, t2] = [t2, t1]; }
+                
+                current = { court: courtMatch[1], t1: t1, t2: t2 };
+            } else if (current && current.t2 === "") {
+                current.t2 = trimmed;
             }
         });
         if (current) matchups.push(current);
@@ -116,12 +144,18 @@
     const matchups = parseLineup();
     let html = '';
     matchups.forEach(m => {
-        const findT = (name) => (state.roster[mode] || []).find(t => cleanN(t.teamName || t.name) === cleanN(name));
-        const team1 = findT(m.t1); const team2 = findT(m.t2);
+        const team1 = findTeamDeep(m.t1); 
+        const team2 = findTeamDeep(m.t2);
+        
         const p1List = mode === 'SINGLES' ? [team1] : (team1 ? team1.members : []);
         const p2List = mode === 'SINGLES' ? [team2] : (team2 ? team2.members : []);
 
         for (let g = 1; g <= 3; g++) {
+            const shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((val, idx) => {
+                let isGray = (g === 1 || g === 3) ? (idx % 2 === 0) : (idx % 2 !== 0);
+                return `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh ${isGray?'bg-gray':''}">${val}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+            }).join('');
+
             html += `
             <div class="sheet">
                 <div class="top-row"><h1>LOON POND HORSESHOE CLUB</h1><div class="court-box">COURT: ${m.court}</div></div>
@@ -130,17 +164,15 @@
                 
                 <table class="score-grid">
                     <thead>
-                        <tr><th colspan="6"></th><th class="col-score-label">Score</th><th class="col-sh">VS</th><th class="col-score-label">Score</th><th colspan="6"></th></tr>
-                        <tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th><th>SH</th><th>Team</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th></tr>
+                        <tr><th colspan="6"></th><th class="col-score">Score</th><th class="col-sh">VS</th><th colspan="6"></th><th class="col-score">Score</th></tr>
+                        <tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th><th>SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th></tr>
                     </thead>
                     <tbody>
-                        ${[2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map(sh => `
-                            <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">${sh}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        `).join('')}
-                        <tr class="summary-row"><td colspan="6">Points</td><td></td><td class="col-sh">Pts</td><td></td><td colspan="6">Points</td></tr>
-                        <tr class="summary-row"><td colspan="6">Total Hcap</td><td></td><td class="col-sh">Hcap</td><td></td><td colspan="6">Total Hcap</td></tr>
-                        <tr class="summary-row"><td colspan="6">Total</td><td></td><td class="col-sh">Total</td><td></td><td colspan="6">Total</td></tr>
-                        <tr class="summary-row"><td colspan="6">Ringers</td><td></td><td class="col-sh">Ring</td><td></td><td colspan="6">Ringers</td></tr>
+                        ${shRows}
+                        <tr class="summary-row"><td colspan="6" class="label-cell">Points</td><td></td><td class="col-sh"></td><td colspan="6"></td><td></td></tr>
+                        <tr class="summary-row"><td colspan="6" class="label-cell">Total Hcap</td><td></td><td class="col-sh"></td><td colspan="6"></td><td></td></tr>
+                        <tr class="summary-row"><td colspan="6" class="label-cell">Total</td><td></td><td class="col-sh"></td><td colspan="6"></td><td></td></tr>
+                        <tr class="summary-row"><td colspan="6" class="label-cell">Ringers</td><td></td><td class="col-sh"></td><td colspan="6"></td><td></td></tr>
                     </tbody>
                 </table>
 
@@ -150,7 +182,10 @@
                         <table class="p-table">
                             <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
                             <tbody>
-                                ${[0,1,2].map(i => `<tr><td class="name-cell">${p1List[i]?p1List[i].name:'&nbsp;'}</td><td>${p1List[i]?getH(p1List[i].name):''}</td><td>${p1List[i]?getPlyrAvg(p1List[i].name):''}</td></tr>`).join('')}
+                                ${[0,1,2].map(i => {
+                                    const p = p1List[i];
+                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`;
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -159,7 +194,10 @@
                         <table class="p-table">
                             <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
                             <tbody>
-                                ${[0,1,2].map(i => `<tr><td class="name-cell">${p2List[i]?p2List[i].name:'&nbsp;'}</td><td>${p2List[i]?getH(p2List[i].name):''}</td><td>${p2List[i]?getPlyrAvg(p2List[i].name):''}</td></tr>`).join('')}
+                                ${[0,1,2].map(i => {
+                                    const p = p2List[i];
+                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`;
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>
