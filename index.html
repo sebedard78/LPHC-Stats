@@ -284,6 +284,11 @@ window.openPrintSystem = () => {
     const docRef = doc(db, "league", "masterData");
     const docRefTourney = doc(db, "tournament_final_v1", "data");
 
+	window.openPrintSystem = () => {
+    localStorage.setItem('lphc_print_data', JSON.stringify(state));
+    window.open('scoresheets.html', '_blank');
+};
+
     // state updated to include 4. Singles Half logic storage
     // LOGGING FIX: Ensure fourDeads DOUBLES is initialized as an object {}
     let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null, weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
@@ -1769,7 +1774,22 @@ window.openPrintSystem = () => {
                 </tr>`;
             }).join('');
 
-            content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Weekly Lineup')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Lineup</button></div><div class="max-w-xl mx-auto mt-6 shadow-2xl overflow-hidden"><table class="lineup-table"><thead><tr class="lineup-header-bg"><th class="lineup-court-col text-white">Court</th><th>${currentLineup.weekTitle || 'Weekly Lineup'}</th></tr></thead><tbody>${rowsHtml || '<tr><td colspan="2" class="p-10 opacity-30 italic">No data found. Switch to Manage tab to paste the lineup.</td></tr>'}</tbody></table></div>`;
+            content.innerHTML = `
+    <div class="action-bar flex justify-end p-2 gap-2 no-print">
+        <button onclick="window.printActive('Weekly Lineup')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print Lineup</button>
+        <button onclick="window.openPrintSystem()" class="bg-red-600 text-white px-4 py-2 font-black uppercase shadow-lg border border-red-700">Generate Sheets</button>
+    </div>
+    <div class="max-w-xl mx-auto mt-6 shadow-2xl overflow-hidden">
+        <table class="lineup-table">
+            <thead>
+                <tr class="lineup-header-bg">
+                    <th class="lineup-court-col text-white">Court</th>
+                    <th>${currentLineup.weekTitle || 'Weekly Lineup'}</th>
+                </tr>
+            </thead>
+            <tbody>${rowsHtml || '<tr><td colspan="2" class="p-10 opacity-30 italic">No data.</td></tr>'}</tbody>
+        </table>
+    </div>`;
         } else if (view === 'REPORT') {
             let aChamp = state.winners.champ, aRunner = state.winners.runner, aSeason = state.winners.season;
             if (mode === 'DOUBLES') {
