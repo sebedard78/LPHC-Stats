@@ -2,282 +2,172 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>LPHC Official Scoresheet Generator</title>
+    <title>LPHC Official Scoresheets</title>
     <style>
+        * { box-sizing: border-box; }
+        body { font-family: "Arial Narrow", Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
+        
+        .no-print { 
+            background: #111; padding: 15px; text-align: center; 
+            border-bottom: 4px solid #0ea5e9; position: sticky; top: 0; z-index: 100;
+        }
+        .btn-print {
+            background: #0ea5e9; color: white; padding: 12px 30px; 
+            font-weight: 900; border: none; border-radius: 5px; cursor: pointer;
+        }
+
+        .print-container { width: 8.5in; margin: 0 auto; padding: 10px; }
+
+        /* The Scoresheet Card */
+        .sheet {
+            border: 2px solid black;
+            padding: 10px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+            background: white;
+        }
+
+        /* Top Header Area */
+        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid black; padding-bottom: 4px; }
+        .top-row h1 { margin: 0; font-size: 16pt; font-weight: 900; letter-spacing: 1px; }
+        .court-box { border: 3px solid black; padding: 2px 15px; font-weight: 900; font-size: 13pt; }
+
+        .scoring-rules { font-size: 7.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 2px 0; margin-bottom: 4px; }
+
+        .team-header { display: flex; justify-content: space-between; font-size: 9pt; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; }
+
+        /* The 15 Column Scoring Grid */
+        .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid black; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 16px; text-align: center; font-size: 8.5pt; }
+        .score-grid thead th { background: #eee; font-size: 7pt; font-weight: 900; }
+        
+        .col-sh { width: 35px; background: #eee; font-weight: 900; }
+        .col-score-label { width: 55px; font-weight: 900; font-size: 8pt; }
+        .summary-row { font-weight: 900; font-size: 8pt; }
+        .summary-row td:nth-child(1) { text-align: right; padding-right: 5px; border-right: none; }
+        .summary-row td:nth-child(10) { text-align: left; padding-left: 5px; border-left: none; }
+
+        /* Bottom Player Boxes */
+        .footer { display: flex; justify-content: space-between; margin-top: 10px; }
+        .team-box { width: 49%; border: 1px solid black; }
+        .wlt-header { font-size: 22pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 2px solid black; padding: 2px 0; margin-left: 20px; }
+        
+        .p-table { width: 100%; border-collapse: collapse; }
+        .p-table th, .p-table td { border: 1px solid black; height: 20px; text-align: center; font-size: 9pt; }
+        .p-table th { background: #eee; font-size: 7.5pt; font-weight: 900; }
+        .name-cell { text-align: left; padding-left: 5px; width: 60%; font-weight: 900; }
+
         @media print {
             .no-print { display: none; }
-            @page { margin: 0.3cm; size: portrait; }
-            .page-break { page-break-after: always; }
-        }
-
-        body { font-family: 'Arial Narrow', Arial, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; }
-        .print-area { width: 8.5in; margin: 0 auto; padding: 10px; box-sizing: border-box; }
-
-        .sheet {
-            border: 1.5px solid black;
-            padding: 8px;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            height: 3.4in; /* Fits exactly 3 per page */
-            position: relative;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid black;
-            padding-bottom: 2px;
-            margin-bottom: 3px;
-        }
-        .header h1 { margin: 0; font-size: 14pt; font-weight: 900; letter-spacing: 0.5px; }
-        .court-box { border: 2.5px solid black; padding: 2px 12px; font-weight: 900; font-size: 12pt; }
-
-        .info-bar { 
-            font-size: 7.5pt; 
-            text-align: center; 
-            font-weight: bold; 
-            margin-bottom: 3px; 
-            border-bottom: 1px solid black; 
-            padding-bottom: 1px; 
-        }
-
-        .sub-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 8.5pt;
-            font-weight: 900;
-            margin-bottom: 2px;
-            text-transform: uppercase;
-        }
-
-        /* 15-Column Scoring Table */
-        .score-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            font-size: 8pt;
-        }
-        .score-table th, .score-table td {
-            border: 1px solid black;
-            text-align: center;
-            height: 12px;
-        }
-        .score-table th { background: #f0f0f0; font-weight: 900; height: 14px; font-size: 7pt; }
-        
-        .col-sh { width: 32px; font-weight: 900; background: #f0f0f0; }
-        .col-team { width: 50px; font-weight: 900; background: #fff; }
-        .row-label { text-align: right; padding-right: 5px; font-weight: 900; font-size: 7.5pt; }
-
-        /* Footer Section */
-        .footer-container {
-            display: flex;
-            justify-content: space-between;
-            margin-top: auto;
-            padding-top: 4px;
-        }
-        .stats-box { width: 49%; }
-        .wlt-header { font-size: 18pt; font-weight: 900; letter-spacing: 15px; text-align: center; margin-bottom: 1px; }
-        
-        .player-table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1.5px solid black;
-        }
-        .player-table th, .player-table td {
-            border: 1px solid black;
-            padding: 1px 3px;
-            font-size: 8.5pt;
-            text-align: center;
-            height: 16px;
-        }
-        .player-table th { font-size: 7pt; font-weight: 900; background: #f0f0f0; }
-        .name-col { text-align: left !important; width: 60%; font-weight: 900; overflow: hidden; white-space: nowrap; }
-        
-        .btn-print {
-            background: #0ea5e9;
-            color: #fff;
-            padding: 15px 40px;
-            font-weight: 900;
-            text-transform: uppercase;
-            cursor: pointer;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            body { background: white; }
+            .print-container { width: 100%; padding: 0; }
+            .sheet { margin-bottom: 10px; border-width: 1.5pt; }
+            @page { margin: 0.4cm; }
         }
     </style>
 </head>
 <body>
 
-<div class="no-print" style="text-align: center; background: #111; padding: 20px; border-bottom: 4px solid #0ea5e9;">
-    <h2 style="color:white; margin:0 0 10px 0;">Loon Pond Scoresheet System</h2>
-    <button class="btn-print" onclick="window.print()">Print Pre-Filled Sheets</button>
+<div class="no-print">
+    <button class="btn-print" onclick="window.print()">PRINT PRE-FILLED SCORESHEETS</button>
 </div>
 
-<div id="render-target" class="print-area"></div>
+<div id="render-target" class="print-container"></div>
 
 <script>
-    // 1. Grab data from main app
     const state = JSON.parse(localStorage.getItem('lphc_print_data'));
     const mode = state.mode || 'DOUBLES';
-
-    // 2. Helper Logic (Mirrored from main app for accuracy)
     const cleanN = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
-    
+
     function getPlyrAvg(pName) {
-        const n = cleanN(pName); 
-        if(!pName || ['bye','dummy'].includes(n)) return 0;
+        const n = cleanN(pName); if(!pName || ['bye','dummy'].includes(n)) return 0;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanN(x.name) === n);
         const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode).slice(-9);
-        const rawAvg = hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0);
-        return Math.round(rawAvg);
+        return Math.round(hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0));
     }
 
     function getH(pName) {
-        const n = cleanN(pName); 
-        if(!pName || n === 'bye') return 0; 
-        if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
+        const n = cleanN(pName); if(!pName || n === 'bye') return 0; if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanN(x.name) === n);
-        
-        let currentCalc = 0;
-        if (state.hcpLocked && state.hcpLocked[mode]) {
-            currentCalc = Number(p ? (p.currentHcp || 0) : 0);
-        } else {
-            const avg = getPlyrAvg(pName);
-            currentCalc = Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
-        }
-
-        // Apply half-season winner logic if applicable
-        if (mode === 'SINGLES' && state.singlesHalfWinner && cleanN(state.singlesHalfWinner) === n) {
-            return Math.min(currentCalc, state.singlesHalfHcp || currentCalc);
-        }
-        return currentCalc;
+        if (state.hcpLocked && state.hcpLocked[mode]) return Number(p ? (p.currentHcp || 0) : 0);
+        const avg = getPlyrAvg(pName);
+        return Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
     }
 
-    // 3. Lineup Parser
     function parseLineup() {
         const raw = state.weeklyLineup[mode].rawPaste;
         const lines = raw.split('\n');
-        const matchups = [];
-        let current = null;
-
+        const matchups = []; let current = null;
         lines.forEach(line => {
-            const trimmed = line.trim();
-            if (!trimmed) return;
+            const trimmed = line.trim(); if (!trimmed) return;
             const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
-            
             if (courtMatch) {
                 if (current) matchups.push(current);
-                let teamStr = (courtMatch[2] || "").replace(/"/g, '').trim();
-                let teams = teamStr.split(/\s+vs\s+/i);
-                current = { 
-                    court: courtMatch[1], 
-                    t1Name: (teams[0] || "Team A").trim(), 
-                    t2Name: (teams[1] || "Team B").trim() 
-                };
-            } else if (current) {
-                // Handle multi-line team names if "vs" wasn't found on the first line
-                current.t2Name = trimmed.replace(/"/g, '').trim();
+                let teamStr = (courtMatch[2] || "").split(/\s+vs\s+/i);
+                current = { court: courtMatch[1], t1: (teamStr[0]||"").trim(), t2: (teamStr[1]||"").trim() };
             }
         });
         if (current) matchups.push(current);
         return matchups;
     }
 
-    // 4. Score Sheet Renderer
-    function generate() {
-        const matchups = parseLineup();
-        const target = document.getElementById('render-target');
-        let fullHtml = '';
+    const matchups = parseLineup();
+    let html = '';
+    matchups.forEach(m => {
+        const findT = (name) => (state.roster[mode] || []).find(t => cleanN(t.teamName || t.name) === cleanN(name));
+        const team1 = findT(m.t1); const team2 = findT(m.t2);
+        const p1List = mode === 'SINGLES' ? [team1] : (team1 ? team1.members : []);
+        const p2List = mode === 'SINGLES' ? [team2] : (team2 ? team2.members : []);
 
-        matchups.forEach(m => {
-            // Find Team Data for Footer
-            const findT = (name) => (state.roster[mode] || []).find(t => cleanN(t.teamName || t.name) === cleanN(name));
-            const team1 = findT(m.t1Name);
-            const team2 = findT(m.t2Name);
+        for (let g = 1; g <= 3; g++) {
+            html += `
+            <div class="sheet">
+                <div class="top-row"><h1>LOON POND HORSESHOE CLUB</h1><div class="court-box">COURT: ${m.court}</div></div>
+                <div class="scoring-rules">1 = 1 PT. 2 = 2 PTS. 0 = 1 RINGER 3 PTS. O' = 1 RINGER 4 PTS. 00 = 2 RINGERS 6 PTS.</div>
+                <div class="team-header"><span>Team: ${m.t1}</span><span>Game ${g}</span><span>Team: ${m.t2}</span></div>
+                
+                <table class="score-grid">
+                    <thead>
+                        <tr><th colspan="6"></th><th class="col-score-label">Score</th><th class="col-sh">VS</th><th class="col-score-label">Score</th><th colspan="6"></th></tr>
+                        <tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th><th>SH</th><th>Team</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th></tr>
+                    </thead>
+                    <tbody>
+                        ${[2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map(sh => `
+                            <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">${sh}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        `).join('')}
+                        <tr class="summary-row"><td colspan="6">Points</td><td></td><td class="col-sh">Pts</td><td></td><td colspan="6">Points</td></tr>
+                        <tr class="summary-row"><td colspan="6">Total Hcap</td><td></td><td class="col-sh">Hcap</td><td></td><td colspan="6">Total Hcap</td></tr>
+                        <tr class="summary-row"><td colspan="6">Total</td><td></td><td class="col-sh">Total</td><td></td><td colspan="6">Total</td></tr>
+                        <tr class="summary-row"><td colspan="6">Ringers</td><td></td><td class="col-sh">Ring</td><td></td><td colspan="6">Ringers</td></tr>
+                    </tbody>
+                </table>
 
-            // Extract members (handling 3-man teams)
-            const p1List = mode === 'SINGLES' ? [team1] : (team1 ? team1.members : []);
-            const p2List = mode === 'SINGLES' ? [team2] : (team2 ? team2.members : []);
-
-            // Loop 3 games per match
-            for (let g = 1; g <= 3; g++) {
-                fullHtml += `
-                <div class="sheet">
-                    <div class="header">
-                        <h1>LOON POND HORSESHOE CLUB</h1>
-                        <div class="court-box">COURT: ${m.court}</div>
+                <div class="footer">
+                    <div class="team-box">
+                        <div class="wlt-header">W L T</div>
+                        <table class="p-table">
+                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
+                            <tbody>
+                                ${[0,1,2].map(i => `<tr><td class="name-cell">${p1List[i]?p1List[i].name:'&nbsp;'}</td><td>${p1List[i]?getH(p1List[i].name):''}</td><td>${p1List[i]?getPlyrAvg(p1List[i].name):''}</td></tr>`).join('')}
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="info-bar">1 = 1 PT. 2 = 2 PTS. 0 = 1 RINGER 3 PTS. O' = 1 RINGER 4 PTS. 00 = 2 RINGERS 6 PTS.</div>
-                    <div class="sub-header">
-                        <span>Team: ${m.t1Name}</span>
-                        <span>Game ${g}</span>
-                        <span>Team: ${m.t2Name}</span>
+                    <div class="team-box">
+                        <div class="wlt-header">W L T</div>
+                        <table class="p-table">
+                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
+                            <tbody>
+                                ${[0,1,2].map(i => `<tr><td class="name-cell">${p2List[i]?p2List[i].name:'&nbsp;'}</td><td>${p2List[i]?getH(p2List[i].name):''}</td><td>${p2List[i]?getPlyrAvg(p2List[i].name):''}</td></tr>`).join('')}
+                            </tbody>
+                        </table>
                     </div>
-
-                    <table class="score-table">
-                        <thead>
-                            <tr>
-                                <th colspan="3"></th><th colspan="3"></th><th class="col-team">Score</th><th class="col-sh">VS</th><th class="col-team">Score</th><th colspan="3"></th><th colspan="3"></th>
-                            </tr>
-                            <tr>
-                                <th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th><th>SH</th><th>Team</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${[2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map(sh => `
-                                <tr>
-                                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">${sh}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                                </tr>
-                            `).join('')}
-                            <tr><td colspan="6" class="row-label">Points</td><td></td><td class="col-sh">Pts</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Points</td></tr>
-                            <tr><td colspan="6" class="row-label">Total Hcap</td><td></td><td class="col-sh">Hcap</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Total Hcap</td></tr>
-                            <tr><td colspan="6" class="row-label">Total</td><td></td><td class="col-sh">Total</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Total</td></tr>
-                            <tr><td colspan="6" class="row-label">Ringers</td><td></td><td class="col-sh">Ring</td><td></td><td colspan="6" style="text-align:left; padding-left:5px; font-weight:900;">Ringers</td></tr>
-                        </tbody>
-                    </table>
-
-                    <div class="footer-container">
-                        <div class="stats-box">
-                            <div class="wlt-header">W L T</div>
-                            <table class="player-table">
-                                <thead><tr><th class="name-col">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
-                                <tbody>
-                                    ${Array.from({length: 3}).map((_, i) => {
-                                        const p = p1List[i];
-                                        return `<tr><td class="name-col">${p ? p.name : '&nbsp;'}</td><td>${p ? getH(p.name) : ''}</td><td>${p ? getPlyrAvg(p.name) : ''}</td></tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="stats-box">
-                            <div class="wlt-header">W L T</div>
-                            <table class="player-table">
-                                <thead><tr><th class="name-col">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
-                                <tbody>
-                                    ${Array.from({length: 3}).map((_, i) => {
-                                        const p = p2List[i];
-                                        return `<tr><td class="name-col">${p ? p.name : '&nbsp;'}</td><td>${p ? getH(p.name) : ''}</td><td>${p ? getPlyrAvg(p.name) : ''}</td></tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>`;
-
-                if (g === 3) fullHtml += '<div class="page-break"></div>';
-            }
-        });
-
-        target.innerHTML = fullHtml;
-    }
-
-    if (state) { generate(); } 
-    else { document.body.innerHTML = "<h2 style='text-align:center; padding-top:100px;'>Error: Open this from the main app's Manage tab.</h2>"; }
+                </div>
+            </div>`;
+        }
+    });
+    document.getElementById('render-target').innerHTML = html;
 </script>
 </body>
 </html>
