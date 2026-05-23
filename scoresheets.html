@@ -16,7 +16,8 @@
             font-weight: 900; border: none; border-radius: 5px; cursor: pointer;
         }
 
-        .print-container { width: 8.5in; margin: 0 auto; padding: 10px; }
+        /* VERTICAL CENTERING: Generous top padding for a centered look on print */
+        .print-container { width: 8.5in; margin: 0 auto; padding: 80px 10px 10px 10px; }
 
         .sheet {
             border: 2px solid black; padding: 10px; margin-bottom: 25px;
@@ -24,40 +25,48 @@
             display: block; position: relative;
         }
 
-        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid black; padding-bottom: 2px; }
-        .top-row h1 { margin: 0; font-size: 17pt; font-weight: 900; letter-spacing: 0.5px; }
-        .court-box { border: 3px solid black; padding: 1px 12px; font-weight: 900; font-size: 13pt; }
+        /* HEADER */
+        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid black; padding-bottom: 8px; }
+        .header-main { display: flex; align-items: center; gap: 15px; }
+        .main-logo { height: 80px; width: auto; }
+        .top-row h1 { margin: 0; font-size: 24pt; font-weight: 900; letter-spacing: 0.5px; }
+        .court-box { border: 3px solid black; padding: 2px 14px; font-weight: 900; font-size: 18pt; }
 
-        .scoring-rules { font-size: 7.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 1px 0; margin-bottom: 2px; }
+        /* KEY / SCORING RULES */
+        .scoring-rules { font-size: 13pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 4px 0; margin-bottom: 4px; }
 
-        .team-header { display: flex; justify-content: space-between; font-size: 9pt; font-weight: 900; margin-bottom: 3px; text-transform: uppercase; }
+        .team-header { display: flex; justify-content: space-between; font-size: 12pt; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; }
 
-        /* THE 15 COLUMN GRID */
+        /* SCORING GRID */
         .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid black; }
-        .score-grid th, .score-grid td { border: 1px solid black; height: 14.5px; text-align: center; font-size: 8pt; overflow: hidden; }
-        .score-grid thead th { background: #fff; font-size: 6.5pt; font-weight: 900; height: 14px; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 24px; text-align: center; font-size: 9pt; overflow: hidden; }
         
-        .col-sh { width: 45px; font-weight: 900; font-size: 7.5pt !important; background: #ddd !important; } 
-        .col-score { width: 42px; font-weight: 900; } 
+        .score-grid thead th { background: #fff; font-size: 10pt; font-weight: 900; height: 24px; }
         
-        /* HIGH CONTRAST GRAY */
+        /* BORDER THICKNESS: Fixed dividers at specific column intervals */
+        .divider-col { border-right: 3px solid black !important; }
+
+        .col-sh { width: 48px; font-weight: 900; font-size: 10pt !important; background: #ddd !important; } 
+        .col-score { width: 45px; font-weight: 900; } 
+        
         .bg-gray { background-color: #aaa !important; -webkit-print-color-adjust: exact; }
 
-        .summary-row { font-weight: 900; font-size: 7.5pt; height: 18px; }
+        .summary-row { font-weight: 900; font-size: 10pt; height: 30px; }
 
-        .footer { display: flex; justify-content: space-between; margin-top: 10px; }
+        /* FOOTER */
+        .footer { display: flex; justify-content: space-between; margin-top: 12px; }
         .team-box { width: 49%; border: 2px solid black; }
-        .wlt-header { font-size: 24pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 2.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
+        .wlt-header { font-size: 34pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 2.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
         
         .p-table { width: 100%; border-collapse: collapse; }
-        .p-table th, .p-table td { border: 1px solid black; height: 20px; text-align: center; font-size: 8.5pt; }
-        .p-table th { background: #fff; font-size: 7pt; font-weight: 900; border-bottom: 1.5px solid black; }
-        .name-cell { text-align: left; padding-left: 5px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
+        .p-table th, .p-table td { border: 1px solid black; height: 33px; text-align: center; font-size: 12pt; }
+        .p-table th { background: #fff; font-size: 10.5pt; font-weight: 900; border-bottom: 1.5px solid black; }
+        .name-cell { text-align: left; padding-left: 8px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
 
         @media print {
             .no-print { display: none; }
             body { background: white; }
-            .print-container { width: 100%; padding: 0; }
+            .print-container { width: 100%; padding-top: 60px; }
             .sheet { margin-bottom: 20px; }
             @page { margin: 0.3cm; }
         }
@@ -75,7 +84,6 @@
     const state = JSON.parse(localStorage.getItem('lphc_print_data'));
     const mode = state.mode || 'DOUBLES';
     
-    // Extreme cleaning for matching
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
     function getPlyrAvg(pName) {
@@ -101,11 +109,9 @@
         if (searchClean === 'bye') return { teamName: 'BYE', members: [], name: 'BYE' };
         
         const roster = state.roster[mode] || [];
-        // 1. Direct clean match
         let found = roster.find(t => clean(t.teamName || t.name) === searchClean);
         if (found) return found;
 
-        // 2. Fragment match
         const parts = searchStr.split(/[&/]| vs | VS | and |,/i).map(p => clean(p.trim())).filter(p => p.length > 2);
         found = roster.find(t => {
             const mems = mode === 'SINGLES' ? [clean(t.name)] : t.members.map(m => clean(m.name));
@@ -147,26 +153,56 @@
         for (let g = 1; g <= 3; g++) {
             const shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((val, idx) => {
                 let isGray = (g === 1 || g === 3) ? (idx % 2 === 0) : (idx % 2 !== 0);
-                return `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh ${isGray?'bg-gray':''}">${val}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+                return `<tr>
+                    <td></td><td></td><td class="divider-col"></td>
+                    <td></td><td></td><td class="divider-col"></td>
+                    <td></td>
+                    <td class="col-sh ${isGray?'bg-gray':''}">${val}</td>
+                    <td></td><td></td><td class="divider-col"></td>
+                    <td></td><td></td><td class="divider-col"></td>
+                    <td></td>
+                </tr>`;
             }).join('');
 
             html += `
             <div class="sheet">
-                <div class="top-row"><h1>LOON POND HORSESHOE CLUB</h1><div class="court-box">COURT: ${m.court}</div></div>
+                <div class="top-row">
+                    <div class="header-main">
+                        <img src="logo.png" class="main-logo" alt="Logo">
+                        <h1>LOON POND HORSESHOE CLUB</h1>
+                    </div>
+                    <div class="court-box">COURT: ${m.court}</div>
+                </div>
                 <div class="scoring-rules">1 = 1 PT. 2 = 2 PTS. 0 = 1 RINGER 3 PTS. O' = 1 RINGER 4 PTS. 00 = 2 RINGERS 6 PTS.</div>
                 <div class="team-header"><span>Team: ${m.t1}</span><span>Game ${g}</span><span>Team: ${m.t2}</span></div>
                 
                 <table class="score-grid">
                     <thead>
-                        <tr><th colspan="6"></th><th class="col-score">Score</th><th class="col-sh" style="background:#fff !important;">VS</th><th colspan="6"></th><th class="col-score">Score</th></tr>
-                        <tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th><th>SH</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th>Team</th></tr>
+                        <tr>
+                            <th colspan="3" class="divider-col"></th>
+                            <th colspan="3" class="divider-col"></th>
+                            <th class="col-score">Score</th>
+                            <th class="col-sh" style="background:#fff !important;">VS</th>
+                            <th colspan="3" class="divider-col"></th>
+                            <th colspan="3" class="divider-col"></th>
+                            <th class="col-score">Score</th>
+                        </tr>
+                        <tr>
+                            <th>R</th><th>P</th><th class="divider-col">S</th>
+                            <th>R</th><th>P</th><th class="divider-col">S</th>
+                            <th>Team</th>
+                            <th class="col-sh" style="background:#fff !important;">SH</th>
+                            <th>R</th><th>P</th><th class="divider-col">S</th>
+                            <th>R</th><th>P</th><th class="divider-col">S</th>
+                            <th>Team</th>
+                        </tr>
                     </thead>
                     <tbody>
                         ${shRows}
-                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">Points</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">Total Hcap</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">Total</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-sh">Ringers</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Points</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Total Hcap</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Total</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Ringers</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
                     </tbody>
                 </table>
 
