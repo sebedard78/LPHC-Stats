@@ -16,7 +16,7 @@
             font-weight: 900; border: none; border-radius: 5px; cursor: pointer;
         }
 
-        /* VERTICAL CENTERING: Generous top padding for a centered look on print */
+        /* VERTICAL CENTERING */
         .print-container { width: 8.5in; margin: 0 auto; padding: 80px 10px 10px 10px; }
 
         .sheet {
@@ -43,13 +43,14 @@
         
         .score-grid thead th { background: #fff; font-size: 10pt; font-weight: 900; height: 24px; }
         
-        /* BORDER THICKNESS: Fixed dividers at specific column intervals */
+        /* BORDER THICKNESS */
         .divider-col { border-right: 3px solid black !important; }
 
-        .col-sh { width: 48px; font-weight: 900; font-size: 10pt !important; background: #ddd !important; } 
+        .col-sh { width: 48px; font-weight: 900; font-size: 10pt !important; } 
         .col-score { width: 45px; font-weight: 900; } 
         
-        .bg-gray { background-color: #aaa !important; -webkit-print-color-adjust: exact; }
+        /* GRAY STYLE */
+        .bg-gray { background-color: #ddd !important; -webkit-print-color-adjust: exact; }
 
         .summary-row { font-weight: 900; font-size: 10pt; height: 30px; }
 
@@ -151,8 +152,15 @@
         const p2List = mode === 'SINGLES' ? (team2 ? [team2] : []) : (team2 ? team2.members : []);
 
         for (let g = 1; g <= 3; g++) {
+            // SH logic based on game number
             const shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((val, idx) => {
-                let isGray = (g === 1 || g === 3) ? (idx % 2 === 0) : (idx % 2 !== 0);
+                let isGray = false;
+                if (g === 1 || g === 3) {
+                    isGray = (idx % 2 === 0); // Row 2(G), 4(W), 6(G)...
+                } else {
+                    isGray = (idx % 2 !== 0); // Row 2(W), 4(G), 6(W)...
+                }
+                
                 return `<tr>
                     <td></td><td></td><td class="divider-col"></td>
                     <td></td><td></td><td class="divider-col"></td>
