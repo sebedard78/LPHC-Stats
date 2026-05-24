@@ -17,52 +17,54 @@
         }
 
         /* VERTICAL CENTERING */
-        .print-container { width: 8.5in; margin: 0 auto; padding: 80px 10px 10px 10px; }
+        .print-container { width: 8.5in; margin: 0 auto; padding: 60px 10px 10px 10px; }
 
         .sheet {
-            border: 2px solid black; padding: 10px; margin-bottom: 25px;
+            border: 2.5px solid black; padding: 10px; margin-bottom: 25px;
             page-break-inside: avoid; background: white;
             display: block; position: relative;
         }
 
         /* HEADER */
-        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid black; padding-bottom: 8px; }
+        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid black; padding-bottom: 8px; }
         .header-main { display: flex; align-items: center; gap: 15px; }
-        .main-logo { height: 80px; width: auto; }
-        .top-row h1 { margin: 0; font-size: 24pt; font-weight: 900; letter-spacing: 0.5px; }
-        .court-box { border: 3px solid black; padding: 2px 14px; font-weight: 900; font-size: 18pt; }
+        .main-logo { height: 85px; width: auto; }
+        .top-row h1 { margin: 0; font-size: 26pt; font-weight: 900; letter-spacing: 0.5px; }
+        .court-box { border: 4px solid black; padding: 2px 14px; font-weight: 900; font-size: 19pt; }
 
-        /* KEY / SCORING RULES */
-        .scoring-rules { font-size: 13pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 4px 0; margin-bottom: 4px; }
-
-        .team-header { display: flex; justify-content: space-between; font-size: 12pt; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; }
+        .scoring-rules { font-size: 13.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 4px 0; margin-bottom: 5px; }
+        .team-header { display: flex; justify-content: space-between; font-size: 13pt; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
 
         /* SCORING GRID */
-        .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid black; }
-        .score-grid th, .score-grid td { border: 1px solid black; height: 24px; text-align: center; font-size: 9pt; overflow: hidden; }
+        .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid black; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 11pt; overflow: hidden; }
+        .score-grid thead th { background: #fff; font-size: 11pt; font-weight: 900; height: 28px; }
         
-        .score-grid thead th { background: #fff; font-size: 10pt; font-weight: 900; height: 24px; }
+        .col-sh { width: 70px; font-weight: 900; font-size: 12pt !important; background: #fff !important; } 
+        .col-score { width: 62px; font-weight: 900; font-size: 10.5pt !important; line-height: 1.1; } 
         
-        /* BORDER THICKNESS */
-        .divider-col { border-right: 3px solid black !important; }
-
-        .col-sh { width: 48px; font-weight: 900; font-size: 10pt !important; } 
-        .col-score { width: 45px; font-weight: 900; } 
-        
-        /* GRAY STYLE */
         .bg-gray { background-color: #ddd !important; -webkit-print-color-adjust: exact; }
 
-        .summary-row { font-weight: 900; font-size: 10pt; height: 30px; }
+        /* BOLD BOX STYLING */
+        .bold-box { border: 2.5px solid black !important; }
+        
+        /* BORDER REMOVAL */
+        .no-border { border: none !important; }
+
+        /* VERTICAL DIVIDERS - 4px for high visibility and symmetry */
+        .v-thick { border-right: 4px solid black !important; }
+
+        .summary-row { height: 32px; font-weight: 900; }
 
         /* FOOTER */
-        .footer { display: flex; justify-content: space-between; margin-top: 12px; }
-        .team-box { width: 49%; border: 2px solid black; }
-        .wlt-header { font-size: 34pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 2.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
+        .footer { display: flex; justify-content: space-between; margin-top: 20px; }
+        .team-box { width: 49%; border: 3px solid black; }
+        .wlt-header { font-size: 38pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 3.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
         
         .p-table { width: 100%; border-collapse: collapse; }
-        .p-table th, .p-table td { border: 1px solid black; height: 33px; text-align: center; font-size: 12pt; }
-        .p-table th { background: #fff; font-size: 10.5pt; font-weight: 900; border-bottom: 1.5px solid black; }
-        .name-cell { text-align: left; padding-left: 8px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
+        .p-table th, .p-table td { border: 1.5px solid black; height: 35px; text-align: center; font-size: 14pt; }
+        .p-table th { background: #fff; font-size: 12pt; font-weight: 900; border-bottom: 2px solid black; }
+        .name-cell { text-align: left; padding-left: 10px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
 
         @media print {
             .no-print { display: none; }
@@ -84,7 +86,6 @@
 <script>
     const state = JSON.parse(localStorage.getItem('lphc_print_data'));
     const mode = state.mode || 'DOUBLES';
-    
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
     function getPlyrAvg(pName) {
@@ -108,11 +109,9 @@
         if (!searchStr) return null;
         const searchClean = clean(searchStr);
         if (searchClean === 'bye') return { teamName: 'BYE', members: [], name: 'BYE' };
-        
         const roster = state.roster[mode] || [];
         let found = roster.find(t => clean(t.teamName || t.name) === searchClean);
         if (found) return found;
-
         const parts = searchStr.split(/[&/]| vs | VS | and |,/i).map(p => clean(p.trim())).filter(p => p.length > 2);
         found = roster.find(t => {
             const mems = mode === 'SINGLES' ? [clean(t.name)] : t.members.map(m => clean(m.name));
@@ -125,7 +124,6 @@
         const raw = state.weeklyLineup[mode].rawPaste;
         const lines = raw.split('\n');
         const matchups = []; let current = null;
-
         lines.forEach(line => {
             const trimmed = line.trim().replace(/^"|"$/g, '');
             if (!trimmed) return;
@@ -147,27 +145,19 @@
     matchups.forEach(m => {
         const team1 = findTeamDeep(m.t1); 
         const team2 = findTeamDeep(m.t2);
-        
         const p1List = mode === 'SINGLES' ? (team1 ? [team1] : []) : (team1 ? team1.members : []);
         const p2List = mode === 'SINGLES' ? (team2 ? [team2] : []) : (team2 ? team2.members : []);
 
         for (let g = 1; g <= 3; g++) {
-            // SH logic based on game number
             const shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((val, idx) => {
-                let isGray = false;
-                if (g === 1 || g === 3) {
-                    isGray = (idx % 2 === 0); // Row 2(G), 4(W), 6(G)...
-                } else {
-                    isGray = (idx % 2 !== 0); // Row 2(W), 4(G), 6(W)...
-                }
-                
+                let isGray = (g === 1 || g === 3) ? (idx % 2 === 0) : (idx % 2 !== 0);
                 return `<tr>
-                    <td></td><td></td><td class="divider-col"></td>
-                    <td></td><td></td><td class="divider-col"></td>
-                    <td></td>
-                    <td class="col-sh ${isGray?'bg-gray':''}">${val}</td>
-                    <td></td><td></td><td class="divider-col"></td>
-                    <td></td><td></td><td class="divider-col"></td>
+                    <td></td><td></td><td class="v-thick"></td>
+                    <td></td><td></td><td class="v-thick"></td>
+                    <td class="v-thick"></td>
+                    <td class="col-sh v-thick ${isGray?'bg-gray':''}">${val}</td>
+                    <td></td><td></td><td class="v-thick"></td>
+                    <td></td><td></td><td class="v-thick"></td>
                     <td></td>
                 </tr>`;
             }).join('');
@@ -187,30 +177,70 @@
                 <table class="score-grid">
                     <thead>
                         <tr>
-                            <th colspan="3" class="divider-col"></th>
-                            <th colspan="3" class="divider-col"></th>
-                            <th class="col-score">Score</th>
-                            <th class="col-sh" style="background:#fff !important;">VS</th>
-                            <th colspan="3" class="divider-col"></th>
-                            <th colspan="3" class="divider-col"></th>
-                            <th class="col-score">Score</th>
+                            <th colspan="3" class="v-thick"></th>
+                            <th colspan="3" class="v-thick"></th>
+                            <th class="col-score v-thick">Team Score</th>
+                            <th class="col-sh v-thick">VS</th>
+                            <th colspan="3" class="v-thick"></th>
+                            <th colspan="3" class="v-thick"></th>
+                            <th class="col-score">Team Score</th>
                         </tr>
                         <tr>
-                            <th>R</th><th>P</th><th class="divider-col">S</th>
-                            <th>R</th><th>P</th><th class="divider-col">S</th>
-                            <th>Team</th>
-                            <th class="col-sh" style="background:#fff !important;">SH</th>
-                            <th>R</th><th>P</th><th class="divider-col">S</th>
-                            <th>R</th><th>P</th><th class="divider-col">S</th>
-                            <th>Team</th>
+                            <th>R</th><th>P</th><th class="v-thick">S</th>
+                            <th>R</th><th>P</th><th class="v-thick">S</th>
+                            <th class="v-thick">&nbsp;</th>
+                            <th class="col-sh v-thick">SH</th>
+                            <th>R</th><th>P</th><th class="v-thick">S</th>
+                            <th>R</th><th>P</th><th class="v-thick">S</th>
+                            <th>&nbsp;</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${shRows}
-                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Points</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
-                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Total Hcap</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
-                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Total</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
-                        <tr class="summary-row"><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td><td class="col-sh">Ringers</td><td></td><td></td><td class="divider-col"></td><td></td><td></td><td class="divider-col"></td><td></td></tr>
+                        
+                        <!-- POINT ROW -->
+                        <tr class="summary-row">
+                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
+                            <td class="bold-box v-thick"></td>
+                            <td class="col-sh v-thick">Point</td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
+                            <td class="bold-box"></td>
+                        </tr>
+
+                        <!-- TOTAL HCAP ROW -->
+                        <tr class="summary-row">
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box v-thick"></td>
+                            <td class="col-sh v-thick">Total Hcap</td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box"></td>
+                        </tr>
+
+                        <!-- TOTAL ROW -->
+                        <tr class="summary-row">
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box v-thick"></td>
+                            <td class="col-sh v-thick">Total</td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box"></td>
+                        </tr>
+
+                        <!-- RINGERS ROW -->
+                        <tr class="summary-row">
+                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box v-thick"></td>
+                            <td class="col-sh v-thick">Ringers</td>
+                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
+                            <td class="bold-box"></td>
+                        </tr>
                     </tbody>
                 </table>
 
@@ -218,7 +248,7 @@
                     <div class="team-box">
                         <div class="wlt-header">W L T</div>
                         <table class="p-table">
-                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
+                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Point Avg</th></tr></thead>
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p1List[i];
@@ -230,7 +260,7 @@
                     <div class="team-box">
                         <div class="wlt-header">W L T</div>
                         <table class="p-table">
-                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
+                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Point Avg</th></tr></thead>
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p2List[i];
