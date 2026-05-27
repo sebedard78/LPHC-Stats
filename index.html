@@ -462,7 +462,8 @@ window.openPrintSystem = () => {
         const n = cleanN(pName); if(!pName || ['bye','dummy'].includes(n)) return 0;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanN(x.name) === n);
-        const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode).slice(-9);
+        // STANDINGS FIX: Filter out entries marked as isNoShow so they don't count toward averages
+        const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode && !x.isNoShow).slice(-9);
         const rawAvg = hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0);
         return Math.round(rawAvg);
     }
@@ -1457,7 +1458,8 @@ window.openPrintSystem = () => {
                 for (let g = 1; g <= 3; g++) {
                     state.history.push({
                         player: pN, score: 0, ringers: 0, result: 'L',
-                        sessionId: sId, gameNum: g, mode, date: today, timestamp: Date.now()
+                        sessionId: sId, gameNum: g, mode, date: today, timestamp: Date.now(),
+                        isNoShow: true // STATS FIX: Ensure this loss doesn't affect averages
                     });
                 }
             });
@@ -1482,7 +1484,8 @@ window.openPrintSystem = () => {
         players.forEach(pN => {
             state.history.push({
                 player: pN, score: 0, ringers: 0, result: r,
-                sessionId: sId, gameNum: 1, mode, date: today, timestamp: Date.now()
+                sessionId: sId, gameNum: 1, mode, date: today, timestamp: Date.now(),
+                isNoShow: true // STATS FIX: Ensure manual adjust doesn't affect averages
             });
         });
         await save();
@@ -1808,7 +1811,8 @@ window.openPrintSystem = () => {
             const rList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
             const pNames = [...new Set([...rList.map(p => p.name), ...state.history.filter(h => h.mode === mode).map(h => h.player)])];
             const stats = pNames.map(pN => {
-                const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode);
+                // STATS FIX: Ignore No-Show entries for averages
+                const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode && !h.isNoShow);
                 const avg = getPlyrAvg(pN);
                 const totP = g.reduce((s,x)=>s+Number(x.score||0),0);
                 const totR = g.reduce((s,x)=>s+Number(x.ringers||0),0);
@@ -2031,7 +2035,8 @@ window.openPrintSystem = () => {
             const historyNames = state.history.filter(h => h.mode === mode).map(h => h.player);
             const pNames = [...new Set([...rosterNames, ...historyNames])];
             const rows = pNames.map(pN => { 
-                const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode);
+                // STATS FIX: Ignore no-show entries for averages
+                const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode && !h.isNoShow);
                 const playerAvg = getPlyrAvg(pN);
                 const totP = g.reduce((sum, x)=>sum+Number(x.score||0),0);
                 const totR = g.reduce((sum, x)=>sum+Number(x.ringers||0),0); 
@@ -2208,7 +2213,8 @@ window.openPrintSystem = () => {
         const shoesPerG = Number(cfg.shoesPerGame) || (mode === 'DOUBLES' ? 30 : 50);
         const pNames = [...new Set(state.history.filter(h => h.mode === mode).map(h => h.player))];
         const pData = pNames.map(pN => {
-            const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode);
+            // STATS FIX: Filter out No-Shows
+            const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode && !h.isNoShow);
             const rList = mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t => t.members);
             const rRec = rList.find(p => cleanN(p.name) === cleanN(pN)) || {cardNo:'---', category: '---', prevHighRinger: 0};
             const totalPts = g.reduce((s,x)=>s+x.score,0);
