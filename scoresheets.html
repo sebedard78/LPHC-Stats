@@ -32,7 +32,7 @@
         .scoring-rules { font-size: 13.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 4px 0; margin-bottom: 5px; }
         .team-header { display: flex; justify-content: space-between; font-size: 13pt; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
         .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid black; }
-        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 11pt; overflow: hidden; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 11pt; }
         .score-grid thead th { background: #fff; font-size: 11pt; font-weight: 900; height: 28px; }
         .col-sh { width: 70px; font-weight: 900; font-size: 12pt !important; background: #fff !important; } 
         .col-score { width: 62px; font-weight: 900; font-size: 10.5pt !important; line-height: 1.1; } 
@@ -57,9 +57,11 @@
         .game-section { flex: 1; border: 1.2px solid black; padding: 1.5px; }
         .matchup-header-s { border: 1.2px solid black; text-align: center; font-weight: 900; font-size: 10.5pt; padding: 3px; margin: 2px 0; text-transform: uppercase; border-bottom: 2px solid black; }
         .score-table-s { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16px; text-align: center; font-size: 8pt; padding: 0; }
-        .col-sh-s { width: 40px; font-weight: 900; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
-        .summary-label-s { font-weight: 900; font-size: 7.5pt; text-transform: uppercase; background: #eee !important; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
+        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16.5px; text-align: center; font-size: 8pt; padding: 0; }
+        /* Widened column to fit RINGERS */
+        .col-sh-s { width: 55px; font-weight: 900; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
+        /* Smaller font to fit RINGERS */
+        .summary-label-s { font-weight: 900; font-size: 7pt; text-transform: uppercase; background: #eee !important; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
         .data-cell-s { border: 1.5px solid black !important; font-weight: 900; font-size: 9pt; }
         .thick-top { border-top: 2.2px solid black !important; }
         .wlt-row-s { display: flex; justify-content: space-around; font-weight: 900; font-size: 16pt; letter-spacing: 15px; margin-top: 15px; }
@@ -67,8 +69,6 @@
 
         @media print {
             .no-print { display: none; }
-            .print-container-doubles { width: 100%; padding-top: 20px; }
-            .print-container-singles { width: 100%; padding: 0; }
             @page { margin: 0.3cm; }
         }
     </style>
@@ -76,7 +76,7 @@
 <body>
 
 <div class="no-print">
-    <button class="btn-print" onclick="window.print()">PRINT PRE-FILLED SCORESHEETS</button>
+    <button class="btn-print" onclick="window.print()">PRINT SCORESHEETS</button>
 </div>
 
 <div id="render-target"></div>
@@ -157,7 +157,7 @@
                 }
                 return `
                 <div class="game-section">
-                    <div style="font-weight:900; font-size:10.5pt; padding-left:2px;">Game ${gNum}</div>
+                    <div style="font-weight:900; font-size:10pt; padding-left:2px;">Game ${gNum}</div>
                     <div class="matchup-header-s">${m.t1} vs. ${m.t2}</div>
                     <table class="score-table-s">
                         <thead><tr><th>Ringers</th><th>Points</th><th>Score</th><th class="col-sh-s">Shoes</th><th>Ringers</th><th>Points</th><th>Score</th></tr></thead>
@@ -176,8 +176,8 @@
             html += `<div class="sheet-singles">
                 <div class="header-s">
                     <div style="font-weight:900; width:150px;">Court ${m.court} &nbsp;&nbsp; Wk.# ${m.wk}</div>
-                    <div style="text-align:center; flex-grow:1;"><h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1><div style="font-size:8.5pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div><div style="font-weight:900; font-size:11pt; margin-top:2px;">2025 - SINGLES</div></div>
-                    <div style="width:150px; text-align:right;"><img src="logo.jpg" style="height:45px;"></div>
+                    <div style="text-align:center; flex-grow:1;"><h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1><div style="font-size:8pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div><div style="font-weight:900; font-size:10pt; margin-top:2px;">2025 - SINGLES</div></div>
+                    <div style="width:150px; text-align:right;"><img src="logo.jpg" style="height:40px;"></div>
                 </div>
                 <div class="games-row">${gameHtml(1)}${gameHtml(2)}${gameHtml(3)}</div>
                 <div class="wlt-row-s"><span>W L T</span><span>W L T</span><span>W L T</span></div>
