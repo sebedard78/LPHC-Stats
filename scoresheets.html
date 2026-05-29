@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>LPHC Official Scoresheets</title>
     <style>
+        /* BASE STYLES */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
         body { font-family: "Arial Narrow", Arial, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; }
         
@@ -16,31 +17,58 @@
             font-weight: 900; border: none; border-radius: 5px; cursor: pointer;
         }
 
-        /* DOUBLES (PORTRAIT) STYLING */
-        .print-container-doubles { width: 8.5in; margin: 0 auto; padding: 40px 10px; }
-        .sheet-doubles { border: 2.5px solid black; padding: 10px; margin-bottom: 25px; page-break-inside: avoid; background: white; }
+        /* DOUBLES PORTRAIT STYLING (Original Layout Restored) */
+        .print-container-doubles { width: 8.5in; margin: 0 auto; padding: 60px 10px 10px 10px; }
+        .sheet-doubles {
+            border: 2.5px solid black; padding: 10px; margin-bottom: 25px;
+            page-break-inside: avoid; background: white;
+            display: block; position: relative;
+        }
+        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid black; padding-bottom: 8px; }
+        .header-main { display: flex; align-items: center; gap: 15px; }
+        .main-logo { height: 85px; width: auto; }
+        .top-row h1 { margin: 0; font-size: 26pt; font-weight: 900; letter-spacing: 0.5px; }
+        .court-box { border: 4px solid black; padding: 2px 14px; font-weight: 900; font-size: 19pt; }
+        .scoring-rules { font-size: 13.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 4px 0; margin-bottom: 5px; }
+        .team-header { display: flex; justify-content: space-between; font-size: 13pt; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
         .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid black; }
-        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 11pt; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 11pt; overflow: hidden; }
+        .score-grid thead th { background: #fff; font-size: 11pt; font-weight: 900; height: 28px; }
+        .col-sh { width: 70px; font-weight: 900; font-size: 12pt !important; background: #fff !important; } 
+        .col-score { width: 62px; font-weight: 900; font-size: 10.5pt !important; line-height: 1.1; } 
         .v-thick { border-right: 4px solid black !important; }
         .bg-gray { background-color: #ddd !important; }
+        .bold-box { border: 2.5px solid black !important; }
+        .no-border { border: none !important; }
+        .summary-row { height: 32px; font-weight: 900; }
+        .footer-doubles { display: flex; justify-content: space-between; margin-top: 20px; }
+        .team-box { width: 49%; border: 3px solid black; }
+        .wlt-header { font-size: 38pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 3.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
+        .p-table { width: 100%; border-collapse: collapse; }
+        .p-table th, .p-table td { border: 1.5px solid black; height: 35px; text-align: center; font-size: 14pt; }
+        .p-table th { background: #fff; font-size: 12pt; font-weight: 900; border-bottom: 2px solid black; }
+        .name-cell { text-align: left; padding-left: 10px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
 
-        /* SINGLES (LANDSCAPE) STYLING */
+        /* SINGLES LANDSCAPE STYLING (New Layout from Photo) */
         .print-container-singles { width: 10.5in; margin: 0 auto; padding: 10px; }
-        .sheet-singles { width: 100%; height: 8in; padding: 5px; page-break-after: always; }
-        .games-row { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; }
-        .game-section { flex: 1; border: 1px solid black; padding: 2px; }
-        .matchup-header { border: 1px solid black; text-align: center; font-weight: 900; font-size: 10pt; padding: 2px; margin-bottom: 3px; }
+        .sheet-singles { width: 100%; height: 8in; padding: 5px; page-break-after: always; position: relative; }
+        .header-s { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+        .games-row { display: flex; justify-content: space-between; gap: 8px; }
+        .game-section { flex: 1; border: 1.5px solid black; padding: 2px; }
+        .matchup-header-s { border: 1.5px solid black; text-align: center; font-weight: 900; font-size: 11pt; padding: 3px; margin: 3px 0; text-transform: uppercase; }
         .score-table-s { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 15px; text-align: center; font-size: 7.5pt; padding: 0; }
-        .col-sh-s { width: 30px; background: #ddd !important; font-weight: 900; }
-        .summary-label { text-align: left !important; padding-left: 4px !important; font-weight: 900; font-size: 7pt; text-transform: uppercase; }
+        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16.5px; text-align: center; font-size: 8pt; padding: 0; }
+        .col-sh-s { width: 35px; font-weight: 900; border-left: 2px solid black !important; border-right: 2px solid black !important; }
+        .summary-label-s { text-align: left !important; padding-left: 4px !important; font-weight: 900; font-size: 7.5pt; text-transform: uppercase; }
+        .initials-box { border: 2px solid black; width: 50px; height: 25px; display: inline-block; vertical-align: middle; }
 
         @media print {
             .no-print { display: none; }
-            .sheet-doubles { margin-bottom: 20px; border: 2.5px solid black; }
-            @page { margin: 0.5cm; }
-            .landscape-page { size: landscape; }
-            .portrait-page { size: portrait; }
+            .print-container-doubles { width: 100%; padding-top: 20px; }
+            .print-container-singles { width: 100%; padding: 0; }
+            @page { margin: 0.3cm; }
+            .mode-doubles { size: portrait; }
+            .mode-singles { size: landscape; }
         }
     </style>
 </head>
@@ -54,14 +82,17 @@
 
 <script>
     const state = JSON.parse(localStorage.getItem('lphc_print_data'));
-    const mode = state.activeMode || 'DOUBLES'; // Auto-detects from Main Program
-    
+    const mode = state.activeMode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
 
     function findP(pName) {
         if (!pName || pName.toLowerCase() === 'bye') return null;
+        // Strip quotes specifically for the lookup
+        const searchName = pName.replace(/"/g, '');
+        const nClean = clean(searchName);
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
-        const parts = pName.toLowerCase().split(/[\s,]+/).filter(x => x.length > 0);
+        
+        const parts = searchName.toLowerCase().split(/[\s,]+/).filter(x => x.length > 0);
         return rList.find(player => {
             const rosterName = player.name.toLowerCase();
             return parts.every(part => rosterName.includes(part));
@@ -98,9 +129,15 @@
             if (courtMatch) {
                 if (current) matchups.push(current);
                 let teamPart = (courtMatch[2] || "").split(/\s+vs\s+|\s+VS\s+|\s+Vs\s+/i);
-                current = { court: courtMatch[1], t1: (teamPart[0]||"").trim(), t2: (teamPart[1]||"").trim(), wk: weekNum };
+                // CLEAN QUOTES FROM NAMES
+                current = { 
+                    court: courtMatch[1], 
+                    t1: (teamPart[0]||"").trim().replace(/"/g, ''), 
+                    t2: (teamPart[1]||"").trim().replace(/"/g, ''), 
+                    wk: weekNum 
+                };
             } else if (current && current.t2 === "") {
-                current.t2 = trimmed;
+                current.t2 = trimmed.replace(/"/g, '');
             }
         });
         if (current) matchups.push(current);
@@ -108,100 +145,129 @@
     }
 
     const matchups = parseLineup();
+    const targetEl = document.getElementById('render-target');
     let html = '';
 
     if (mode === 'SINGLES') {
-        // --- SINGLES LANDSCAPE LAYOUT ---
+        // --- SINGLES LANDSCAPE RENDER ---
         matchups.forEach(m => {
-            const h1 = getH(m.t1); const h2 = getH(m.t2);
-            let tableRows = '';
-            for (let i = 2; i <= 50; i += 2) {
-                tableRows += `<tr><td></td><td></td><td></td><td class="col-sh-s">${i}</td><td></td><td></td><td></td></tr>`;
-            }
+            const h1 = getH(m.t1); 
+            const h2 = getH(m.t2);
 
-            const gameHtml = (gNum) => `
+            const gameHtml = (gNum) => {
+                let rows = '';
+                for (let i = 1; i <= 25; i++) {
+                    const val = i * 2;
+                    // Alternating Shading Rule: matches doubles logic
+                    let isGray = (gNum === 1 || gNum === 3) ? (i % 2 !== 0) : (i % 2 === 0);
+                    rows += `<tr><td></td><td></td><td></td><td class="col-sh-s ${isGray?'bg-gray':''}">${val}</td><td></td><td></td><td></td></tr>`;
+                }
+                return `
                 <div class="game-section">
-                    <div style="font-weight:900; font-size:10pt;">Game ${gNum}</div>
-                    <div class="matchup-header">${m.t1} vs. ${m.t2}</div>
+                    <div style="font-weight:900; font-size:11pt; padding-left:2px;">Game ${gNum}</div>
+                    <div class="matchup-header-s">${m.t1} vs. ${m.t2}</div>
                     <table class="score-table-s">
                         <thead><tr><th>Ringers</th><th>Points</th><th>Score</th><th class="col-sh-s">Shoes</th><th>Ringers</th><th>Points</th><th>Score</th></tr></thead>
                         <tbody>
-                            ${tableRows}
-                            <tr class="bg-gray"><td colspan="2" class="summary-label">Points</td><td></td><td class="col-sh-s"></td><td colspan="2" class="summary-label">Points</td><td></td></tr>
-                            <tr><td colspan="2" class="summary-label">H'cap</td><td>${h1}</td><td class="col-sh-s"></td><td colspan="2" class="summary-label">H'cap</td><td>${h2}</td></tr>
-                            <tr class="bg-gray"><td colspan="2" class="summary-label">Total</td><td></td><td class="col-sh-s"></td><td colspan="2" class="summary-label">Total</td><td></td></tr>
-                            <tr><td colspan="2" class="summary-label">Ringers</td><td></td><td class="col-sh-s"></td><td colspan="2" class="summary-label">Ringers</td><td></td></tr>
-                            <tr class="bg-gray"><td colspan="2" class="summary-label">Shoes</td><td>50</td><td class="col-sh-s"></td><td colspan="2" class="summary-label">Shoes</td><td>50</td></tr>
-                            <tr><td colspan="2" class="summary-label">% Pct.</td><td>%</td><td class="col-sh-s"></td><td colspan="2" class="summary-label">% Pct.</td><td>%</td></tr>
+                            ${rows}
+                            <tr class="bg-gray"><td colspan="2" class="summary-label-s">Points</td><td></td><td class="col-sh-s"></td><td colspan="2" class="summary-label-s">Points</td><td></td></tr>
+                            <tr><td colspan="2" class="summary-label-s">H'cap</td><td>${h1}</td><td class="col-sh-s"></td><td colspan="2" class="summary-label-s">H'cap</td><td>${h2}</td></tr>
+                            <tr class="bg-gray"><td colspan="2" class="summary-label-s">Total</td><td></td><td class="col-sh-s"></td><td colspan="2" class="summary-label-s">Total</td><td></td></tr>
+                            <tr><td colspan="2" class="summary-label-s">Ringers</td><td></td><td class="col-sh-s"></td><td colspan="2" class="summary-label-s">Ringers</td><td></td></tr>
+                            <tr class="bg-gray"><td colspan="2" class="summary-label-s">Shoes</td><td>50</td><td class="col-sh-s"></td><td colspan="2" class="summary-label-s">Shoes</td><td>50</td></tr>
+                            <tr><td colspan="2" class="summary-label-s">% Pct.</td><td>%</td><td class="col-sh-s"></td><td colspan="2" class="summary-label-s">% Pct.</td><td>%</td></tr>
                         </tbody>
                     </table>
                 </div>`;
+            };
 
             html += `
             <div class="sheet-singles">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-weight:900;">Court ${m.court} &nbsp;&nbsp; Wk.# ${m.wk}</div>
-                    <div style="text-align:center;">
-                        <h1 style="margin:0; font-size:16pt;">LOON POND HORSESHOE CLUB</h1>
-                        <div style="font-size:8pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div>
-                        <div style="font-weight:900;">2025 - SINGLES</div>
+                <div class="header-s">
+                    <div style="font-weight:900; font-size:12pt; width:200px;">Court ${m.court} &nbsp;&nbsp; Wk.# ${m.wk}</div>
+                    <div style="text-align:center; flex-grow:1;">
+                        <h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1>
+                        <div style="font-size:8.5pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div>
+                        <div style="font-weight:900; margin-top:2px; font-size:11pt;">2025 - SINGLES</div>
                     </div>
-                    <img src="logo.jpg" style="height:40px;">
+                    <div style="width:200px; text-align:right;"><img src="logo.jpg" style="height:45px;"></div>
                 </div>
                 <div class="games-row">${gameHtml(1)}${gameHtml(2)}${gameHtml(3)}</div>
-                <div style="display:flex; justify-content:space-around; margin-top:10px; font-weight:900; font-size:12pt; letter-spacing:5px;">
-                    <span>W L T &nbsp;&nbsp;&nbsp; W L T</span> <span>W L T &nbsp;&nbsp;&nbsp; W L T</span> <span>W L T &nbsp;&nbsp;&nbsp; W L T</span>
+                <div style="display:flex; justify-content:space-around; margin-top:12px; font-weight:900; font-size:16pt; letter-spacing:8px; border-top:1px solid black; padding-top:5px;">
+                    <span>W L T &nbsp;&nbsp;&nbsp;&nbsp; W L T</span>
+                    <span>W L T &nbsp;&nbsp;&nbsp;&nbsp; W L T</span>
+                    <span>W L T &nbsp;&nbsp;&nbsp;&nbsp; W L T</span>
                 </div>
-                <div style="margin-top:10px; font-size:9pt; font-weight:bold;">Date __________ <span style="margin-left:40px;">Please initial in the box only if all 3 games were checked.</span> <div style="border:1px solid black; width:40px; height:20px; display:inline-block; vertical-align:middle;"></div></div>
+                <div style="margin-top:15px; font-size:10pt; font-weight:bold;">
+                    Date ____________________ 
+                    <span style="margin-left:60px;">Please initial in the box only if all 3 games were checked.</span> 
+                    <div class="initials-box"></div>
+                </div>
             </div>`;
         });
-        document.getElementById('render-target').className = "print-container-singles";
+        targetEl.className = "print-container-singles";
     } else {
-        // --- DOUBLES PORTRAIT LAYOUT ---
+        // --- DOUBLES PORTRAIT RENDER (Restored Original) ---
         matchups.forEach(m => {
+            const team1 = state.roster.DOUBLES.find(t => clean(t.teamName) === clean(m.t1));
+            const team2 = state.roster.DOUBLES.find(t => clean(t.teamName) === clean(m.t2));
+            const p1List = team1 ? team1.members : [];
+            const p2List = team2 ? team2.members : [];
+
             for (let g = 1; g <= 3; g++) {
-                let shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((v, i) => `<tr><td></td><td></td><td class="v-thick"></td><td></td><td></td><td class="v-thick"></td><td class="v-thick"></td><td class="col-sh v-thick ${((g%2!==0&&i%2===0)||(g%2===0&&i%2!==0))?'bg-gray':''}">${v}</td><td></td><td></td><td class="v-thick"></td><td></td><td></td><td class="v-thick"></td><td></td></tr>`).join('');
+                const shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((val, idx) => {
+                    let isGray = (g === 1 || g === 3) ? (idx % 2 === 0) : (idx % 2 !== 0);
+                    return `<tr><td></td><td></td><td class="v-thick"></td><td></td><td></td><td class="v-thick"></td><td class="v-thick"></td><td class="col-sh v-thick ${isGray?'bg-gray':''}">${val}</td><td></td><td></td><td class="v-thick"></td><td></td><td></td><td class="v-thick"></td><td></td></tr>`;
+                }).join('');
+
                 html += `
                 <div class="sheet-doubles">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid black; padding-bottom:5px;">
-                        <img src="logo.jpg" style="height:60px;">
-                        <h1 style="margin:0; font-size:22pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1>
-                        <div style="border:3px solid black; padding:5px 10px; font-weight:900; font-size:16pt;">COURT: ${m.court}</div>
+                    <div class="top-row">
+                        <div class="header-main"><img src="logo.jpg" class="main-logo" alt="Logo"><h1>LOON POND HORSESHOE CLUB</h1></div>
+                        <div class="court-box">COURT: ${m.court}</div>
                     </div>
-                    <div style="text-align:center; font-weight:bold; font-size:10pt; padding:5px; border-bottom:1px solid black;">1 = 1 PT. 2 = 2 PTS. 0 = 1 RINGER 3 PTS. O' = 1 RINGER 4 PTS. 00 = 2 RINGERS 6 PTS.</div>
-                    <div style="display:flex; justify-content:space-between; font-weight:900; padding:5px; text-transform:uppercase;"><span>Team: ${m.t1}</span><span>Game ${g}</span><span>Team: ${m.t2}</span></div>
+                    <div class="scoring-rules">1 = 1 PT. 2 = 2 PTS. 0 = 1 RINGER 3 PTS. O' = 1 RINGER 4 PTS. 00 = 2 RINGERS 6 PTS.</div>
+                    <div class="team-header"><span>Team: ${m.t1}</span><span>Game ${g}</span><span>Team: ${m.t2}</span></div>
                     <table class="score-grid">
                         <thead>
-                            <tr><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th class="v-thick">Team Score</th><th class="v-thick">VS</th><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th>Team Score</th></tr>
-                            <tr><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th class="v-thick"></th><th class="v-thick">SH</th><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th></th></tr>
+                            <tr><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th class="col-score v-thick">Team Score</th><th class="col-sh v-thick">VS</th><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th class="col-score">Team Score</th></tr>
+                            <tr><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th class="v-thick">&nbsp;</th><th class="col-sh v-thick">SH</th><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th>&nbsp;</th></tr>
                         </thead>
                         <tbody>
                             ${shRows}
-                            <tr style="font-weight:900;"><td colspan="6" class="v-thick"></td><td class="v-thick" style="border:2px solid black;"></td><td class="v-thick">Point</td><td colspan="6" class="v-thick"></td><td style="border:2px solid black;"></td></tr>
-                            <tr style="font-weight:900;"><td colspan="6" class="v-thick"></td><td class="v-thick" style="border:2px solid black;"></td><td class="v-thick">Total Hcap</td><td colspan="6" class="v-thick"></td><td style="border:2px solid black;"></td></tr>
-                            <tr style="font-weight:900;"><td colspan="6" class="v-thick"></td><td class="v-thick" style="border:2px solid black;"></td><td class="v-thick">Total</td><td colspan="6" class="v-thick"></td><td style="border:2px solid black;"></td></tr>
+                            <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Point</td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="bold-box"></td></tr>
+                            <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Total Hcap</td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
+                            <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Total</td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
+                            <tr class="summary-row"><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Ringers</td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
                         </tbody>
                     </table>
-                    <div style="display:flex; justify-content:space-between; margin-top:10px;">
-                        ${[m.t1, m.t2].map(tName => {
-                            const roster = state.roster.DOUBLES.find(x => x.teamName === tName);
-                            const pList = roster ? roster.members : [];
-                            return `<div style="width:48%; border:2px solid black;">
-                                <div style="font-size:24pt; font-weight:900; text-align:center; border-bottom:2px solid black; letter-spacing:15px;">W L T</div>
-                                <table style="width:100%; border-collapse:collapse;">
-                                    <tr style="font-size:9pt; font-weight:900; border-bottom:1px solid black;"><th style="text-align:left; padding-left:5px;">Name</th><th>Hcp</th><th>Avg</th></tr>
-                                    ${[0,1,2].map(i => { const p = pList[i]; return `<tr style="height:25px; border-bottom:1px solid black;"><td style="padding-left:5px; font-weight:900;">${p?p.name:''}</td><td style="text-align:center;">${p?getH(p.name):''}</td><td style="text-align:center;">${p?getPlyrAvg(p.name):''}</td></tr>` }).join('')}
-                                </table>
-                            </div>`
-                        }).join('')}
+                    <div class="footer-doubles">
+                        <div class="team-box">
+                            <div class="wlt-header">W L T</div>
+                            <table class="p-table">
+                                <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Point Avg</th></tr></thead>
+                                <tbody>
+                                    ${[0,1,2].map(i => { const p = p1List[i]; return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`; }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="team-box">
+                            <div class="wlt-header">W L T</div>
+                            <table class="p-table">
+                                <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Point Avg</th></tr></thead>
+                                <tbody>
+                                    ${[0,1,2].map(i => { const p = p2List[i]; return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`; }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>`;
             }
         });
-        document.getElementById('render-target').className = "print-container-doubles";
+        targetEl.className = "print-container-doubles";
     }
 
-    document.getElementById('render-target').innerHTML = html;
+    targetEl.innerHTML = html;
 </script>
 </body>
 </html>
