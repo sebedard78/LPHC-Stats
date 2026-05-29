@@ -276,10 +276,11 @@
     const docRefTourney = doc(db, "tournament_final_v1", "data");
 
 	window.openPrintSystem = () => {
+    // This tells the printer which mode (Singles or Doubles) you are currently looking at
+    state.activeMode = mode; 
     localStorage.setItem('lphc_print_data', JSON.stringify(state));
     window.open('scoresheets.html', '_blank');
 };
-
     // state updated to include 4. Singles Half logic storage
     // LOGGING FIX: Ensure fourDeads DOUBLES is initialized as an object {}
     let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], singlesHalfWinner: null, singlesHalfHcp: null, singlesHalfArchive: [], singlesPlayoffActive: false, singlesStandingsResetDate: null, weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
