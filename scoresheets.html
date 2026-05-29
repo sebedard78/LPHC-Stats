@@ -230,4 +230,236 @@
     targetEl.innerHTML = html;
 </script>
 </body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LPHC Official Scoresheets</title>
+    <style>
+        /* BASE STYLES */
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+        body { font-family: "Arial Narrow", Arial, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; }
+        
+        .no-print { 
+            background: #111; padding: 15px; text-align: center; 
+            border-bottom: 4px solid #0ea5e9; position: sticky; top: 0; z-index: 100;
+        }
+        .btn-print {
+            background: #0ea5e9; color: white; padding: 12px 30px; 
+            font-weight: 900; border: none; border-radius: 5px; cursor: pointer;
+        }
+
+        /* --- RESTORED DOUBLES PORTRAIT STYLING --- */
+        .print-container-doubles { width: 8.5in; margin: 0 auto; padding: 60px 10px 10px 10px; }
+        .sheet-doubles {
+            border: 2.5px solid black; padding: 10px; margin-bottom: 25px;
+            page-break-inside: avoid; background: white;
+            display: block; position: relative;
+        }
+        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid black; padding-bottom: 8px; }
+        .header-main { display: flex; align-items: center; gap: 15px; }
+        .main-logo { height: 85px; width: auto; }
+        .top-row h1 { margin: 0; font-size: 26pt; font-weight: 900; letter-spacing: 0.5px; }
+        .court-box { border: 4px solid black; padding: 2px 14px; font-weight: 900; font-size: 19pt; }
+        .scoring-rules { font-size: 13.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 4px 0; margin-bottom: 5px; }
+        .team-header { display: flex; justify-content: space-between; font-size: 13pt; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
+        .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid black; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 11pt; }
+        .score-grid thead th { background: #fff; font-size: 11pt; font-weight: 900; height: 28px; }
+        .col-sh { width: 70px; font-weight: 900; font-size: 12pt !important; background: #fff !important; } 
+        .col-score { width: 62px; font-weight: 900; font-size: 10.5pt !important; line-height: 1.1; } 
+        .v-thick { border-right: 4px solid black !important; }
+        .bg-gray { background-color: #ddd !important; }
+        .bold-box { border: 2.5px solid black !important; }
+        .no-border { border: none !important; }
+        .summary-row { height: 32px; font-weight: 900; }
+        .footer-doubles { display: flex; justify-content: space-between; margin-top: 20px; }
+        .team-box { width: 49%; border: 3px solid black; }
+        .wlt-header { font-size: 38pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 3.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
+        .p-table { width: 100%; border-collapse: collapse; }
+        .p-table th, .p-table td { border: 1.5px solid black; height: 35px; text-align: center; font-size: 14pt; }
+        .p-table th { background: #fff; font-size: 12pt; font-weight: 900; border-bottom: 2px solid black; }
+        .name-cell { text-align: left; padding-left: 10px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
+
+        /* --- SINGLES LANDSCAPE STYLING --- */
+        .print-container-singles { width: 10.5in; margin: 0 auto; padding: 10px; }
+        .sheet-singles { width: 100%; height: 8in; padding: 5px; page-break-after: always; position: relative; }
+        .header-s { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+        .games-row { display: flex; justify-content: space-between; gap: 8px; }
+        .game-section { flex: 1; border: 1.2px solid black; padding: 1.5px; }
+        .matchup-header-s { border: 1.2px solid black; text-align: center; font-weight: 900; font-size: 10.5pt; padding: 3px; margin: 2px 0; text-transform: uppercase; border-bottom: 2px solid black; }
+        .score-table-s { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16.5px; text-align: center; font-size: 8pt; padding: 0; }
+        /* Widened column to fit RINGERS */
+        .col-sh-s { width: 55px; font-weight: 900; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
+        /* Smaller font to fit RINGERS */
+        .summary-label-s { font-weight: 900; font-size: 7pt; text-transform: uppercase; background: #eee !important; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
+        .data-cell-s { border: 1.5px solid black !important; font-weight: 900; font-size: 9pt; }
+        .thick-top { border-top: 2.2px solid black !important; }
+        .wlt-row-s { display: flex; justify-content: space-around; font-weight: 900; font-size: 16pt; letter-spacing: 15px; margin-top: 15px; }
+        .initials-box { border: 2.5px solid black; width: 65px; height: 35px; display: inline-block; vertical-align: middle; margin-left: 8px; }
+
+        @media print {
+            .no-print { display: none; }
+            @page { margin: 0.3cm; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <button class="btn-print" onclick="window.print()">PRINT SCORESHEETS</button>
+</div>
+
+<div id="render-target"></div>
+
+<script>
+    const state = JSON.parse(localStorage.getItem('lphc_print_data'));
+    const mode = state.activeMode || 'DOUBLES';
+    const clean = (n) => n ? n.toLowerCase().trim().replace(/[^a-z0-9]/g, '') : '';
+
+    function findP(pName) {
+        if (!pName || pName.toLowerCase() === 'bye') return null;
+        const searchName = pName.replace(/"/g, ''); 
+        const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
+        const parts = searchName.toLowerCase().split(/[\s,]+/).filter(x => x.length > 0);
+        return rList.find(player => {
+            const rosterName = player.name.toLowerCase();
+            return parts.every(part => rosterName.includes(part));
+        });
+    }
+
+    function getPlyrAvg(pName) {
+        const p = findP(pName);
+        if (!p) return 0;
+        const n = clean(p.name);
+        const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode && !x.isNoShow).slice(-9);
+        return hist.length ? Math.round(hist.reduce((s, g) => s + g.score, 0) / hist.length) : Number(p.startAvg || 0);
+    }
+
+    function getH(pName) {
+        const p = findP(pName);
+        if (!p) return 0;
+        if (state.hcpLocked && state.hcpLocked[mode]) return Number(p.currentHcp || 0);
+        const avg = getPlyrAvg(pName);
+        const target = (mode === 'DOUBLES' ? 90 : 150);
+        return Math.max(0, Math.floor((target - avg) * 0.9));
+    }
+
+    function parseLineup() {
+        const raw = state.weeklyLineup[mode].rawPaste;
+        const weekTitle = state.weeklyLineup[mode].weekTitle || "Wk.# 1";
+        const weekNum = weekTitle.match(/\d+/) ? weekTitle.match(/\d+/)[0] : "1";
+        const lines = raw.split('\n');
+        const matchups = []; let current = null;
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+            const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
+            if (courtMatch) {
+                if (current) matchups.push(current);
+                let teamPart = (courtMatch[2] || "").split(/\s+vs\s+|\s+VS\s+|\s+Vs\s+/i);
+                current = { 
+                    court: courtMatch[1], 
+                    t1: (teamPart[0]||"").trim().replace(/"/g, ''), 
+                    t2: (teamPart[1]||"").trim().replace(/"/g, ''), 
+                    wk: weekNum 
+                };
+            } else if (current && current.t2 === "") {
+                current.t2 = trimmed.replace(/"/g, '');
+            }
+        });
+        if (current) matchups.push(current);
+        return matchups;
+    }
+
+    const matchups = parseLineup();
+    const targetEl = document.getElementById('render-target');
+    let html = '';
+
+    if (mode === 'SINGLES') {
+        matchups.forEach(m => {
+            const h1 = getH(m.t1); const h2 = getH(m.t2);
+            const gameHtml = (gNum) => {
+                let rows = '';
+                for (let i = 1; i <= 25; i++) {
+                    const val = i * 2;
+                    let isGray = (gNum === 1 || gNum === 3) ? (i % 2 !== 0) : (i % 2 === 0);
+                    rows += `<tr><td></td><td></td><td></td><td class="col-sh-s ${isGray?'bg-gray':''}">${val}</td><td></td><td></td><td></td></tr>`;
+                }
+                return `
+                <div class="game-section">
+                    <div style="font-weight:900; font-size:10pt; padding-left:2px;">Game ${gNum}</div>
+                    <div class="matchup-header-s">${m.t1} vs. ${m.t2}</div>
+                    <table class="score-table-s">
+                        <thead><tr><th>Ringers</th><th>Points</th><th>Score</th><th class="col-sh-s">Shoes</th><th>Ringers</th><th>Points</th><th>Score</th></tr></thead>
+                        <tbody>
+                            ${rows}
+                            <tr><td colspan="3" class="data-cell-s"></td><td class="summary-label-s">POINTS</td><td colspan="3" class="data-cell-s"></td></tr>
+                            <tr><td colspan="3" class="data-cell-s" style="text-align:right; padding-right:10px;">${h1}</td><td class="summary-label-s">H'CAP</td><td colspan="3" class="data-cell-s" style="text-align:right; padding-right:10px;">${h2}</td></tr>
+                            <tr class="thick-top"><td colspan="3" class="data-cell-s"></td><td class="summary-label-s">TOTAL</td><td colspan="3" class="data-cell-s"></td></tr>
+                            <tr><td colspan="3" class="data-cell-s"></td><td class="summary-label-s">RINGERS</td><td colspan="3" class="data-cell-s"></td></tr>
+                            <tr><td colspan="3" class="data-cell-s">50</td><td class="summary-label-s">SHOES</td><td colspan="3" class="data-cell-s">50</td></tr>
+                            <tr><td colspan="3" class="data-cell-s" style="text-align:right; padding-right:10px;">%</td><td class="summary-label-s">PCT.</td><td colspan="3" class="data-cell-s" style="text-align:right; padding-right:10px;">%</td></tr>
+                        </tbody>
+                    </table>
+                </div>`;
+            };
+            html += `<div class="sheet-singles">
+                <div class="header-s">
+                    <div style="font-weight:900; width:150px;">Court ${m.court} &nbsp;&nbsp; Wk.# ${m.wk}</div>
+                    <div style="text-align:center; flex-grow:1;"><h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1><div style="font-size:8pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div><div style="font-weight:900; font-size:10pt; margin-top:2px;">2025 - SINGLES</div></div>
+                    <div style="width:150px; text-align:right;"><img src="logo.jpg" style="height:40px;"></div>
+                </div>
+                <div class="games-row">${gameHtml(1)}${gameHtml(2)}${gameHtml(3)}</div>
+                <div class="wlt-row-s"><span>W L T</span><span>W L T</span><span>W L T</span></div>
+                <div style="margin-top:20px; font-size:10.5pt; font-weight:bold;">Date _________________ <span style="margin-left:60px;">Please initial in the box only if all 3 games were checked.</span> <div class="initials-box"></div></div>
+            </div>`;
+        });
+        targetEl.className = "print-container-singles";
+    } else {
+        matchups.forEach(m => {
+            const team1 = state.roster.DOUBLES.find(t => clean(t.teamName) === clean(m.t1));
+            const team2 = state.roster.DOUBLES.find(t => clean(t.teamName) === clean(m.t2));
+            const p1List = team1 ? team1.members : [];
+            const p2List = team2 ? team2.members : [];
+            for (let g = 1; g <= 3; g++) {
+                const shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((val, idx) => {
+                    let isGray = (g === 1 || g === 3) ? (idx % 2 === 0) : (idx % 2 !== 0);
+                    return `<tr><td></td><td></td><td class="v-thick"></td><td></td><td></td><td class="v-thick"></td><td class="v-thick"></td><td class="col-sh v-thick ${isGray?'bg-gray':''}">${val}</td><td></td><td></td><td class="v-thick"></td><td></td><td></td><td class="v-thick"></td><td></td></tr>`;
+                }).join('');
+                html += `
+                <div class="sheet-doubles">
+                    <div class="top-row"><div class="header-main"><img src="logo.jpg" class="main-logo" alt="Logo"><h1>LOON POND HORSESHOE CLUB</h1></div><div class="court-box">COURT: ${m.court}</div></div>
+                    <div class="scoring-rules">1 = 1 PT. 2 = 2 PTS. 0 = 1 RINGER 3 PTS. O' = 1 RINGER 4 PTS. 00 = 2 RINGERS 6 PTS.</div>
+                    <div class="team-header"><span>Team: ${m.t1}</span><span>Game ${g}</span><span>Team: ${m.t2}</span></div>
+                    <table class="score-grid">
+                        <thead>
+                            <tr><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th class="col-score v-thick">Team Score</th><th class="col-sh v-thick">VS</th><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th class="col-score">Team Score</th></tr>
+                            <tr><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th class="v-thick">&nbsp;</th><th class="col-sh v-thick">SH</th><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th>&nbsp;</th></tr>
+                        </thead>
+                        <tbody>
+                            ${shRows}
+                            <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Point</td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="bold-box"></td></tr>
+                            <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Total Hcap</td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
+                            <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Total</td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
+                            <tr class="summary-row"><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Ringers</td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
+                        </tbody>
+                    </table>
+                    <div class="footer-doubles">
+                        <div class="team-box"><div class="wlt-header">W L T</div><table class="p-table"><thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Point Avg</th></tr></thead><tbody>
+                            ${[0,1,2].map(i => { const p = p1List[i]; return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`; }).join('')}
+                        </tbody></table></div>
+                        <div class="team-box"><div class="wlt-header">W L T</div><table class="p-table"><thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Point Avg</th></tr></thead><tbody>
+                            ${[0,1,2].map(i => { const p = p2List[i]; return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`; }).join('')}
+                        </tbody></table></div>
+                    </div>
+                </div>`;
+            }
+        });
+        targetEl.className = "print-container-doubles";
+    }
+    targetEl.innerHTML = html;
+</script>
+</body>
 </html>
