@@ -88,46 +88,52 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Bulletproof lookup for "Stuart, Noah" or "Noah Stuart"
+    // Advanced name matching for "Stuart, Noah" vs "Noah Stuart"
     function findP(pName) {
-        if (!pName) return null;
+        if (!pName || pName.toLowerCase() === 'bye') return null;
         const nClean = clean(pName);
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        // Match 1: Exact cleaned match
         let found = rList.find(x => clean(x.name) === nClean);
-        if (found) return found;
-
-        // Match 2: If lineup has "Stuart, Noah", flip it to check for "Noah Stuart"
-        if (pName.includes(',')) {
+        if (!found && pName.includes(',')) {
             const parts = pName.split(',').map(p => p.trim());
             const flipped = clean(parts[1] + parts[0]);
             found = rList.find(x => clean(x.name) === flipped);
         }
-
-        // Match 3: Loose check
         if (!found) {
             found = rList.find(x => clean(x.name).includes(nClean) || nClean.includes(clean(x.name)));
         }
         return found;
     }
 
-    // Directly pull current average from the program's calculated state
+    // Force Live Average Calculation from History
     function getPlyrAvg(pName) {
         const p = findP(pName);
         if (!p) return 0;
-        // Pull the exact 'currentAvg' property displayed on your stat page
-        return (p.currentAvg !== undefined && p.currentAvg !== null) ? p.currentAvg : (p.startAvg || 0);
+        const n = clean(p.name);
+        
+        // Filter history for this specific player/mode
+        const hist = (state.history || []).filter(h => clean(h.player) === n && h.mode === mode).slice(-9);
+        
+        if (hist.length > 0) {
+            return Math.round(hist.reduce((s, g) => s + g.score, 0) / hist.length);
+        }
+        // Fallback only if NO history exists
+        return p.currentAvg || p.startAvg || 0;
     }
 
-    // Directly pull current handicap from the program's calculated state
+    // Force Live Handicap Calculation based on Live Average
     function getH(pName) {
-        const n = clean(pName);
-        if (n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
+        const nClean = clean(pName);
+        if (nClean === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
         const p = findP(pName);
         if (!p) return 0;
-        // Pull the exact 'currentHcp' property displayed on your stat page
-        return (p.currentHcp !== undefined && p.currentHcp !== null) ? p.currentHcp : 0;
+
+        const avg = getPlyrAvg(pName);
+        const target = (mode === 'DOUBLES' ? 90 : 150);
+        
+        // Match the 90% logic from your main program
+        return Math.max(0, Math.floor((target - avg) * 0.9));
     }
 
     function findTeamDeep(searchStr) {
