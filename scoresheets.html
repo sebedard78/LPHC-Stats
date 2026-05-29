@@ -92,6 +92,11 @@
         const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return 0;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => clean(x.name) === n);
+        
+        // Priority 1: Use the average already calculated by the main program
+        if (p && (p.currentAvg !== undefined && p.currentAvg !== null)) return p.currentAvg;
+
+        // Priority 2: Fallback calculation if currentAvg is missing
         const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode).slice(-9);
         return Math.round(hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0));
     }
@@ -100,6 +105,11 @@
         const n = clean(pName); if(!n || n === 'bye') return 0; if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => clean(x.name) === n);
+
+        // Priority 1: Use the handicap already calculated by the main program
+        if (p && (p.currentHcp !== undefined && p.currentHcp !== null)) return p.currentHcp;
+
+        // Priority 2: Fallback calculation
         if (state.hcpLocked && state.hcpLocked[mode]) return Number(p ? (p.currentHcp || 0) : 0);
         const avg = getPlyrAvg(pName);
         return Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
