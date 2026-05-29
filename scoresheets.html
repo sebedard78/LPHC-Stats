@@ -88,63 +88,46 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Fix for "Stuart, Noah" matching "Noah Stuart"
+    // Logic to find player regardless of "Stuart, Noah" vs "Noah Stuart"
     function findP(pName) {
-        if (!pName || pName.toLowerCase() === 'bye') return null;
+        if (!pName) return null;
         const nClean = clean(pName);
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        // 1. Exact match
+        // Match 1: Direct match
         let found = rList.find(x => clean(x.name) === nClean);
         if (found) return found;
 
-        // 2. Handle "Last, First" by flipping the comma
+        // Match 2: Handle flipped "Last, First"
         if (pName.includes(',')) {
             const parts = pName.split(',').map(p => p.trim());
-            const flipped = clean(parts[1] + parts[0]); // "noahstuart"
+            const flipped = clean(parts[1] + parts[0]);
             found = rList.find(x => clean(x.name) === flipped);
         }
 
-        // 3. Last resort: Partial match
+        // Match 3: Name inclusion match (Safety)
         if (!found) {
             found = rList.find(x => nClean.includes(clean(x.name)) || clean(x.name).includes(nClean));
         }
         return found;
     }
 
+    // Direct pull from Stat Page values
     function getPlyrAvg(pName) {
         const p = findP(pName);
         if (!p) return 0;
-        
-        // If locked AND currentAvg exists, use it
-        if (state.hcpLocked && state.hcpLocked[mode] && p.currentAvg) {
-            return p.currentAvg;
-        }
-
-        // If not locked OR roster says 0, calculate from history (to match Stat Page)
-        const n = clean(p.name);
-        const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode).slice(-9);
-        if (hist.length > 0) {
-            return Math.round(hist.reduce((s, g) => s + g.score, 0) / hist.length);
-        }
-        return p.currentAvg || p.startAvg || 0;
+        // Always grab currentAvg. If currentAvg is missing, use startAvg.
+        return (p.currentAvg !== undefined && p.currentAvg !== null) ? p.currentAvg : (p.startAvg || 0);
     }
 
+    // Direct pull from Stat Page values
     function getH(pName) {
         const n = clean(pName);
         if (n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
         const p = findP(pName);
         if (!p) return 0;
-
-        // If locked AND currentHcp is NOT 0, use it
-        if (state.hcpLocked && state.hcpLocked[mode] && p.currentHcp) {
-            return p.currentHcp;
-        }
-
-        // Otherwise, calculate live to match the Stat Page
-        const avg = getPlyrAvg(pName);
-        const target = (mode === 'DOUBLES' ? 90 : 150);
-        return Math.max(0, Math.floor((target - avg) * 0.9));
+        // Always grab currentHcp exactly as displayed on stat page
+        return (p.currentHcp !== undefined && p.currentHcp !== null) ? p.currentHcp : 0;
     }
 
     function findTeamDeep(searchStr) {
