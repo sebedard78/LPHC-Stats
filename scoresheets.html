@@ -88,52 +88,46 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Smart Player Lookup to handle "Stuart, Noah" vs "Noah Stuart"
+    // Robust player lookup to handle "Noah Stuart" vs "Stuart, Noah"
     function findP(pName) {
         const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return null;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        // 1. Try exact cleaned match
+        // Match 1: Exact clean match
         let found = rList.find(x => clean(x.name) === n);
         if (found) return found;
 
-        // 2. Try handling "Last, First" format
+        // Match 2: If name contains comma, flip it (e.g. "Stuart, Noah" -> "Noah Stuart")
         if (pName.includes(',')) {
             const parts = pName.split(',').map(p => p.trim());
-            const flipped = clean(parts[1] + parts[0]); // "NoahStuart"
+            const flipped = clean(parts[1] + parts[0]);
             found = rList.find(x => clean(x.name) === flipped);
         }
+        
+        // Match 3: Loose inclusion (handle partial pastes)
+        if (!found) {
+            found = rList.find(x => n.includes(clean(x.name)) || clean(x.name).includes(n));
+        }
+
         return found;
     }
 
+    // Pull directly from the stats page data
     function getPlyrAvg(pName) {
-        const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return 0;
         const p = findP(pName);
-        
-        // If the main program provides an average (Locked or Live), use it to match the Stat Page
-        if (p && p.currentAvg !== undefined && p.currentAvg !== null) return p.currentAvg;
-
-        // Fallback for manual calculation
-        const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode).slice(-9);
-        return Math.round(hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0));
+        if (!p) return 0;
+        return (p.currentAvg !== undefined) ? p.currentAvg : 0;
     }
 
+    // Pull directly from the stats page data
     function getH(pName) {
-        const n = clean(pName); if(!n || n === 'bye') return 0; 
-        if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
+        const n = clean(pName); 
+        if (n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
+        if (!n || n === 'bye') return 0;
         
         const p = findP(pName);
-
-        // If handicap is locked OR if the main program already has a live currentHcp, use that
-        if (p && p.currentHcp !== undefined && p.currentHcp !== null) {
-            // If locked, we definitely use it. If not locked, we use it because the main program 
-            // has already done the "Live" calculation for the stat page.
-            return p.currentHcp;
-        }
-
-        // Calculation fallback for live handicaps if not provided in the roster object
-        const avg = getPlyrAvg(pName);
-        return Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
+        if (!p) return 0;
+        return (p.currentHcp !== undefined) ? p.currentHcp : 0;
     }
 
     function findTeamDeep(searchStr) {
