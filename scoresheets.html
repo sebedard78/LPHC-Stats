@@ -88,51 +88,40 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Search for a player by matching name parts (handles "Stuart, Noah" vs "Noah Stuart")
+    // Standard lookup to find the player object in the roster
     function findP(pName) {
         if (!pName || pName.toLowerCase() === 'bye') return null;
+        const nClean = clean(pName);
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        // Split search name into pieces (e.g., ["stuart", "noah"])
-        const parts = pName.toLowerCase().split(/[\s,]+/).filter(x => x.length > 0);
-        
-        return rList.find(player => {
-            const playerName = player.name.toLowerCase();
-            // Match if every part of the search name exists in the roster name
-            return parts.every(part => playerName.includes(part));
-        });
+        let found = rList.find(x => clean(x.name) === nClean);
+        if (!found && pName.includes(',')) {
+            const parts = pName.split(',').map(p => p.trim());
+            const flipped = clean(parts[1] + parts[0]);
+            found = rList.find(x => clean(x.name) === flipped);
+        }
+        if (!found) {
+            found = rList.find(x => clean(x.name).includes(nClean) || nClean.includes(clean(x.name)));
+        }
+        return found;
     }
 
-    function getLiveStats(pName) {
+    // Pull directly from the stats page data (No math)
+    function getPlyrAvg(pName) {
         const p = findP(pName);
-        if (!p) return { hcp: 0, avg: 0 };
-        if (clean(pName) === 'dummy') return { hcp: (mode === 'DOUBLES' ? 54 : 30), avg: 0 };
+        if (!p) return 0;
+        // Grab the exact value from the program's stat display
+        return (p.currentAvg !== undefined && p.currentAvg !== null) ? p.currentAvg : 0;
+    }
 
-        // 1. Prioritize recalculating from history to ensure Noah (3) and Milo (15) match Stats page
-        const fullNameClean = clean(p.name);
-        const history = (state.history || []).filter(h => clean(h.player) === fullNameClean && h.mode === mode).slice(-9);
-        
-        let avg = 0;
-        if (history.length > 0) {
-            // Calculate average from all available history games (1, 2, or 3 games)
-            avg = Math.round(history.reduce((sum, g) => sum + g.score, 0) / history.length);
-        } else {
-            avg = p.startAvg || 0;
-        }
-
-        // 2. Determine Handicap (90% of difference from target)
-        const target = (mode === 'DOUBLES' ? 90 : 150);
-        let hcp = Math.max(0, Math.floor((target - avg) * 0.9));
-
-        // 3. IF the Handicap is LOCKED and the roster has a specific non-zero value, use that instead
-        if (state.hcpLocked && state.hcpLocked[mode]) {
-            if (p.currentHcp !== undefined && p.currentHcp !== 0) {
-                hcp = p.currentHcp;
-                avg = p.currentAvg || 0;
-            }
-        }
-
-        return { hcp, avg };
+    // Pull directly from the stats page data (No math)
+    function getH(pName) {
+        const n = clean(pName);
+        if (n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
+        const p = findP(pName);
+        if (!p) return 0;
+        // Grab the exact value from the program's stat display
+        return (p.currentHcp !== undefined && p.currentHcp !== null) ? p.currentHcp : 0;
     }
 
     function findTeamDeep(searchStr) {
@@ -226,8 +215,8 @@
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p1List[i];
-                                    const s = p ? getLiveStats(p.name) : { hcp: '', avg: '' };
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${s.hcp}</td><td>${s.avg}</td></tr>`;
+                                    const pName = p ? p.name : '';
+                                    return `<tr><td class="name-cell">${pName||'&nbsp;'}</td><td>${pName?getH(pName):''}</td><td>${pName?getPlyrAvg(pName):''}</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -239,8 +228,8 @@
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p2List[i];
-                                    const s = p ? getLiveStats(p.name) : { hcp: '', avg: '' };
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${s.hcp}</td><td>${s.avg}</td></tr>`;
+                                    const pName = p ? p.name : '';
+                                    return `<tr><td class="name-cell">${pName||'&nbsp;'}</td><td>${pName?getH(pName):''}</td><td>${pName?getPlyrAvg(pName):''}</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
