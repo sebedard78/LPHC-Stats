@@ -88,17 +88,32 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
+    // Smart Player Lookup to handle "Stuart, Noah" vs "Noah Stuart"
+    function findP(pName) {
+        const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return null;
+        const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
+        
+        // 1. Try exact cleaned match
+        let found = rList.find(x => clean(x.name) === n);
+        if (found) return found;
+
+        // 2. Try handling "Last, First" format
+        if (pName.includes(',')) {
+            const parts = pName.split(',').map(p => p.trim());
+            const flipped = clean(parts[1] + parts[0]); // "NoahStuart"
+            found = rList.find(x => clean(x.name) === flipped);
+        }
+        return found;
+    }
+
     function getPlyrAvg(pName) {
         const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return 0;
-        const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
-        const p = rList.find(x => clean(x.name) === n);
+        const p = findP(pName);
+        
+        // If the main program provides an average (Locked or Live), use it to match the Stat Page
+        if (p && p.currentAvg !== undefined && p.currentAvg !== null) return p.currentAvg;
 
-        // If lock is ON, pull exactly what is on the stat page
-        if (state.hcpLocked && state.hcpLocked[mode]) {
-            if (p && p.currentAvg !== undefined) return p.currentAvg;
-        }
-
-        // If lock is OFF, calculate live from history
+        // Fallback for manual calculation
         const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode).slice(-9);
         return Math.round(hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0));
     }
@@ -107,15 +122,16 @@
         const n = clean(pName); if(!n || n === 'bye') return 0; 
         if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
         
-        const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
-        const p = rList.find(x => clean(x.name) === n);
+        const p = findP(pName);
 
-        // If lock is ON, pull exactly what is on the stat page
-        if (state.hcpLocked && state.hcpLocked[mode]) {
-            return Number(p ? (p.currentHcp || 0) : 0);
+        // If handicap is locked OR if the main program already has a live currentHcp, use that
+        if (p && p.currentHcp !== undefined && p.currentHcp !== null) {
+            // If locked, we definitely use it. If not locked, we use it because the main program 
+            // has already done the "Live" calculation for the stat page.
+            return p.currentHcp;
         }
 
-        // If lock is OFF, pull live handicap based on live avg
+        // Calculation fallback for live handicaps if not provided in the roster object
         const avg = getPlyrAvg(pName);
         return Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - avg) * 0.9));
     }
@@ -267,7 +283,8 @@
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p1List[i];
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`;
+                                    const pName = p ? p.name : '';
+                                    return `<tr><td class="name-cell">${pName||'&nbsp;'}</td><td>${pName?getH(pName):''}</td><td>${pName?getPlyrAvg(pName):''}</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -279,7 +296,8 @@
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p2List[i];
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`;
+                                    const pName = p ? p.name : '';
+                                    return `<tr><td class="name-cell">${pName||'&nbsp;'}</td><td>${pName?getH(pName):''}</td><td>${pName?getPlyrAvg(pName):''}</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
