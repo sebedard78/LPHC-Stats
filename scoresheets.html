@@ -17,8 +17,8 @@
             font-weight: 900; border: none; border-radius: 5px; cursor: pointer;
         }
 
-        /* DOUBLES PORTRAIT STYLING (Original Restored) */
-        .print-container-doubles { width: 8.5in; margin: 0 auto; padding: 60px 10px 10px 10px; }
+        /* DOUBLES PORTRAIT STYLING (Restored Original) */
+        .print-container-doubles { width: 8.5in; margin: 0 auto; padding: 40px 10px 10px 10px; }
         .sheet-doubles {
             border: 2.5px solid black; padding: 10px; margin-bottom: 25px;
             page-break-inside: avoid; background: white;
@@ -49,19 +49,23 @@
         .p-table th { background: #fff; font-size: 12pt; font-weight: 900; border-bottom: 2px solid black; }
         .name-cell { text-align: left; padding-left: 10px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
 
-        /* SINGLES LANDSCAPE STYLING */
+        /* SINGLES LANDSCAPE STYLING (Refined to Photo) */
         .print-container-singles { width: 10.5in; margin: 0 auto; padding: 10px; }
         .sheet-singles { width: 100%; height: 8in; padding: 5px; page-break-after: always; position: relative; }
         .header-s { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .games-row { display: flex; justify-content: space-between; gap: 8px; }
-        .game-section { flex: 1; border: 1.5px solid black; padding: 2px; }
-        .matchup-header-s { border: 1.5px solid black; text-align: center; font-weight: 900; font-size: 10pt; padding: 2.5px; margin: 2px 0; text-transform: uppercase; }
+        .games-row { display: flex; justify-content: space-between; gap: 10px; }
+        .game-section { flex: 1; border: 1.2px solid black; padding: 1.5px; }
+        .matchup-header-s { border: 1.2px solid black; text-align: center; font-weight: 900; font-size: 11pt; padding: 3px; margin: 2px 0; text-transform: uppercase; border-bottom: 2px solid black; }
         .score-table-s { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16.5px; text-align: center; font-size: 7.5pt; padding: 0; }
+        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16.5px; text-align: center; font-size: 8pt; padding: 0; }
         .col-sh-s { width: 35px; font-weight: 900; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
-        .summary-label-s { font-weight: 900; font-size: 7pt; text-transform: uppercase; background: #ddd !important; }
+        .summary-label-s { font-weight: 900; font-size: 7.5pt; text-transform: uppercase; background: #eee !important; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
         .data-cell-s { border: 1.5px solid black !important; font-weight: 900; }
-        .wlt-row-s { display: flex; justify-content: space-around; font-weight: 900; font-size: 15pt; letter-spacing: 12px; margin-top: 15px; border-top: 1px solid black; padding-top: 5px; }
+        .thick-top { border-top: 2.2px solid black !important; }
+        
+        .wlt-row-s { display: flex; justify-content: space-between; margin-top: 15px; padding: 0 10px; }
+        .wlt-group { display: flex; gap: 70px; width: 31%; justify-content: center; font-weight: 900; font-size: 16pt; letter-spacing: 12px; }
+        .footer-info-s { margin-top: 25px; font-size: 11pt; font-weight: bold; border-top: 1px solid black; padding-top: 10px; }
         .initials-box { border: 2.5px solid black; width: 65px; height: 35px; display: inline-block; vertical-align: middle; margin-left: 8px; }
 
         @media print {
@@ -160,12 +164,12 @@
                         <thead><tr><th>Ringers</th><th>Points</th><th>Score</th><th class="col-sh-s">Shoes</th><th>Ringers</th><th>Points</th><th>Score</th></tr></thead>
                         <tbody>
                             ${rows}
-                            <tr><td></td><td></td><td class="data-cell-s"></td><td class="col-sh-s summary-label-s">POINTS</td><td class="data-cell-s"></td><td></td><td></td></tr>
-                            <tr><td></td><td></td><td class="data-cell-s">${h1}</td><td class="col-sh-s summary-label-s">H'CAP</td><td class="data-cell-s">${h2}</td><td></td><td></td></tr>
-                            <tr style="border-top:2px solid black;"><td colspan="3" class="data-cell-s"></td><td class="col-sh-s summary-label-s">TOTAL</td><td colspan="3" class="data-cell-s"></td></tr>
-                            <tr><td></td><td></td><td class="data-cell-s"></td><td class="col-sh-s summary-label-s">RINGERS</td><td class="data-cell-s"></td><td></td><td></td></tr>
-                            <tr><td></td><td></td><td class="data-cell-s">50</td><td class="col-sh-s summary-label-s">SHOES</td><td class="data-cell-s">50</td><td></td><td></td></tr>
-                            <tr><td class="data-cell-s"></td><td style="font-weight:900;">%</td><td></td><td class="col-sh-s summary-label-s">PCT.</td><td></td><td style="font-weight:900;">%</td><td class="data-cell-s"></td></tr>
+                            <tr><td colspan="3" class="data-cell-s"></td><td class="summary-label-s">POINTS</td><td colspan="3" class="data-cell-s"></td></tr>
+                            <tr><td colspan="3" class="data-cell-s">${h1}</td><td class="summary-label-s">H'CAP</td><td colspan="3" class="data-cell-s">${h2}</td></tr>
+                            <tr class="thick-top"><td colspan="3" class="data-cell-s"></td><td class="summary-label-s">TOTAL</td><td colspan="3" class="data-cell-s"></td></tr>
+                            <tr><td colspan="3" class="data-cell-s"></td><td class="summary-label-s">RINGERS</td><td colspan="3" class="data-cell-s"></td></tr>
+                            <tr><td colspan="3" class="data-cell-s">50</td><td class="summary-label-s">SHOES</td><td colspan="3" class="data-cell-s">50</td></tr>
+                            <tr><td class="data-cell-s"></td><td style="font-weight:900;">%</td><td></td><td class="summary-label-s">PCT.</td><td></td><td style="font-weight:900;">%</td><td class="data-cell-s"></td></tr>
                         </tbody>
                     </table>
                 </div>`;
@@ -173,16 +177,27 @@
             html += `<div class="sheet-singles">
                 <div class="header-s">
                     <div style="font-weight:900; width:150px;">Court ${m.court} &nbsp;&nbsp; Wk.# ${m.wk}</div>
-                    <div style="text-align:center; flex-grow:1;"><h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1><div style="font-size:8pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div><div style="font-weight:900; font-size:10pt;">2025 - SINGLES</div></div>
+                    <div style="text-align:center; flex-grow:1;"><h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1><div style="font-size:8pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div><div style="font-weight:900; font-size:10pt; margin-top:3px;">2025 - SINGLES</div></div>
                     <div style="width:150px; text-align:right;"><img src="logo.jpg" style="height:40px;"></div>
                 </div>
                 <div class="games-row">${gameHtml(1)}${gameHtml(2)}${gameHtml(3)}</div>
-                <div class="wlt-row-s"><div>W L T &nbsp;&nbsp;&nbsp;&nbsp; W L T</div><div>W L T &nbsp;&nbsp;&nbsp;&nbsp; W L T</div><div>W L T &nbsp;&nbsp;&nbsp;&nbsp; W L T</div></div>
-                <div style="margin-top:20px; font-size:10pt; font-weight:bold;">Date _________________ <span style="margin-left:60px;">Please initial in the box only if all 3 games were checked.</span> <div class="initials-box"></div></div>
+                
+                <div class="wlt-row-s">
+                    <div class="wlt-group"><span>W L T</span><span>W L T</span></div>
+                    <div class="wlt-group"><span>W L T</span><span>W L T</span></div>
+                    <div class="wlt-group"><span>W L T</span><span>W L T</span></div>
+                </div>
+
+                <div class="footer-info-s">
+                    Date _________________ 
+                    <span style="margin-left:60px;">Please initial in the box only if all 3 games were checked.</span> 
+                    <div class="initials-box"></div>
+                </div>
             </div>`;
         });
         targetEl.className = "print-container-singles";
     } else {
+        // ORIGINAL DOUBLES RENDER
         matchups.forEach(m => {
             const team1 = state.roster.DOUBLES.find(t => clean(t.teamName) === clean(m.t1));
             const team2 = state.roster.DOUBLES.find(t => clean(t.teamName) === clean(m.t2));
