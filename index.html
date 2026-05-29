@@ -116,12 +116,6 @@
     .btn-score .num { font-size: 2.2rem; font-weight: 900; color: #111; line-height: 1; }
     .btn-score .sym { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
 
-// Add this function to the <script> section of your main app
-window.openPrintSystem = () => {
-    localStorage.setItem('lphc_print_data', JSON.stringify(state));
-    window.open('scoresheets.html', '_blank');
-};
-
     /* BUTTON SCORER STYLES */
     .manual-entry-btn { background: white; border: 2px solid #e2e8f0; height: 44px; width: 100%; font-weight: 900; display: flex; align-items: center; justify-content: center; color: #000; border-radius: 6px !important; transition: background 0.2s; }
     .manual-entry-btn.active { border-color: #0ea5e9; background: #f0f9ff; }
@@ -1195,7 +1189,72 @@ window.openPrintSystem = () => {
         render();
     };
 
-    // --- ADDED TEAM MEMBER MANAGEMENT ---
+    // --- UPDATED: EDIT PLAYER LOGIC (ALL FIELDS) ---
+    window.addRosterItem = async () => {
+        if (mode === 'SINGLES') {
+            const n = await window.smPrompt("Player Name (Last, First):");
+            if (!n) return;
+            const avg = Number(await window.smPrompt("Starting Point Average:", 0));
+            const cat = await window.smPrompt("Category (Men/Women/Elder):", "Men");
+            const card = await window.smPrompt("NHPA Card #:", "");
+            const r = Number(await window.smPrompt("High Ringer %:", 0));
+            const hcp = Number(await window.smPrompt("Current Manual Handicap:", 0));
+            state.roster.SINGLES.push({ name: n, startAvg: avg, category: cat, cardNo: card, prevHighRinger: r, currentHcp: hcp });
+        } else {
+            const tn = await window.smPrompt("Team Name (Optional):");
+            state.roster.DOUBLES.push({ teamName: tn || 'New Team', members: [] });
+        }
+        await save(); render();
+    };
+
+    window.editRosterItem = async (idx) => {
+        const item = state.roster[mode][idx];
+        if (mode === 'SINGLES') {
+            const n = await window.smPrompt("Edit Name:", item.name);
+            if (n !== null) item.name = n;
+            const avg = await window.smPrompt("Edit Start Avg:", item.startAvg);
+            if (avg !== null) item.startAvg = Number(avg);
+            const cat = await window.smPrompt("Edit Category:", item.category || "Men");
+            if (cat !== null) item.category = cat;
+            const card = await window.smPrompt("Edit Card #:", item.cardNo || "");
+            if (card !== null) item.cardNo = card;
+            const r = await window.smPrompt("Edit High Ringer %:", item.prevHighRinger || 0);
+            if (r !== null) item.prevHighRinger = Number(r);
+            const hcp = await window.smPrompt("Edit Manual HCP:", item.currentHcp || 0);
+            if (hcp !== null) item.currentHcp = Number(hcp);
+        } else {
+            const tn = await window.smPrompt("Edit Team Name:", item.teamName);
+            if (tn !== null) item.teamName = tn;
+        }
+        await save(); render();
+    };
+
+    window.editPlayerInTeam = async (tIdx, mIdx) => {
+        const p = state.roster.DOUBLES[tIdx].members[mIdx];
+        const n = await window.smPrompt("Edit Name:", p.name);
+        if (n !== null) p.name = n;
+        const avg = await window.smPrompt("Edit Start Avg:", p.startAvg);
+        if (avg !== null) p.startAvg = Number(avg);
+        const cat = await window.smPrompt("Edit Category:", p.category || "Men");
+        if (cat !== null) p.category = cat;
+        const card = await window.smPrompt("Edit Card #:", p.cardNo || "");
+        if (card !== null) p.cardNo = card;
+        const r = await window.smPrompt("Edit High Ringer %:", p.prevHighRinger || 0);
+        if (r !== null) p.prevHighRinger = Number(r);
+        const hcp = await window.smPrompt("Edit Manual HCP:", p.currentHcp || 0);
+        if (hcp !== null) p.currentHcp = Number(hcp);
+        await save(); render();
+    };
+
+    window.delR = async (idx) => {
+        const item = state.roster[mode][idx];
+        const name = mode === 'SINGLES' ? item.name : item.teamName;
+        if (await window.smConfirm(`Permanently delete ${name}?`)) {
+            state.roster[mode].splice(idx, 1);
+            await save(); render();
+        }
+    };
+
     window.addPlayerToTeam = async (tIdx) => {
         const team = state.roster.DOUBLES[tIdx];
         const mName = await window.smPrompt(`New Member Name:`);
@@ -1203,7 +1262,7 @@ window.openPrintSystem = () => {
         const mAvg = Number(await window.smPrompt(`Start Avg:`, 0));
         const mCat = await window.smPrompt(`Category:`, "Men");
         const mCard = await window.smPrompt(`NHPA Card #:`, "");
-        const mR = Number(await window.smPrompt(`Prev High R%:`, 0));
+        const mR = Number(await window.smPrompt(`Prev High Ringer:`, 0));
         const mHcp = Number(await window.smPrompt(`Handicap:`, 0));
         team.members.push({ name: mName, startAvg: mAvg, category: mCat, cardNo: mCard, prevHighRinger: mR, currentHcp: mHcp });
         team.teamName = team.members.map(m => getFirst(m.name)).join('/');
@@ -1484,7 +1543,10 @@ window.openPrintSystem = () => {
         const calcTeamScr = (pKeys) => {
             let total = 0;
             pKeys.forEach(k => {
-                if(cleanN(g[k]) === 'dummy') { total += 30; return; }
+                if(cleanN(g[k]) === 'dummy' || cleanN(g[k]) === 'BYE') { 
+                    if(cleanN(g[k]) === 'dummy') total += 30; 
+                    return; 
+                }
                 if(sess.isManual) {
                     total += (g[k + '_scr'] || 0);
                 } else {
@@ -1901,7 +1963,10 @@ window.openPrintSystem = () => {
                     const mList = (t.members || []).map((m, mi) => `
                         <div class="flex justify-between items-center bg-zinc-50 p-2 mt-1 border border-zinc-200">
                             <span class="text-[10px] font-black text-sky-800">${m.name}</span>
-                            <button onclick="window.removePlayerFromTeam(${i}, ${mi})" class="text-red-500 font-black text-[9px] uppercase">Rem</button>
+                            <div class="flex gap-2">
+                                <button onclick="window.editPlayerInTeam(${i}, ${mi})" class="text-sky-500 font-black text-[9px] uppercase">Edit Stats</button>
+                                <button onclick="window.removePlayerFromTeam(${i}, ${mi})" class="text-red-500 font-black text-[9px] uppercase">Rem</button>
+                            </div>
                         </div>
                     `).join('');
 
@@ -2035,7 +2100,7 @@ window.openPrintSystem = () => {
             const rRec = rList.find(p => cleanN(p.name) === cleanN(pN)) || {cardNo:'---', category: '---', prevHighRinger: 0};
             const totalPts = g.reduce((s,x)=>s+x.score,0);
             const highPts = g.length ? Math.max(...g.map(x=>x.score)) : 0;
-            const totalShoes = g.length * shoesPerG;
+            const totalShoes = g.length * shoesPG;
             const totalRingers = g.reduce((s,x)=>s+x.ringers,0);
             const prevHighR = Number(rRec.prevHighRinger || 0);
             const currSeasonHiR = g.length ? Math.max(...g.map(x=>(x.ringers/shoesPerG)*100)) : 0;
