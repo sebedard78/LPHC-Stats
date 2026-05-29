@@ -88,46 +88,58 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Robust player lookup to handle "Noah Stuart" vs "Stuart, Noah"
+    // Advanced lookup to handle "Stuart, Noah" vs "Noah Stuart"
     function findP(pName) {
         const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return null;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        // Match 1: Exact clean match
         let found = rList.find(x => clean(x.name) === n);
         if (found) return found;
 
-        // Match 2: If name contains comma, flip it (e.g. "Stuart, Noah" -> "Noah Stuart")
         if (pName.includes(',')) {
             const parts = pName.split(',').map(p => p.trim());
             const flipped = clean(parts[1] + parts[0]);
             found = rList.find(x => clean(x.name) === flipped);
         }
         
-        // Match 3: Loose inclusion (handle partial pastes)
         if (!found) {
             found = rList.find(x => n.includes(clean(x.name)) || clean(x.name).includes(n));
         }
-
         return found;
     }
 
-    // Pull directly from the stats page data
     function getPlyrAvg(pName) {
+        const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return 0;
         const p = findP(pName);
-        if (!p) return 0;
-        return (p.currentAvg !== undefined) ? p.currentAvg : 0;
+        const isLocked = state.hcpLocked && state.hcpLocked[mode];
+
+        // 1. If Locked, use the program's saved average
+        if (isLocked && p && p.currentAvg !== undefined) return p.currentAvg;
+
+        // 2. If Unlocked (Live), calculate from history
+        const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode).slice(-9);
+        if (hist.length > 0) {
+            return Math.round(hist.reduce((s, g) => s + g.score, 0) / hist.length);
+        }
+
+        // 3. Fallback to whatever data is available
+        return p ? (p.currentAvg || p.startAvg || 0) : 0;
     }
 
-    // Pull directly from the stats page data
     function getH(pName) {
-        const n = clean(pName); 
-        if (n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
-        if (!n || n === 'bye') return 0;
+        const n = clean(pName); if(!n || n === 'bye') return 0; 
+        if(n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
         
         const p = findP(pName);
-        if (!p) return 0;
-        return (p.currentHcp !== undefined) ? p.currentHcp : 0;
+        const isLocked = state.hcpLocked && state.hcpLocked[mode];
+
+        // 1. If Locked, use the program's saved handicap
+        if (isLocked && p && p.currentHcp !== undefined) return p.currentHcp;
+
+        // 2. If Unlocked (Live), calculate based on live average
+        const avg = getPlyrAvg(pName);
+        const limit = (mode === 'DOUBLES' ? 90 : 150);
+        return Math.max(0, Math.floor((limit - avg) * 0.9));
     }
 
     function findTeamDeep(searchStr) {
@@ -222,8 +234,6 @@
                     </thead>
                     <tbody>
                         ${shRows}
-                        
-                        <!-- POINT ROW -->
                         <tr class="summary-row">
                             <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
                             <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
@@ -233,8 +243,6 @@
                             <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
                             <td class="bold-box"></td>
                         </tr>
-
-                        <!-- TOTAL HCAP ROW -->
                         <tr class="summary-row">
                             <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
                             <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
@@ -244,8 +252,6 @@
                             <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
                             <td class="bold-box"></td>
                         </tr>
-
-                        <!-- TOTAL ROW -->
                         <tr class="summary-row">
                             <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
                             <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
@@ -255,8 +261,6 @@
                             <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
                             <td class="bold-box"></td>
                         </tr>
-
-                        <!-- RINGERS ROW -->
                         <tr class="summary-row">
                             <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
                             <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
