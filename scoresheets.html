@@ -88,42 +88,36 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Advanced search: ensures "Stuart, Noah" finds "Noah Stuart" in both Roster and History
-    function getPlayerStats(pName) {
-        if (!pName || pName.toLowerCase() === 'bye') return { hcp: 0, avg: 0 };
-        if (clean(pName) === 'dummy') return { hcp: (mode === 'DOUBLES' ? 54 : 30), avg: 0 };
-
-        // 1. Find the player in the roster by matching name parts
-        const searchParts = pName.toLowerCase().split(/[\s,]+/).filter(x => x.length > 0);
+    // Simple lookup to find the player in the roster
+    function findP(pName) {
+        if (!pName || pName.toLowerCase() === 'bye') return null;
+        const nClean = clean(pName);
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        const p = rList.find(player => {
-            const rosterName = player.name.toLowerCase();
-            return searchParts.every(part => rosterName.includes(part));
-        });
-
-        if (!p) return { hcp: 0, avg: 0 };
-
-        // 2. Search History using the same "parts" logic to find Noah/Milo's 3 games
-        const history = (state.history || []).filter(h => {
-            if (h.mode !== mode) return false;
-            const histName = h.player.toLowerCase();
-            return searchParts.every(part => histName.includes(part));
-        }).slice(-9);
-
-        let avg = 0;
-        if (history.length > 0) {
-            // Calculate Average (Noah will result in 3, Milo will result in 15)
-            avg = Math.round(history.reduce((sum, game) => sum + game.score, 0) / history.length);
-        } else {
-            avg = p.currentAvg || p.startAvg || 0;
+        // Match exactly what is in the roster
+        let found = rList.find(x => clean(x.name) === nClean);
+        
+        // Fallback: If names are flipped like "Stuart, Noah"
+        if (!found && pName.includes(',')) {
+            const parts = pName.split(',').map(p => p.trim());
+            const flipped = clean(parts[1] + parts[0]);
+            found = rList.find(x => clean(x.name) === flipped);
         }
+        return found;
+    }
 
-        // 3. Calculate Handicap (Force Live Logic: Noah will result in 78, Milo in 67)
-        const target = (mode === 'DOUBLES' ? 90 : 150);
-        const hcp = Math.max(0, Math.floor((target - avg) * 0.9));
+    // PULL DIRECT DATA: Grabs exactly what is stored in the program's data fields
+    function getStats(pName) {
+        const p = findP(pName);
+        if (!p) return { hcp: '0', avg: '0' };
+        if (clean(pName) === 'dummy') return { hcp: (mode === 'DOUBLES' ? 54 : 30), avg: '0' };
 
-        return { hcp, avg };
+        // We pull currentHcp and currentAvg directly. 
+        // If they are missing (null/undefined), we show 0 to avoid "undefined" text.
+        return {
+            hcp: (p.currentHcp !== undefined && p.currentHcp !== null) ? p.currentHcp : 0,
+            avg: (p.currentAvg !== undefined && p.currentAvg !== null) ? p.currentAvg : 0
+        };
     }
 
     function findTeamDeep(searchStr) {
@@ -217,8 +211,9 @@
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p1List[i];
-                                    const s = p ? getPlayerStats(p.name) : { hcp: '', avg: '' };
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${s.hcp}</td><td>${s.avg}</td></tr>`;
+                                    const name = p ? p.name : '';
+                                    const s = name ? getStats(name) : { hcp: '', avg: '' };
+                                    return `<tr><td class="name-cell">${name||'&nbsp;'}</td><td>${s.hcp}</td><td>${s.avg}</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -230,8 +225,9 @@
                             <tbody>
                                 ${[0,1,2].map(i => {
                                     const p = p2List[i];
-                                    const s = p ? getPlayerStats(p.name) : { hcp: '', avg: '' };
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${s.hcp}</td><td>${s.avg}</td></tr>`;
+                                    const name = p ? p.name : '';
+                                    const s = name ? getStats(name) : { hcp: '', avg: '' };
+                                    return `<tr><td class="name-cell">${name||'&nbsp;'}</td><td>${s.hcp}</td><td>${s.avg}</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
