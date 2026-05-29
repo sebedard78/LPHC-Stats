@@ -88,25 +88,26 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Improved lookup to handle "Stuart, Noah" vs "Noah Stuart"
+    // Fix for "Stuart, Noah" matching "Noah Stuart"
     function findP(pName) {
-        const n = clean(pName); if(!n || n === 'bye' || n === 'dummy') return null;
+        if (!pName || pName.toLowerCase() === 'bye') return null;
+        const nClean = clean(pName);
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        // Match 1: Direct Match
-        let found = rList.find(x => clean(x.name) === n);
+        // 1. Exact match
+        let found = rList.find(x => clean(x.name) === nClean);
         if (found) return found;
 
-        // Match 2: Handle flipped names with commas
+        // 2. Handle "Last, First" by flipping the comma
         if (pName.includes(',')) {
             const parts = pName.split(',').map(p => p.trim());
-            const flipped = clean(parts[1] + parts[0]);
+            const flipped = clean(parts[1] + parts[0]); // "noahstuart"
             found = rList.find(x => clean(x.name) === flipped);
         }
 
-        // Match 3: Loose inclusion
+        // 3. Last resort: Partial match
         if (!found) {
-            found = rList.find(x => n.includes(clean(x.name)) || clean(x.name).includes(n));
+            found = rList.find(x => nClean.includes(clean(x.name)) || clean(x.name).includes(nClean));
         }
         return found;
     }
@@ -114,19 +115,36 @@
     function getPlyrAvg(pName) {
         const p = findP(pName);
         if (!p) return 0;
-        // Return exactly what is on the stat page (program updates this value live)
-        return (p.currentAvg !== undefined) ? p.currentAvg : (p.startAvg || 0);
+        
+        // If locked AND currentAvg exists, use it
+        if (state.hcpLocked && state.hcpLocked[mode] && p.currentAvg) {
+            return p.currentAvg;
+        }
+
+        // If not locked OR roster says 0, calculate from history (to match Stat Page)
+        const n = clean(p.name);
+        const hist = (state.history || []).filter(x => clean(x.player) === n && x.mode === mode).slice(-9);
+        if (hist.length > 0) {
+            return Math.round(hist.reduce((s, g) => s + g.score, 0) / hist.length);
+        }
+        return p.currentAvg || p.startAvg || 0;
     }
 
     function getH(pName) {
-        const n = clean(pName); 
+        const n = clean(pName);
         if (n === 'dummy') return mode === 'DOUBLES' ? 54 : 30;
-        if (!n || n === 'bye') return 0;
-        
         const p = findP(pName);
         if (!p) return 0;
-        // Return exactly what is on the stat page (program updates this value live)
-        return (p.currentHcp !== undefined) ? p.currentHcp : 0;
+
+        // If locked AND currentHcp is NOT 0, use it
+        if (state.hcpLocked && state.hcpLocked[mode] && p.currentHcp) {
+            return p.currentHcp;
+        }
+
+        // Otherwise, calculate live to match the Stat Page
+        const avg = getPlyrAvg(pName);
+        const target = (mode === 'DOUBLES' ? 90 : 150);
+        return Math.max(0, Math.floor((target - avg) * 0.9));
     }
 
     function findTeamDeep(searchStr) {
@@ -200,63 +218,15 @@
                 
                 <table class="score-grid">
                     <thead>
-                        <tr>
-                            <th colspan="3" class="v-thick"></th>
-                            <th colspan="3" class="v-thick"></th>
-                            <th class="col-score v-thick">Team Score</th>
-                            <th class="col-sh v-thick">VS</th>
-                            <th colspan="3" class="v-thick"></th>
-                            <th colspan="3" class="v-thick"></th>
-                            <th class="col-score">Team Score</th>
-                        </tr>
-                        <tr>
-                            <th>R</th><th>P</th><th class="v-thick">S</th>
-                            <th>R</th><th>P</th><th class="v-thick">S</th>
-                            <th class="v-thick">&nbsp;</th>
-                            <th class="col-sh v-thick">SH</th>
-                            <th>R</th><th>P</th><th class="v-thick">S</th>
-                            <th>R</th><th>P</th><th class="v-thick">S</th>
-                            <th>&nbsp;</th>
-                        </tr>
+                        <tr><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th class="col-score v-thick">Team Score</th><th class="col-sh v-thick">VS</th><th colspan="3" class="v-thick"></th><th colspan="3" class="v-thick"></th><th class="col-score">Team Score</th></tr>
+                        <tr><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th class="v-thick">&nbsp;</th><th class="col-sh v-thick">SH</th><th>R</th><th>P</th><th class="v-thick">S</th><th>R</th><th>P</th><th class="v-thick">S</th><th>&nbsp;</th></tr>
                     </thead>
                     <tbody>
                         ${shRows}
-                        <tr class="summary-row">
-                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
-                            <td class="bold-box v-thick"></td>
-                            <td class="col-sh v-thick">Point</td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td>
-                            <td class="bold-box"></td>
-                        </tr>
-                        <tr class="summary-row">
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box v-thick"></td>
-                            <td class="col-sh v-thick">Total Hcap</td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box"></td>
-                        </tr>
-                        <tr class="summary-row">
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box v-thick"></td>
-                            <td class="col-sh v-thick">Total</td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box"></td>
-                        </tr>
-                        <tr class="summary-row">
-                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box v-thick"></td>
-                            <td class="col-sh v-thick">Ringers</td>
-                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td>
-                            <td class="bold-box"></td>
-                        </tr>
+                        <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Point</td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="bold-box v-thick"></td><td class="bold-box"></td></tr>
+                        <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Total Hcap</td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
+                        <tr class="summary-row"><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Total</td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="no-border"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
+                        <tr class="summary-row"><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box v-thick"></td><td class="col-sh v-thick">Ringers</td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td><td class="no-border"></td><td class="no-border v-thick"></td><td class="bold-box"></td></tr>
                     </tbody>
                 </table>
 
