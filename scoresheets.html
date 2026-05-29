@@ -88,22 +88,19 @@
     const mode = state.mode || 'DOUBLES';
     const clean = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-    // Finds the actual roster object for any version of a name (Flipped or not)
+    // Search for a player by matching name parts (handles "Stuart, Noah" vs "Noah Stuart")
     function findP(pName) {
         if (!pName || pName.toLowerCase() === 'bye') return null;
-        const nClean = clean(pName);
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         
-        let found = rList.find(x => clean(x.name) === nClean);
-        if (!found && pName.includes(',')) {
-            const parts = pName.split(',').map(p => p.trim());
-            const flipped = clean(parts[1] + parts[0]);
-            found = rList.find(x => clean(x.name) === flipped);
-        }
-        if (!found) {
-            found = rList.find(x => clean(x.name).includes(nClean) || nClean.includes(clean(x.name)));
-        }
-        return found;
+        // Split search name into pieces (e.g., ["stuart", "noah"])
+        const parts = pName.toLowerCase().split(/[\s,]+/).filter(x => x.length > 0);
+        
+        return rList.find(player => {
+            const playerName = player.name.toLowerCase();
+            // Match if every part of the search name exists in the roster name
+            return parts.every(part => playerName.includes(part));
+        });
     }
 
     function getLiveStats(pName) {
@@ -111,28 +108,29 @@
         if (!p) return { hcp: 0, avg: 0 };
         if (clean(pName) === 'dummy') return { hcp: (mode === 'DOUBLES' ? 54 : 30), avg: 0 };
 
-        // 1. Always look at history first to get the 3, 15, etc.
+        // 1. Prioritize recalculating from history to ensure Noah (3) and Milo (15) match Stats page
         const fullNameClean = clean(p.name);
         const history = (state.history || []).filter(h => clean(h.player) === fullNameClean && h.mode === mode).slice(-9);
         
         let avg = 0;
         if (history.length > 0) {
-            // Calculate average based on exactly how many games they have (e.g. 3)
+            // Calculate average from all available history games (1, 2, or 3 games)
             avg = Math.round(history.reduce((sum, g) => sum + g.score, 0) / history.length);
         } else {
             avg = p.startAvg || 0;
         }
 
-        // 2. If Handicap Lock is ON and we have a non-zero roster value, use that instead
+        // 2. Determine Handicap (90% of difference from target)
+        const target = (mode === 'DOUBLES' ? 90 : 150);
+        let hcp = Math.max(0, Math.floor((target - avg) * 0.9));
+
+        // 3. IF the Handicap is LOCKED and the roster has a specific non-zero value, use that instead
         if (state.hcpLocked && state.hcpLocked[mode]) {
             if (p.currentHcp !== undefined && p.currentHcp !== 0) {
-                return { hcp: p.currentHcp, avg: p.currentAvg || 0 };
+                hcp = p.currentHcp;
+                avg = p.currentAvg || 0;
             }
         }
-
-        // 3. Otherwise, calculate the handicap from the average (90% rule)
-        const target = (mode === 'DOUBLES' ? 90 : 150);
-        const hcp = Math.max(0, Math.floor((target - avg) * 0.9));
 
         return { hcp, avg };
     }
