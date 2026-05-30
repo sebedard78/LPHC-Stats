@@ -17,60 +17,60 @@
             font-weight: 900; border: none; border-radius: 5px; cursor: pointer;
         }
 
-        /* --- DOUBLES PORTRAIT STYLING (Tightened to fit one page) --- */
-        .print-container-doubles { width: 8.5in; margin: 0 auto; padding: 10px; }
+        /* --- RESTORED DOUBLES PORTRAIT STYLING --- */
+        .print-container-doubles { width: 8.5in; margin: 0 auto; padding: 60px 10px 10px 10px; }
         .sheet-doubles {
-            border: 2.5px solid black; padding: 8px; margin-bottom: 20px;
-            page-break-after: always; background: white;
+            border: 2.5px solid black; padding: 10px; margin-bottom: 25px;
+            page-break-inside: avoid; background: white;
             display: block; position: relative;
         }
-        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid black; padding-bottom: 4px; }
-        .header-main { display: flex; align-items: center; gap: 12px; }
-        .main-logo { height: 65px; width: auto; }
-        .top-row h1 { margin: 0; font-size: 22pt; font-weight: 900; letter-spacing: 0.5px; }
-        .court-box { border: 3px solid black; padding: 1px 12px; font-weight: 900; font-size: 16pt; }
-        .scoring-rules { font-size: 11pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 3px 0; margin-bottom: 4px; }
-        .team-header { display: flex; justify-content: space-between; font-size: 12pt; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; }
-        
+        .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid black; padding-bottom: 8px; }
+        .header-main { display: flex; align-items: center; gap: 15px; }
+        .main-logo { height: 85px; width: auto; }
+        .top-row h1 { margin: 0; font-size: 26pt; font-weight: 900; letter-spacing: 0.5px; }
+        .court-box { border: 4px solid black; padding: 2px 14px; font-weight: 900; font-size: 19pt; }
+        .scoring-rules { font-size: 13.5pt; text-align: center; font-weight: bold; border-bottom: 1px solid black; padding: 4px 0; margin-bottom: 5px; }
+        .team-header { display: flex; justify-content: space-between; font-size: 13pt; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
         .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid black; }
-        .score-grid th, .score-grid td { border: 1px solid black; height: 22px; text-align: center; font-size: 10.5pt; }
-        .score-grid thead th { background: #fff; font-size: 10pt; font-weight: 900; height: 24px; }
-        
-        .col-sh { width: 65px; font-weight: 900; font-size: 11pt !important; background: #fff !important; } 
-        .col-score { width: 55px; font-weight: 900; font-size: 10pt !important; line-height: 1.1; } 
-        .v-thick { border-right: 3.5px solid black !important; }
-        .bg-gray { background-color: #ccc !important; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 11pt; }
+        .score-grid thead th { background: #fff; font-size: 11pt; font-weight: 900; height: 28px; }
+        .col-sh { width: 70px; font-weight: 900; font-size: 12pt !important; background: #fff !important; } 
+        .col-score { width: 62px; font-weight: 900; font-size: 10.5pt !important; line-height: 1.1; } 
+        .v-thick { border-right: 4px solid black !important; }
+        .bg-gray { background-color: #ddd !important; }
         .bold-box { border: 2.5px solid black !important; }
         .no-border { border: none !important; }
-        .summary-row { height: 28px; font-weight: 900; }
-
-        .footer-doubles { display: flex; justify-content: space-between; margin-top: 12px; }
-        .team-box { width: 49%; border: 2.5px solid black; }
-        .wlt-header { font-size: 32pt; font-weight: 900; text-align: center; letter-spacing: 20px; border-bottom: 3px solid black; padding: 0 0 0 20px; line-height: 1; }
+        .summary-row { height: 32px; font-weight: 900; }
+        .footer-doubles { display: flex; justify-content: space-between; margin-top: 20px; }
+        .team-box { width: 49%; border: 3px solid black; }
+        .wlt-header { font-size: 38pt; font-weight: 900; text-align: center; letter-spacing: 25px; border-bottom: 3.5px solid black; padding: 0 0 0 25px; line-height: 1.1; }
         .p-table { width: 100%; border-collapse: collapse; }
-        .p-table th, .p-table td { border: 1.2px solid black; height: 28px; text-align: center; font-size: 13pt; }
-        .p-table th { background: #fff; font-size: 11pt; font-weight: 900; border-bottom: 2px solid black; }
-        .name-cell { text-align: left; padding-left: 8px; width: 60%; font-weight: 900; overflow: hidden; white-space: nowrap; }
+        .p-table th, .p-table td { border: 1.5px solid black; height: 35px; text-align: center; font-size: 14pt; }
+        .p-table th { background: #fff; font-size: 12pt; font-weight: 900; border-bottom: 2px solid black; }
+        .name-cell { text-align: left; padding-left: 10px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
 
         /* --- SINGLES LANDSCAPE STYLING --- */
-        .print-container-singles { width: 10.5in; margin: 0 auto; padding: 10px; }
-        .sheet-singles { width: 100%; height: 8.2in; padding: 5px; page-break-after: always; position: relative; }
-        .header-s { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+        .print-container-singles { width: 10.5in; margin: 0 auto; }
+        .sheet-singles { width: 100%; height: 7.9in; padding: 5px; page-break-after: always; position: relative; }
         .games-row { display: flex; justify-content: space-between; gap: 8px; }
-        .game-section { flex: 1; border: 1.5px solid black; padding: 2px; }
+        .game-section { flex: 1; border: 1.5px solid black; padding: 1.5px; }
         .matchup-header-s { border: 1.5px solid black; text-align: center; font-weight: 900; font-size: 10pt; padding: 2px; margin: 2px 0; text-transform: uppercase; border-bottom: 2px solid black; }
         .score-table-s { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16.5px; text-align: center; font-size: 7.5pt; padding: 0; }
+        .score-table-s th, .score-table-s td { border: 1px solid #000; height: 16.2px; text-align: center; font-size: 7.5pt; padding: 0; }
         .col-sh-s { width: 55px; font-weight: 900; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
-        .summary-label-s { font-weight: 900; font-size: 7.2pt; text-transform: uppercase; background: #eee !important; border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
-        .data-cell-s { border: 1.5px solid black !important; font-weight: 900; font-size: 9.5pt; }
+        .summary-label-s { font-weight: 900; font-size: 7pt; text-transform: uppercase; border-left: 2px solid black !important; border-right: 2px solid black !important; }
+        .data-cell-s { border: 1.5px solid black !important; font-weight: 900; font-size: 9pt; }
         .thick-top { border-top: 2.5px solid black !important; }
-        .wlt-row-s { display: flex; justify-content: space-around; font-weight: 900; font-size: 16pt; letter-spacing: 15px; margin-top: 8px; }
+        
+        /* WLT Alignment Fix */
+        .wlt-container-s { display: flex; width: 100%; font-weight: 900; font-size: 14pt; letter-spacing: 12px; padding: 5px 0; }
+        .wlt-side { width: calc(50% - 27px); text-align: center; }
         .initials-box { border: 2.5px solid black; width: 65px; height: 35px; display: inline-block; vertical-align: middle; margin-left: 8px; }
 
         @media print {
             .no-print { display: none; }
             @page { margin: 0.3cm; }
+            .sheet-singles:last-child { page-break-after: auto; }
         }
     </style>
 </head>
@@ -172,14 +172,18 @@
                             <tr><td colspan="3" class="data-cell-s" style="text-align:right; padding-right:8px;">%</td><td class="summary-label-s">PCT.</td><td colspan="3" class="data-cell-s" style="text-align:right; padding-right:8px;">%</td></tr>
                         </tbody>
                     </table>
-                    <div class="wlt-group-s"><span>W L T</span><span>W L T</span></div>
+                    <div class="wlt-container-s">
+                        <div class="wlt-side">W L T</div>
+                        <div style="width:55px;"></div>
+                        <div class="wlt-side">W L T</div>
+                    </div>
                 </div>`;
             };
             html += `<div class="sheet-singles">
                 <div class="header-s">
-                    <div style="font-weight:900; width:180px;">Court ${m.court} &nbsp;&nbsp; Wk.# ${m.wk}</div>
-                    <div style="text-align:center; flex-grow:1;"><h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1><div style="font-size:8pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div><div style="font-weight:900; font-size:10pt; margin-top:3px;">2025 - SINGLES</div></div>
-                    <div style="width:180px; text-align:right;"><img src="logo.jpg" style="height:42px;"></div>
+                    <div style="font-weight:900; width:150px;">Court ${m.court} &nbsp;&nbsp; Wk.# ${m.wk}</div>
+                    <div style="text-align:center; flex-grow:1;"><h1 style="margin:0; font-size:18pt; font-weight:900;">LOON POND HORSESHOE CLUB</h1><div style="font-size:8pt; font-weight:bold;">1 = 1 pt. 2 = 2 pts. 0 = 1 ringer 3 pts. O' = 1 ringer 4 pts. 00 = 2 ringers 6 pts.</div><div style="font-weight:900; font-size:10pt; margin-top:2px;">2025 - SINGLES</div></div>
+                    <div style="width:150px; text-align:right;"><img src="logo.jpg" style="height:40px;"></div>
                 </div>
                 <div class="games-row">${gameHtml(1)}${gameHtml(2)}${gameHtml(3)}</div>
                 <div style="margin-top:20px; font-size:10.5pt; font-weight:bold;">Date _________________ <span style="margin-left:60px;">Please initial in the box only if all 3 games were checked.</span> <div class="initials-box"></div></div>
