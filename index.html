@@ -687,7 +687,7 @@
                     g.frames.forEach(f => {
                         p1s += (Number(f.p1) || 0); p2s += (Number(f.p2) || 0);
                         p3s += (Number(f.p3) || 0); p4s += (Number(f.p4) || 0);
-                        html += `<tr><td class="font-black bg-grey">${f.sh}</td><td>${getSym(f.p1, f.p3)}</td><td>${f.p1 || 0}</td><td>${p1s}</td><td>${getSym(f.p2, f.p4)}</td><td>${f.p2 || 0}</td><td>${p2s}</td><td class="font-black bold-border-left bold-border-right">${p1s + p2s + hc1}</td><td>${getSym(f.p3, f.p1)}</td><td>${f.p3 || 0}</td><td>${p3s}</td><td>${getSym(f.p4, f.p2)}</td><td>${f.p4 || 0}</td><td>${p2s}</td><td class="font-black bold-border-left">${p3s + p4s + hc2}</td></tr>`;
+                        html += `<tr><td class="font-black bg-grey">${f.sh}</td><td>${getSym(f.p1, f.p3)}</td><td>${f.p1 || 0}</td><td>${p1s}</td><td>${getSym(f.p2, f.p4)}</td><td>${f.p2 || 0}</td><td>${p2s}</td><td class="font-black bold-border-left bold-border-right">${p1s + p2s + hc1}</td><td>${getSym(f.p3, f.p1)}</td><td>${f.p3 || 0}</td><td>${p3s}</td><td>${getSym(f.p4, f.p2)}</td><td>${f.p4 || 0}</td><td>${p4s}</td><td class="font-black bold-border-left">${p3s + p4s + hc2}</td></tr>`;
                     });
                 }
                 html += `</tbody></table></div>`;
@@ -1190,7 +1190,34 @@
         render();
     };
 
-    // --- UPDATED: EDIT PLAYER LOGIC (ALL FIELDS) ---
+    // Helper for Global Renaming stats when name changes
+    function renamePlayerGlobally(oldName, newName) {
+        if (!oldName || !newName || oldName === newName) return;
+        const oldC = cleanN(oldName);
+        
+        // 1. History
+        state.history.forEach(h => { if(cleanN(h.player) === oldC) h.player = newName; });
+        
+        // 2. Sessions
+        state.sessions.forEach(s => {
+            if(cleanN(s.matchWinner) === oldC) s.matchWinner = newName;
+            if(cleanN(s.t1Name) === oldC) s.t1Name = newName;
+            if(cleanN(s.t2Name) === oldC) s.t2Name = newName;
+            s.fullData.forEach(g => {
+                ['p1','p2','p3','p4','p5','p6'].forEach(k => { if(cleanN(g[k]) === oldC) g[k] = newName; });
+            });
+        });
+
+        // 3. Weekly HOA
+        state.weeklyHoa[mode].forEach(h => { if(cleanN(h.player) === oldC) h.player = newName; });
+
+        // 4. Four Deads
+        if(state.fourDeads[mode][oldName]) {
+            state.fourDeads[mode][newName] = (state.fourDeads[mode][newName] || 0) + state.fourDeads[mode][oldName];
+            delete state.fourDeads[mode][oldName];
+        }
+    }
+
     window.addRosterItem = async () => {
         if (mode === 'SINGLES') {
             const n = await window.smPrompt("Player Name (Last, First):");
@@ -1211,8 +1238,12 @@
     window.editRosterItem = async (idx) => {
         const item = state.roster[mode][idx];
         if (mode === 'SINGLES') {
-            const n = await window.smPrompt("Edit Name:", item.name);
-            if (n !== null) item.name = n;
+            const oldName = item.name;
+            const n = await window.smPrompt("Edit Name:", oldName);
+            if (n !== null && n !== oldName) {
+                item.name = n;
+                renamePlayerGlobally(oldName, n);
+            }
             const avg = await window.smPrompt("Edit Start Avg:", item.startAvg);
             if (avg !== null) item.startAvg = Number(avg);
             const cat = await window.smPrompt("Edit Category:", item.category || "Men");
@@ -1232,8 +1263,14 @@
 
     window.editPlayerInTeam = async (tIdx, mIdx) => {
         const p = state.roster.DOUBLES[tIdx].members[mIdx];
-        const n = await window.smPrompt("Edit Name:", p.name);
-        if (n !== null) p.name = n;
+        const oldName = p.name;
+        const n = await window.smPrompt("Edit Name:", oldName);
+        if (n !== null && n !== oldName) {
+            p.name = n;
+            renamePlayerGlobally(oldName, n);
+            // Refresh Team Name string
+            state.roster.DOUBLES[tIdx].teamName = state.roster.DOUBLES[tIdx].members.map(m => getFirst(m.name)).join('/');
+        }
         const avg = await window.smPrompt("Edit Start Avg:", p.startAvg);
         if (avg !== null) p.startAvg = Number(avg);
         const cat = await window.smPrompt("Edit Category:", p.category || "Men");
@@ -1679,7 +1716,7 @@
             }
             const shoesPG = (mode === 'DOUBLES' ? 30 : 50);
             const rList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
-            const pNames = [...new Set([...rList.map(p => p.name)])];
+            const pNames = rList.map(p => p.name);
             const stats = pNames.map(pN => {
                 // STATS FIX: Ignore No-Show entries for averages
                 const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode && !h.isNoShow);
