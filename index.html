@@ -7,7 +7,7 @@
     <!-- 1. PWA Meta Tags -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0ea5e9">
+    <meta name="theme-color" #0ea5e9">
     <link rel="apple-touch-icon" href="logo.jpg">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1142,7 +1142,7 @@
         </div>`;
     };
 
-    // --- NEW STANDINGS EDITING FUNCTIONS ---
+    // --- NEW FIXED STANDINGS EDITING & SYNC FUNCTIONS ---
     window.logNoShow = async (idx) => {
         const team = state.roster[mode][idx];
         const name = team.teamName || team.name;
@@ -1188,6 +1188,16 @@
         await save();
         window.smAlert(`Manual ${r} adjustment added for ${name}`);
         render();
+    };
+
+    // --- NEW: DELETE SESSION FROM HISTORY ---
+    window.deleteSession = async (sId) => {
+        if(await window.smConfirm("PERMANENTLY DELETE this session? This will remove all associated games from history and standings immediately.")){
+            state.sessions = state.sessions.filter(s => s.id !== sId);
+            state.history = state.history.filter(h => h.sessionId !== sId);
+            await save();
+            render();
+        }
     };
 
     // Helper for Global Renaming stats when name changes
@@ -1969,7 +1979,7 @@
         } else if (view === 'HISTORY') {
             const sessionHtml = (state.sessions || []).filter(s => s.mode === mode).reverse().map(s => {
                 let gHtml = (s.fullData || []).map((g, idx) => `<div class="flex justify-between items-center bg-gray-100 p-2 mb-1 text-[10px] font-bold uppercase"><span>G${g.gameNum}: ${g.s1}-${g.s2} ${g.isPlayoff ? '(PLAYOFF)' : ''}</span><button onclick="window.editPastGame(${s.id}, ${idx})" class="text-sky-600 font-black no-print">Edit</button></div>`).join('');
-                return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name} ${s.isManual ? '[M]' : ''}</span><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600 float-right no-print ml-2">Print Sheets</button>${gHtml}</div>`;
+                return `<div class="bg-white p-3 shadow mb-3 font-black uppercase text-xs"><span>${s.date} - ${s.name} ${s.isManual ? '[M]' : ''}</span><div class="float-right no-print ml-2"><button onclick="window.deleteSession(${s.id})" class="text-red-600 mr-4">Delete Session</button><button onclick="window.printHistoryEntry(${s.id})" class="text-sky-600">Print Sheets</button></div>${gHtml}</div>`;
             }).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No league history found</p>`;
             const tHistoryHtml = (tState.matchHistory || []).slice().reverse().map(h => `<div class="bg-zinc-900 text-white p-3 shadow mb-3 font-black uppercase text-xs border-l-4 border-sky-500"><span><span class="text-sky-400">[TOURNAMENT]</span> ${h.date} - ${h.t1Name} vs ${h.t2Name} (${h.s1}-${h.s2})</span><button onclick="window.printTournamentScoreSheet('${h.timestamp}')" class="text-sky-400 float-right no-print ml-2">Print</button><button onclick="window.showSummary('${h.id}')" class="text-zinc-400 float-right no-print">View</button></div>`).join('') || `<p class="p-10 text-center opacity-40 italic text-zinc-500">No tournament matches found</p>`;
             let archH = ''; 
@@ -1989,7 +1999,7 @@
                         <span class="font-black text-sm uppercase">${t.teamName||t.name}</span>
                         <div class="flex gap-1">
                             <button onclick="window.logNoShow(${i})" class="bg-red-500 text-white px-2 py-1 text-[8px] font-black rounded uppercase">No Show</button>
-                            <button onclick="window.manualStandingsAdjust(${i})" class="bg-zinc-800 text-white px-2 py-1 text-[8px] font-black rounded uppercase">Adjust</button>
+                            <button onclick="window.manualStandingsAdjust(${i})" class="bg-zinc-800 text-white px-2 py-1 text-[8px] font-black rounded uppercase">Adjust Rec</button>
                             <button onclick="window.editRosterItem(${i})" class="text-sky-500 font-black text-[10px] uppercase">Edit</button>
                             <button onclick="window.delR(${i})" class="text-red-500 font-black text-[10px] uppercase">Del</button>
                         </div>
