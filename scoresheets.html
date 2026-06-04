@@ -19,14 +19,9 @@
         .print-container { width: 8.5in; margin: 0 auto; }
 
         .sheet {
-            border: 2px solid black; 
-            padding: 20px; 
-            page-break-after: always; 
-            background: white;
-            display: flex; 
-            flex-direction: column;
-            height: 10.6in; 
-            width: 8.5in;
+            border: 2px solid black; padding: 20px; page-break-after: always; 
+            background: white; display: flex; flex-direction: column;
+            height: 10.6in; width: 8.5in;
         }
 
         .top-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid black; padding-bottom: 5px; }
@@ -34,35 +29,32 @@
         .court-box { border: 4px solid black; padding: 5px 25px; font-weight: 900; font-size: 18pt; }
 
         .rules { font-size: 10pt; text-align: center; font-weight: bold; border-bottom: 2px solid black; padding: 5px 0; margin-bottom: 10px; }
-
         .team-header { display: flex; justify-content: space-between; font-size: 12pt; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
 
-        /* THE 15 COLUMN GRID */
+        /* EXACT 15 COLUMN GRID */
         .score-grid { width: 100%; border-collapse: collapse; table-layout: fixed; border: 2px solid black; }
-        .score-grid th, .score-grid td { border: 1.5px solid black; height: 26px; text-align: center; font-size: 12pt; overflow: hidden; }
+        .score-grid th, .score-grid td { border: 1px solid black; height: 26px; text-align: center; font-size: 12pt; }
         .score-grid thead th { background: #fff; font-size: 10pt; font-weight: 900; height: 22px; }
         
-        .col-sh { width: 70px; font-weight: 900; font-size: 11pt !important; background: #ddd !important; } 
-        .col-score { width: 60px; font-weight: 900; border-left: 3px solid black !important; border-right: 3px solid black !important; } 
-        
-        .bg-gray { background-color: #aaa !important; }
+        /* Strong borders around Score and SH columns */
+        .col-score-l { border-left: 3.5px solid black !important; width: 60px; font-weight: 900; }
+        .col-sh { border-left: 3.5px solid black !important; border-right: 3.5px solid black !important; width: 70px; font-weight: 900; background: #eee; font-size: 11pt !important; }
+        .col-score-r { border-right: 3.5px solid black !important; width: 60px; font-weight: 900; }
 
+        .bg-gray { background-color: #aaa !important; }
         .summary-row { font-weight: 900; font-size: 11pt; height: 32px; }
 
-        /* FOOTER */
         .footer { display: flex; justify-content: space-between; margin-top: auto; padding-top: 15px; }
         .team-box { width: 49%; border: 3px solid black; }
         .wlt-header { font-size: 44pt; font-weight: 900; text-align: center; letter-spacing: 45px; border-bottom: 3.5px solid black; padding-left: 45px; line-height: 1; }
         
         .p-table { width: 100%; border-collapse: collapse; }
-        .p-table th, .p-table td { border: 2px solid black; height: 36px; text-align: center; font-size: 13pt; }
-        .p-table th { background: #eee; font-size: 10pt; font-weight: 900; border-bottom: 2px solid black; }
+        .p-table th, .p-table td { border: 1.5px solid black; height: 36px; text-align: center; font-size: 13pt; }
+        .p-table th { background: #eee; font-size: 10pt; font-weight: 900; }
         .name-cell { text-align: left; padding-left: 10px; width: 62%; font-weight: 900; overflow: hidden; white-space: nowrap; }
 
         @media print {
             .no-print { display: none; }
-            body { background: white; }
-            .print-container { width: 100%; padding: 0; }
             @page { margin: 0; size: letter portrait; }
         }
     </style>
@@ -78,7 +70,6 @@
 <script>
     const state = JSON.parse(localStorage.getItem('lphc_print_data'));
     const mode = state.mode || 'DOUBLES';
-    
     const cleanMatch = (n) => n ? n.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
     function getPlyrAvg(pName) {
@@ -94,60 +85,45 @@
         const n = cleanMatch(pName); if(!n || n === 'bye') return 0; if(n === 'dummy') return 54;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanMatch(x.name) === n);
-        
-        let currentCalc = 0;
-        if (state.hcpLocked && state.hcpLocked[mode]) currentCalc = Number(p ? (p.currentHcp || 0) : 0);
-        else currentCalc = Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - getPlyrAvg(pName)) * 0.9));
-
-        if (mode === 'SINGLES' && state.singlesHalfWinner && cleanMatch(state.singlesHalfWinner) === n) {
-            return Math.min(currentCalc, state.singlesHalfHcp || currentCalc);
-        }
-        return currentCalc;
+        let cur = 0;
+        if (state.hcpLocked && state.hcpLocked[mode]) cur = Number(p ? (p.currentHcp || 0) : 0);
+        else cur = Math.max(0, Math.floor(((mode==='DOUBLES'?90:150) - getPlyrAvg(pName)) * 0.9));
+        return cur;
     }
 
-    function findTeamBulletproof(searchStr) {
+    function findTeam(searchStr) {
         if (!searchStr || cleanMatch(searchStr) === 'bye') return { teamName: 'BYE', members: [], name: 'BYE' };
         const roster = state.roster[mode] || [];
         const searchClean = cleanMatch(searchStr);
-        
         let found = roster.find(t => cleanMatch(t.teamName || t.name) === searchClean || searchClean.includes(cleanMatch(t.teamName || t.name)));
         if (found) return found;
-
-        const parts = searchStr.split(/[&/]| vs | VS | and |,/i).map(p => cleanMatch(p.trim())).filter(p => p.length > 2);
-        found = roster.find(t => {
-            const mems = mode === 'SINGLES' ? [cleanMatch(t.name)] : t.members.map(m => cleanMatch(m.name));
-            return parts.some(p => mems.some(m => m.includes(p) || p.includes(m)));
+        return roster.find(t => {
+            const players = mode === 'SINGLES' ? [t.name] : t.members.map(m => m.name);
+            return players.some(p => {
+                const surname = cleanMatch(p.split(',')[0]);
+                return surname.length > 3 && searchClean.includes(surname);
+            });
         });
-        return found;
     }
 
-    function parseLineup() {
-        const raw = state.weeklyLineup[mode].rawPaste;
-        const lines = raw.split('\n');
-        const matchups = []; let current = null;
-        lines.forEach(line => {
-            const trimmed = line.trim().replace(/^"|"$/g, '');
-            if (!trimmed) return;
-            const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
-            if (courtMatch) {
-                if (current) matchups.push(current);
-                let teamPart = (courtMatch[2] || "").split(/\s+vs\s+|\s+VS\s+|\s+Vs\s+/i);
-                current = { court: courtMatch[1], t1: (teamPart[0]||"").trim(), t2: (teamPart[1]||"").trim() };
-            } else if (current && current.t2 === "") {
-                current.t2 = trimmed;
-            }
-        });
-        if (current) matchups.push(current);
-        return matchups;
-    }
+    const raw = state.weeklyLineup[mode].rawPaste;
+    const matchups = []; let current = null;
+    raw.split('\n').forEach(line => {
+        const trimmed = line.trim(); if (!trimmed) return;
+        const courtMatch = trimmed.match(/^(\d+)\s+(.*)/) || trimmed.match(/^(\d+)$/);
+        if (courtMatch) {
+            if (current) matchups.push(current);
+            let parts = (courtMatch[2] || "").split(/\s+vs\s+|\s+VS\s+|\s+Vs\s+/i);
+            current = { court: courtMatch[1], t1: (parts[0]||"").trim(), t2: (parts[1]||"").trim() };
+        } else if (current && current.t2 === "") current.t2 = trimmed;
+    });
+    if (current) matchups.push(current);
 
-    const matchups = parseLineup();
     let html = '';
     matchups.forEach(m => {
-        const team1 = findTeamBulletproof(m.t1); 
-        const team2 = findTeamBulletproof(m.t2);
-        const p1List = mode === 'SINGLES' ? (team1 && team1.name !== 'BYE' ? [team1] : []) : (team1 ? team1.members : []);
-        const p2List = mode === 'SINGLES' ? (team2 && team2.name !== 'BYE' ? [team2] : []) : (team2 ? team2.members : []);
+        const t1 = findTeam(m.t1); const t2 = findTeam(m.t2);
+        const p1L = mode === 'SINGLES' ? (t1 && t1.name !== 'BYE' ? [t1] : []) : (t1 ? t1.members : []);
+        const p2L = mode === 'SINGLES' ? (t2 && t2.name !== 'BYE' ? [t2] : []) : (t2 ? t2.members : []);
 
         for (let g = 1; g <= 3; g++) {
             const shRows = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30].map((val, idx) => {
@@ -155,17 +131,15 @@
                 if (mode === 'DOUBLES') {
                     isGray = (g === 1 || g === 3) ? (idx % 2 === 0) : (idx % 2 !== 0);
                 } else {
-                    // Singles Shading: G1/3 Gray, White White, Gray Gray...
                     if (g === 1 || g === 3) {
                         if (idx === 0) isGray = true;
                         else isGray = (Math.floor((idx - 1) / 2) % 2 !== 0);
                     } else {
-                        // Singles Shading G2: White, Gray Gray, White White...
                         if (idx === 0) isGray = false;
                         else isGray = (Math.floor((idx - 1) / 2) % 2 === 0);
                     }
                 }
-                return `<tr><td colspan="3"></td><td colspan="3"></td><td class="col-score"></td><td class="col-sh ${isGray?'bg-gray':''}">${val}</td><td class="col-score" style="border-left:none !important; border-right:3px solid black !important;"></td><td colspan="3"></td><td colspan="3"></td><td class="col-score" style="border-left:none !important;"></td></tr>`;
+                return `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-score-l"></td><td class="col-sh ${isGray?'bg-gray':''}">${val}</td><td class="col-score-r"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
             }).join('');
 
             html += `
@@ -175,42 +149,24 @@
                 <div class="team-header"><span>Team: ${m.t1}</span><span>Game ${g}</span><span>Team: ${m.t2}</span></div>
                 <table class="score-grid">
                     <thead>
-                        <tr><th colspan="6"></th><th class="col-score">Score</th><th class="col-sh" style="background:#fff !important;">VS</th><th class="col-score"></th><th colspan="6"></th><th class="col-score">Score</th></tr>
-                        <tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="col-score">Team</th><th>SH</th><th class="col-score"></th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="col-score">Team</th></tr>
+                        <tr><th></th><th></th><th></th><th></th><th></th><th></th><th class="col-score-l">Score</th><th class="col-sh" style="background:#fff !important;">VS</th><th class="col-score-r">Score</th><th></th><th></th><th></th><th></th><th></th><th></th></tr>
+                        <tr><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th><th class="col-score-l">Team</th><th>SH</th><th class="col-score-r">Team</th><th>R</th><th>P</th><th>S</th><th>R</th><th>P</th><th>S</th></tr>
                     </thead>
                     <tbody>
                         ${shRows}
-                        <tr class="summary-row"><td colspan="6"></td><td class="col-score"></td><td class="col-sh">Points</td><td class="col-score"></td><td colspan="6"></td><td class="col-score"></td></tr>
-                        <tr class="summary-row"><td colspan="6"></td><td class="col-score"></td><td class="col-sh">Total Hcap</td><td class="col-score"></td><td colspan="6"></td><td class="col-score"></td></tr>
-                        <tr class="summary-row"><td colspan="6"></td><td class="col-score"></td><td class="col-sh">Total</td><td class="col-score"></td><td colspan="6"></td><td class="col-score"></td></tr>
-                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-score"></td><td class="col-sh">Ringers</td><td class="col-score"></td><td></td><td></td><td></td><td></td><td></td><td class="col-score"></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-score-l"></td><td class="col-sh">Points</td><td class="col-score-r"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-score-l"></td><td class="col-sh">Total Hcap</td><td class="col-score-r"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-score-l"></td><td class="col-sh">Total</td><td class="col-score-r"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                        <tr class="summary-row"><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-score-l"></td><td class="col-sh">Ringers</td><td class="col-score-r"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
                     </tbody>
                 </table>
                 <div class="footer">
-                    <div class="team-box">
-                        <div class="wlt-header">W L T</div>
-                        <table class="p-table">
-                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
-                            <tbody>
-                                ${[0,1,2].map(i => {
-                                    const p = p1List[i];
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="team-box">
-                        <div class="wlt-header">W L T</div>
-                        <table class="p-table">
-                            <thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead>
-                            <tbody>
-                                ${[0,1,2].map(i => {
-                                    const p = p2List[i];
-                                    return `<tr><td class="name-cell">${p?p.name:'&nbsp;'}</td><td>${p?getH(p.name):''}</td><td>${p?getPlyrAvg(p.name):''}</td></tr>`;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                    <div class="team-box"><div class="wlt-header">W L T</div><table class="p-table"><thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead><tbody>
+                        ${[0,1,2].map(i => `<tr><td class="name-cell">${p1L[i]?p1L[i].name:'&nbsp;'}</td><td>${p1L[i]?getH(p1L[i].name):''}</td><td>${p1L[i]?getPlyrAvg(p1L[i].name):''}</td></tr>`).join('')}
+                    </tbody></table></div>
+                    <div class="team-box"><div class="wlt-header">W L T</div><table class="p-table"><thead><tr><th class="name-cell">Name</th><th>Handicap</th><th>Avg</th></tr></thead><tbody>
+                        ${[0,1,2].map(i => `<tr><td class="name-cell">${p2L[i]?p2L[i].name:'&nbsp;'}</td><td>${p2L[i]?getH(p2L[i].name):''}</td><td>${p2L[i]?getPlyrAvg(p2L[i].name):''}</td></tr>`).join('')}
+                    </tbody></table></div>
                 </div>
             </div>`;
         }
