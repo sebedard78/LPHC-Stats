@@ -1640,6 +1640,65 @@
         await save(); render();
     };
 
+    // --- NEW: LAST 9 GAMES REPORT LOGIC ---
+    window.printDateReport = () => {
+        const roster = mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t => t.members);
+        let html = `
+            <style>
+                .last-nine-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+                .player-card { border: 2px solid black; padding: 10px; page-break-inside: avoid; }
+                .player-name { font-weight: 900; text-transform: uppercase; border-bottom: 2px solid black; margin-bottom: 5px; font-size: 12pt; }
+                .nine-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+                .nine-table th, .nine-table td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+                .nine-table th { background: #eee; font-size: 8pt; text-transform: uppercase; }
+                .cell-res { font-weight: bold; }
+                .cell-res-W { color: #059669; }
+                .cell-res-L { color: #dc2626; }
+            </style>
+            <div class="last-nine-grid">`;
+
+        roster.forEach(player => {
+            const playerHist = state.history
+                .filter(h => cleanN(h.player) === cleanN(player.name) && h.mode === mode)
+                .sort((a,b) => b.timestamp - a.timestamp)
+                .slice(0, 9);
+
+            html += `
+                <div class="player-card">
+                    <div class="player-name">${player.name}</div>
+                    <table class="nine-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Score</th>
+                                <th>Rng</th>
+                                <th>Res</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            playerHist.forEach(game => {
+                html += `
+                    <tr>
+                        <td style="font-size: 8pt;">${game.date}</td>
+                        <td style="font-weight: bold;">${game.score}</td>
+                        <td>${game.ringers}</td>
+                        <td class="cell-res cell-res-${game.result}">${game.result}</td>
+                    </tr>`;
+            });
+
+            // Fill empty rows if player hasn't played 9 games yet
+            for (let i = playerHist.length; i < 9; i++) {
+                html += `<tr><td>&nbsp;</td><td>-</td><td>-</td><td>-</td></tr>`;
+            }
+
+            html += `</tbody></table></div>`;
+        });
+
+        html += `</div>`;
+        window.executePrint("Recent Performance - Last 9 Games", html, true);
+    };
+
     function render() {
         document.getElementById('modeS').className = mode === 'SINGLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
         document.getElementById('modeD').className = mode === 'DOUBLES' ? "mode-btn-active text-[10px] px-4 py-2 transition font-bold uppercase" : "text-[10px] px-4 py-2 rounded transition font-bold uppercase";
@@ -1761,7 +1820,7 @@
                 </div>`;
             content.innerHTML = `
                 <div class="action-bar flex justify-end p-2 gap-2 no-print">
-                    <button onclick="window.printDateReport()" class="bg-sky-600 text-white px-4 py-2 font-black uppercase border">Print Report By Date</button>
+                    <button onclick="window.printDateReport()" class="bg-sky-600 text-white px-4 py-2 font-black uppercase border">Print Last 9 Report</button>
                     <button onclick="window.printActive('Season Report')" class="bg-black text-white px-4 py-2 font-black uppercase border">Print Season Report</button>
                 </div>
                 <div class="report-grid max-w-4xl mx-auto border-4 border-black">
