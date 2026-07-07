@@ -288,6 +288,9 @@
     let view = 'NEWS';
     let scorerMode = 'LIVE'; 
     let isUnlocked = false;
+    
+    // PERSISTENCE FIX: Save manual entries locally so they survive re-renders
+    let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0 };
 
     let tState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] };
     let tView = 'BRACKET';
@@ -950,7 +953,12 @@
 
     /* MANUAL SCORER LOGIC */
     window.setScorerView = (v) => { scorerMode = v; render(); };
-    window.updateManualHcp = (pNum) => { const pName = document.getElementById('mp'+pNum).value; document.getElementById('mh'+pNum).value = getH(pName); };
+    window.updateManualHcp = (pNum) => { 
+        const pName = document.getElementById('mp'+pNum).value; 
+        const hcp = getH(pName);
+        manualEntryState['mh'+pNum] = hcp;
+        document.getElementById('mh'+pNum).value = hcp; 
+    };
 
     window.openManualPicker = async (id, label) => {
         const result = await window.smKeypad("Enter " + label);
@@ -972,9 +980,12 @@
 
     window.filterManualTeams = (teamNum) => {
         const tName = document.getElementById('mt'+teamNum).value;
+        manualEntryState['mt'+teamNum] = tName;
+        
         if(cleanN(tName) === 'bye') {
             const startIdx = teamNum === 1 ? 1 : 4;
             for(let i=startIdx; i<startIdx+3; i++) { 
+                manualEntryState['mp'+i] = 'BYE';
                 const el = document.getElementById('mp'+i); 
                 if(el) { el.innerHTML = `<option value="">BYE</option>`; el.selectedIndex = 0; }
             }
@@ -985,6 +996,10 @@
         const opts = `<option value="">--Select Player--</option>` + members.map(m => `<option value="${m.name}">${m.name}</option>`).join('') + `<option value="DUMMY">DUMMY</option>`;
         const startIdx = teamNum === 1 ? 1 : 4;
         for(let i=startIdx; i<startIdx+3; i++) { const el = document.getElementById('mp'+i); if(el) el.innerHTML = opts; }
+    };
+    
+    window.updateManualSelection = (key, val) => {
+        manualEntryState[key] = val;
     };
 
     window.openManualFourDeadPicker = async () => {
@@ -1032,6 +1047,9 @@
             });
         }
 
+        // Tally records for manual summary
+        const pTally = players.map(p => ({ pIdx: p.pIdx, w: 0, l: 0, t: 0 }));
+
         const target = mode === 'SINGLES' ? 135 : 162;
         const games = []; let agg1 = 0, agg2 = 0;
         const sIdMaster = Date.now();
@@ -1071,6 +1089,17 @@
                 r2 = s2 > s1 ? 'W' : (s2 < s1 ? 'L' : 'T');
             }
             agg1 += s1; agg2 += s2;
+            
+            // Update tally for each player in this game
+            players.forEach(p => {
+                if (p[`g${g}_scr`] !== null && p.name && !['BYE','DUMMY'].includes(cleanN(p.name).toUpperCase())) {
+                    const res = p.pIdx <= 3 ? r1 : r2;
+                    if(res==='W') pTally[p.pIdx-1].w++;
+                    else if(res==='L') pTally[p.pIdx-1].l++;
+                    else if(res==='T') pTally[p.pIdx-1].t++;
+                }
+            });
+
             games.push({ 
                 gameNum: g, s1, s2, h1: hcp1, h2: hcp2, 
                 p1: players.find(p=>p.pIdx===1)?.name||'', p1_scr: players.find(p=>p.pIdx===1)?.[`g${g}_scr`]||0, p1_rng: players.find(p=>p.pIdx===1)?.[`g${g}_rng`]||0, 
@@ -1106,16 +1135,23 @@
         else mW = agg1 > agg2 ? t1 : (agg1 < agg2 ? t2 : 'Tie');
 
         state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster });
+        
+        // RESET manualEntryState after successful submission
+        manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0 };
+        
         await save(); 
         
-        const summaryRows = players.filter(p => p.name).map(p => `
+        const summaryRows = players.filter(p => p.name).map(p => {
+            const rec = pTally[p.pIdx-1];
+            return `
             <tr class="border-b border-zinc-700 text-[11px]">
                 <td class="p-2 text-left font-black uppercase text-sky-400">${p.name || '---'}</td>
                 <td class="p-2">${p.g1_scr !== null ? `${p.g1_scr} (${p.g1_rng})` : '-'}</td>
                 <td class="p-2">${p.g2_scr !== null ? `${p.g2_scr} (${p.g2_rng})` : '-'}</td>
                 <td class="p-2">${p.g3_scr !== null ? `${p.g3_scr} (${p.g3_rng})` : '-'}</td>
+                <td class="p-2 font-black text-zinc-400">${rec.w}-${rec.l}-${rec.t}</td>
             </tr>
-        `).join('');
+        `}).join('');
 
         const mod = document.getElementById('modal'); mod.style.display = 'block';
         mod.innerHTML = `
@@ -1132,7 +1168,7 @@
                 <table class="w-full text-center">
                     <thead>
                         <tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400 border-b border-zinc-700">
-                            <th class="p-3 text-left">Player</th><th>G1 (S/R)</th><th>G2 (S/R)</th><th>G3 (S/R)</th>
+                            <th class="p-3 text-left">Player</th><th>G1 (S/R)</th><th>G2 (S/R)</th><th>G3 (S/R)</th><th>Series Record</th>
                         </tr>
                     </thead>
                     <tbody>${summaryRows}</tbody>
@@ -1219,7 +1255,7 @@
         });
 
         // 3. Weekly HOA
-        state.weeklyHoa[mode].forEach(h => { if(cleanN(h.player) === oldC) h.player = newName; });
+        state.weeklyHoa[mode].forEach(h => { if(cleanN(h.player) === cleanN(oldName)) h.player = newName; });
 
         // 4. Four Deads
         if(state.fourDeads[mode][oldName]) {
@@ -1847,12 +1883,21 @@
                 </div>`;
         } else if (view === 'SCORER') {
             if(!state.scorerEnabled) { view = 'STANDINGS'; render(); return; }
-            const upP = getPitcherLead(); 
             
             if (scorerMode === 'MANUAL' && !match.active) {
-                const opts = (state.roster[mode] || []).map(r => `<option value="${r.teamName || r.name}">${r.teamName || r.name}</option>`).join('') + `<option value="BYE">BYE</option>`;
+                const teamOpts = (state.roster[mode] || []).map(r => `<option value="${r.teamName || r.name}" ${manualEntryState.mt1 === (r.teamName || r.name) ? 'selected' : ''}>${r.teamName || r.name}</option>`).join('') + `<option value="BYE">BYE</option>`;
+                const teamOpts2 = (state.roster[mode] || []).map(r => `<option value="${r.teamName || r.name}" ${manualEntryState.mt2 === (r.teamName || r.name) ? 'selected' : ''}>${r.teamName || r.name}</option>`).join('') + `<option value="BYE">BYE</option>`;
+                
                 const allPlayers = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
-                const pOpts = allPlayers.map(p => `<option value="${p.name}">${p.name}</option>`).sort().join('');
+                const pOptsGlobal = allPlayers.map(p => `<option value="${p.name}">${p.name}</option>`).sort().join('');
+                
+                const getMemberOpts = (tName, currentP) => {
+                    if (cleanN(tName) === 'bye') return '<option value="BYE">BYE</option>';
+                    const team = (state.roster[mode] || []).find(t => (t.teamName || t.name) === tName);
+                    const members = team ? (mode === 'DOUBLES' ? team.members : [team]) : [];
+                    return `<option value="">--Select Player--</option>` + members.map(m => `<option value="${m.name}" ${currentP === m.name ? 'selected' : ''}>${m.name}</option>`).join('') + `<option value="DUMMY" ${currentP === 'DUMMY' ? 'selected' : ''}>DUMMY</option>`;
+                };
+
                 content.innerHTML = `
                     <div class="p-2 bg-white shadow-xl max-w-5xl mx-auto mt-4">
                         <div class="flex gap-1 mb-4 no-print">
@@ -1864,14 +1909,16 @@
                             <div class="space-y-4">
                                 <div class="bg-black text-white p-4 border-b-4 border-sky-500">
                                     <p class="text-[10px] font-black mb-1 uppercase tracking-widest text-sky-300">Team 1 Selection</p>
-                                    <select id="mt1" class="w-full p-3 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(1)"><option value="">Select Team</option>${opts}</select>
+                                    <select id="mt1" class="w-full p-3 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(1); render();"><option value="">Select Team</option>${teamOpts}</select>
                                 </div>
                                 ${(mode === 'SINGLES' ? [1] : [1,2,3]).map(i => `
                                 <div class="bg-white p-4 border shadow-sm space-y-4">
-                                    <select id="mp${i}" onchange="updateManualHcp(${i})" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50"><option value="">Select Player</option></select>
+                                    <select id="mp${i}" onchange="updateManualHcp(${i}); updateManualSelection('mp${i}', this.value);" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50">
+                                        ${getMemberOpts(manualEntryState.mt1, manualEntryState['mp'+i])}
+                                    </select>
                                     <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
                                         <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
-                                        <input id="mh${i}" type="number" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white">
+                                        <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white" value="${manualEntryState['mh'+i]}">
                                     </div>
                                     <div class="space-y-3">
                                         ${[1,2,3].map(g => `
@@ -1891,14 +1938,16 @@
                             <div class="space-y-4">
                                 <div class="bg-black text-white p-4 border-b-4 border-sky-500">
                                     <p class="text-[10px] font-black mb-1 uppercase tracking-widest text-sky-300">Team 2 Selection</p>
-                                    <select id="mt2" class="w-full p-3 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(2)"><option value="">Select Team</option>${opts}</select>
+                                    <select id="mt2" class="w-full p-3 bg-zinc-900 border border-zinc-700 font-bold text-sm text-white" onchange="filterManualTeams(2); render();"><option value="">Select Team</option>${teamOpts2}</select>
                                 </div>
                                 ${(mode === 'SINGLES' ? [4] : [4,5,6]).map(i => `
                                 <div class="bg-white p-4 border shadow-sm space-y-4">
-                                    <select id="mp${i}" onchange="updateManualHcp(${i})" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50"><option value="">Select Player</option></select>
+                                    <select id="mp${i}" onchange="updateManualHcp(${i}); updateManualSelection('mp${i}', this.value);" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50">
+                                        ${getMemberOpts(manualEntryState.mt2, manualEntryState['mp'+i])}
+                                    </select>
                                     <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
                                         <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
-                                        <input id="mh${i}" type="number" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white">
+                                        <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white" value="${manualEntryState['mh'+i]}">
                                     </div>
                                     <div class="space-y-3">
                                         ${[1,2,3].map(g => `
@@ -1920,7 +1969,7 @@
                         <div class="mt-12 pt-8 border-t-4 border-zinc-100 max-w-md mx-auto">
                             <h3 class="text-center text-sky-500 font-black italic uppercase mb-4">Manual Four-Dead Log</h3>
                             <div class="bg-zinc-900 text-white p-6 shadow-2xl space-y-4">
-                                <div><label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Player Name</label><select id="mfdName" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white font-bold text-sm"><option value="">--Select Player--</option>${pOpts}</select></div>
+                                <div><label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Player Name</label><select id="mfdName" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white font-bold text-sm"><option value="">--Select Player--</option>${pOptsGlobal}</select></div>
                                 <div><label class="block text-[10px] font-black uppercase text-sky-300 mb-1">Add Count</label><input id="mfdCount" type="number" placeholder="How many deads?" class="w-full p-3 bg-zinc-800 border border-zinc-700 text-white text-center font-black" readonly onclick="window.openManualFourDeadPicker()"></div>
                                 <button onclick="submitManualFourDeads()" class="w-full bg-sky-500 text-black p-4 font-black uppercase text-xs hover:bg-sky-400">Log Four Deads</button>
                             </div>
@@ -1944,10 +1993,25 @@
                 }
             } else if (match.step === 'GAME_SUMMARY' || match.step === 'MATCH_SUMMARY') {
                 const isMatch = match.step === 'MATCH_SUMMARY', players = [match.p1, match.p2, match.p3, match.p4].filter(x => x && !['BYE','DUMMY'].includes(cleanN(x).toUpperCase()));
-                let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
-                players.forEach(p => { let pS = []; for(let gN=1; gN<=match.gameNum; gN++) { const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); pS.push(h ? `${h.score}(${h.ringers})` : '-'); } while(pS.length < 3) pS.push('-'); const sTot = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p)).reduce((s,x)=>s+x.score, 0), statAvg = getPlyrAvg(p); tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pS[0]}</td><td>${pS[1]}</td><td>${pS[2]}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black">${statAvg}</td></tr>`; });
+                let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>W-L-T</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
+                players.forEach(p => { 
+                    let pS = []; 
+                    for(let gN=1; gN<=match.gameNum; gN++) { 
+                        const h = match.seriesBuffer.find(x => cleanN(x.player) === cleanN(p) && x.gameNum === gN); 
+                        pS.push(h ? `${h.score}(${h.ringers})` : '-'); 
+                    } 
+                    while(pS.length < 3) pS.push('-'); 
+                    const sTot = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p)).reduce((s,x)=>s+x.score, 0), statAvg = getPlyrAvg(p); 
+                    
+                    const pWins = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p) && x.result === 'W').length;
+                    const pLoss = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p) && x.result === 'L').length;
+                    const pTies = match.seriesBuffer.filter(x => cleanN(x.player) === cleanN(p) && x.result === 'T').length;
+
+                    tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pS[0]}</td><td>${pS[1]}</td><td>${pS[2]}</td><td class="font-black text-zinc-500">${pWins}-${pLoss}-${pTies}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black">${statAvg}</td></tr>`; 
+                });
                 content.innerHTML = `<div class="p-4 bg-white shadow-2xl max-w-xl mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase">${isMatch ? 'Series Final' : 'Game Summary'}</h2><p class="text-4xl font-black my-4">${match.games[match.gameNum-1].s1} - ${match.games[match.gameNum-1].s2}</p>${tableHtml}<button onclick="${isMatch ? 'window.finalizeFullSeries()' : 'window.nextGame()'}" class="w-full bg-sky-500 text-black p-5 rounded-2xl font-black uppercase shadow-lg mt-6">${isMatch ? 'Save & Close' : 'Next Game'}</button></div>`;
             } else {
+                const upPLead = getPitcherLead();
                 const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
                 const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
                 const rp1 = match.currGameFrames.reduce((s,f)=>s+getR(f.p1),0) + getR(match.currF.p1), rp2 = match.currGameFrames.reduce((s,f)=>s+getR(f.p2),0) + getR(match.currF.p2), rp3 = match.currGameFrames.reduce((s,f)=>s+getR(f.p3),0) + getR(match.currF.p3), rp4 = match.currGameFrames.reduce((s,f)=>s+getR(f.p4),0) + getR(match.currF.p4);
@@ -1983,12 +2047,12 @@
                             </div>
                         </div>
                         <div class="flex items-stretch gap-1 mb-1">
-                            <div class="bg-sky-500 text-black p-2.5 flex-1 text-center text-[11px] font-black uppercase italic tracking-widest shadow-lg">SUGGESTED LEAD: ${getPitcherLead() || '---'}</div>
+                            <div class="bg-sky-500 text-black p-2.5 flex-1 text-center text-[11px] font-black uppercase italic tracking-widest shadow-lg">SUGGESTED LEAD: ${upPLead || '---'}</div>
                             <button onclick="window.openExitModal()" class="bg-red-600 text-white px-8 font-black text-[10px] uppercase rounded">Exit</button>
                         </div>
                         <div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}" style="font-size:1.8rem;">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div>
                         <table class="micro-table border-b border-sky-500">
-                             <thead>${mode==='SINGLES'?'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th></tr>':'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T1</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t2">T2</th></tr>'}</thead>
+                             <thead>${mode==='SINGLES'?'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th></tr>':'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T1</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t2">T2</th>'}</thead>
                         </table>
                     </div>
                     <div class="micro-container">
@@ -2215,7 +2279,7 @@
         }).sort((a,b) => a.last.localeCompare(b.last));
         let rows = pData.map(d => `<tr style="text-align:center; font-size: 7.5pt; height: 18px;"><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.last}</td><td style="border:1.5px solid black; text-align:left; padding-left:3px;">${d.first}</td><td style="border:1.5px solid black;">${d.div}</td><td style="border:1.5px solid black;">${d.card}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c1}</td><td style="border:1.5px solid black;">${d.c2}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c3}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c4}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c5}</td><td style="border:1.5px solid black;">${d.c6}</td><td style="border:1.5px solid black; background: #f0f0f0;">${d.c7}</td><td style="border:1.5px solid black;">${d.elig}</td></tr>`).join('');
         for(let i=0; i<5; i++) rows += `<tr style="height: 18px;"><td style="border:1.5px solid black;" colspan="12"></td></tr>`;
-        const html = `<div style="font-family: 'Arial Narrow', Arial, sans-serif; padding: 10px; color: black; background: white; width: 7.5in; margin: auto;"><div style="display:flex; justify-content:center; align-items:center; position: relative; margin-bottom: 5px;"><div style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; border: 1.5px solid black; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width: 50px; max-height: 50px;"></div><div style="text-align:center;"><h1 style="margin:0; font-size:16pt; font-weight:900; font-style:italic;">National Horseshoe Pitchers Association</h1><h2 style="margin:0; font-size:11pt; font-weight:900; text-transform:uppercase;">Sanctioned Club/League Program - FINAL Stat Sheet</h2><p style="margin:0; font-size: 7.5pt;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p><p style="margin:0; font-size: 7.5pt; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH  Ohio 44070 Bcarson848@gmail.com</p></div></div><div style="border-top: 2.5px solid black; border-bottom: 2.5px solid black; padding: 5px 0; margin-bottom: 10px;"><div style="display: grid; grid-template-columns: 1.5fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Club Name:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.clubName || ''}</span></div><div><b>Phone#:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.phone || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Sanction Number:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.sanctionNum || ''}</span></div><div><b>Director:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.director || ''}</span></div><div><b>Date Submitted:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.dateSubmitted || ''}</span></div></div><div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>State:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.state || ''}</span></div><div><b>Address:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.address || ''}</span></div><div><b>City:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.city || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-size: 9pt;"><div><b>Dates: Start</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.startDate || ''}</span></div><div><b>End</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.endDate || ''}</span></div><div><b>Cancellation:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.cancellation || ''}</span></div><div><b>Count All:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.countAll || ''}</span></div></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 6.5pt; font-weight: bold; margin-bottom: 5px; line-height: 1.1;"><div>Column Number:<br>1. Total League Pts, No Handicap<br>2. High Game Points, No Handicap<br>3. Total League Shoes</div><div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div><div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div></div><table style="width:100%; border-collapse: collapse; border: 2.5px solid black;"><thead><tr style="font-size: 6.5pt; background: #eee;"><th colspan="2" style="border:1.5px solid black;">Player Name</th><th rowspan="2" style="border:1.5px solid black; width: 30px;">Div.</th><th rowspan="2" style="border:1.5px solid black; width: 60px;">NHPA<br>Card No.</th><th style="border:1.5px solid black;">1</th><th style="border:1.5px solid black;">2</th><th style="border:1.5px solid black;">3</th><th style="border:1.5px solid black;">4</th><th style="border:1.5px solid black;">5</th><th style="border:1.5px solid black;">6</th><th style="border:1.5px solid black;">7</th><th rowspan="2" style="border:1.5px solid black; width: 25px;">Elig</th></tr><tr style="font-size: 5pt; background: #eee;"><th style="border:1.5px solid black; width: 70px;">Last</th><th style="border:1.5px solid black; width: 60px;">First</th><th colspan="7" style="border:1.5px solid black;">NHPA COLUMNS</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px; font-size: 8pt; font-weight: bold; display: flex; justify-content: space-between; align-items: flex-end;"><div style="width: 60%;">Signed <span style="border-bottom: 2px solid black; display: inline-block; width: 80%;"></span></div><div style="text-align: center; font-size: 6pt; width: 30%;">Club Officer / League Director</div></div></div>`;
+        const html = `<div style="font-family: 'Arial Narrow', Arial, sans-serif; padding: 10px; color: black; background: white; width: 7.5in; margin: auto;"><div style="display:flex; justify-content:center; align-items:center; position: relative; margin-bottom: 5px;"><div style="position: absolute; left: 0; top: 0; width: 60px; height: 60px; border: 1.5 solid black; display: flex; align-items: center; justify-content: center;"><img src="nhpa_logo.png" style="max-width: 50px; max-height: 50px;"></div><div style="text-align:center;"><h1 style="margin:0; font-size:16pt; font-weight:900; font-style:italic;">National Horseshoe Pitchers Association</h1><h2 style="margin:0; font-size:11pt; font-weight:900; text-transform:uppercase;">Sanctioned Club/League Program - FINAL Stat Sheet</h2><p style="margin:0; font-size: 7.5pt;">This form should include all league members. Verify NATSTATS. Scratch scores only.</p><p style="margin:0; font-size: 7.5pt; font-weight: bold;">mail to: Barbara Carson, 7618 Willow Woods Dr., N. Olmsted, OH  Ohio 44070 Bcarson848@gmail.com</p></div></div><div style="border-top: 2.5px solid black; border-bottom: 2.5px solid black; padding: 5px 0; margin-bottom: 10px;"><div style="display: grid; grid-template-columns: 1.5fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Club Name:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.clubName || ''}</span></div><div><b>Phone#:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.phone || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>Sanction Number:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.sanctionNum || ''}</span></div><div><b>Director:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.director || ''}</span></div><div><b>Date Submitted:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.dateSubmitted || ''}</span></div></div><div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr; font-size: 9pt; margin-bottom: 5px;"><div><b>State:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.state || ''}</span></div><div><b>Address:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.address || ''}</span></div><div><b>City:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.city || ''}</span></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; font-size: 9pt;"><div><b>Dates: Start</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.startDate || ''}</span></div><div><b>End</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.endDate || ''}</span></div><div><b>Cancellation:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.cancellation || ''}</span></div><div><b>Count All:</b> <span style="border-bottom: 1px solid black; padding: 0 10px;">${cfg.countAll || ''}</span></div></div></div><div style="display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 6.5pt; font-weight: bold; margin-bottom: 5px; line-height: 1.1;"><div>Column Number:<br>1. Total League Pts, No Handicap<br>2. High Game Points, No Handicap<br>3. Total League Shoes</div><div><br>4. Total League Ringers<br>5. Previous High Game Ringer %<br>6. Current Season High Game Ringer %</div><div><br>7. Final Ringer %<br>Elig.If higher patch earned indicate with " Y "</div></div><table style="width:100%; border-collapse: collapse; border: 2.5px solid black;"><thead><tr style="font-size: 6.5pt; background: #eee;"><th colspan="2" style="border:1.5px solid black;">Player Name</th><th rowspan="2" style="border:1.5px solid black; width: 30px;">Div.</th><th rowspan="2" style="border:1.5px solid black; width: 60px;">NHPA<br>Card No.</th><th style="border:1.5px solid black;">1</th><th style="border:1.5px solid black;">2</th><th style="border:1.5px solid black;">3</th><th style="border:1.5px solid black;">4</th><th style="border:1.5px solid black;">5</th><th style="border:1.5px solid black;">6</th><th style="border:1.5px solid black;">7</th><th rowspan="2" style="border:1.5px solid black; width: 25px;">Elig</th></tr><tr style="font-size: 5pt; background: #eee;"><th style="border:1.5px solid black; width: 70px;">Last</th><th style="border:1.5px solid black; width: 60px;">First</th><th colspan="7" style="border:1.5px solid black;">NHPA COLUMNS</th></tr></thead><tbody>${rows}</tbody></table><div style="margin-top:10px; font-size: 8pt; font-weight: bold; display: flex; justify-content: space-between; align-items: flex-end;"><div style="width: 60%;">Signed <span style="border-bottom: 2px solid black; display: inline-block; width: 80%;"></span></div><div style="text-align: center; font-size: 6pt; width: 30%;">Club Officer / League Director</div></div></div>`;
         window.executePrint("NHPA Final Stat Sheet", html, true);
     };
 
