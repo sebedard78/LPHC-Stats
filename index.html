@@ -288,7 +288,7 @@
     let view = 'NEWS';
     let scorerMode = 'LIVE'; 
     let isUnlocked = false;
-    
+
     // PERSISTENCE FIX: Save manual entries locally so they survive re-renders
     let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0 };
 
@@ -1508,7 +1508,7 @@
             if(nextW) { if(mIdx % 2 !== 0) nextW.t1 = winner; else nextW.t2 = winner; }
             else if (r === wRounds) { const gf = b.winners.find(x => x.id === 'GF-M1'); if(gf) gf.t1 = winner; }
             if (loser) {
-                if (r === 1) { const targetL = b.losers.find(x => x.id === `L1-M${Math.ceil(mIdx/2)}`); if (targetL) { if (mIdx % 2 !== 0) targetL.t1 = loser; else targetL.t2 = loser; } }
+                if (r === 1) { const targetL = b.losers.find(x => x.id === `L1-M${Math.ceil(mIdx/2)}`); if (targetL) { if (mIdx % 2 !== 0) targetL.t1 = winner; else targetL.t2 = loser; } }
                 else { const targetL = b.losers.find(x => x.id === `L${(r - 1) * 2}-M${mIdx}`); if (targetL) targetL.t2 = loser; }
             }
         } else if (prefix === 'L') {
@@ -2014,7 +2014,10 @@
                 const upPLead = getPitcherLead();
                 const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
                 const sc1 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p1||0)+Number(f.p2||0),0)), sc2 = Number(match.currGameFrames.reduce((s,f)=>s+Number(f.p3||0)+Number(f.p4||0),0));
-                const rp1 = match.currGameFrames.reduce((s,f)=>s+getR(f.p1),0) + getR(match.currF.p1), rp2 = match.currGameFrames.reduce((s,f)=>s+getR(f.p2),0) + getR(match.currF.p2), rp3 = match.currGameFrames.reduce((s,f)=>s+getR(f.p3),0) + getR(match.currF.p3), rp4 = match.currGameFrames.reduce((s,f)=>s+getR(f.p4),0) + getR(match.currF.p4);
+                const rp1 = match.currGameFrames.reduce((s,f)=>s+getR(f.p1),0) + getR(match.currF.p1);
+                const rp2 = match.currGameFrames.reduce((s,f)=>s+getR(f.p2),0) + getR(match.currF.p2);
+                const rp3 = match.currGameFrames.reduce((s,f)=>s+getR(f.p3),0) + getR(match.currF.p3);
+                const rp4 = match.currGameFrames.reduce((s,f)=>s+getR(f.p4),0) + getR(match.currF.p4);
                 const s1C = sc1 + match.h1 + match.h2 + d1 + d2 + Number(match.currF.p1||0) + Number(match.currF.p2||0), s2C = sc2 + match.h3 + match.h4 + d3 + d4 + Number(match.currF.p3||0) + Number(match.currF.p4||0);
                 const target = mode === 'SINGLES' ? 135 : 162; const dS1 = cleanN(match.t1Name) === 'bye' ? target : s1C, dS2 = cleanN(match.t2Name) === 'bye' ? target : s2C;
                 
@@ -2066,7 +2069,12 @@
             if (mode === 'SINGLES' && state.singlesStandingsResetDate) {
                 hList = hList.filter(h => h.timestamp > state.singlesStandingsResetDate);
             }
-            const rows = (state.roster[mode]||[]).map(t => { const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0, l=0; hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; }).sort((a,b)=>b.pts-a.pts).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col">${d.w}</td><td class="st-num-col">${d.l}</td><td class="st-num-col">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
+            const rows = (state.roster[mode]||[]).map(t => { 
+                const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0, l=0; 
+                hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); 
+                const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
+                return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
+            }).sort((a,b) => b.pts - a.pts || b.w - a.w).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col">${d.w}</td><td class="st-num-col">${d.l}</td><td class="st-num-col">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
             content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         } else if (view === 'STATS') {
             const shoesPerG = (mode === 'DOUBLES' ? 30 : 50);
