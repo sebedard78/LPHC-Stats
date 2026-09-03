@@ -77,18 +77,16 @@
     .sum-stats-table td { border-bottom: 1px solid #222; padding: 12px 10px; text-align: left; font-size: 0.95rem; font-weight: bold; vertical-align: middle; white-space: normal !important; overflow-wrap: break-word; }
     .sum-stats-table .val-col { text-align: center; background: #0a0a0a; color: #0ea5e9; width: 60px; border-left: 1px solid #333; font-size: 1.1rem; }
 
-    /* WEEKLY LINEUP TABLE STYLING - FIXING COURT BOX SIZE */
+    /* WEEKLY LINEUP TABLE STYLING */
     .lineup-table { width: 100%; border-collapse: collapse; background: white; border: 4px solid #000; margin-top: 10px; table-layout: fixed; }
     .lineup-header-bg { background-color: #0ea5e9 !important; color: #000 !important; }
     .lineup-table th { padding: 15px; font-weight: 900; font-size: 1.4rem; border-bottom: 4px solid #000; text-align: center; text-transform: uppercase; font-style: italic; }
     
-    /* ADJUSTED: FIT WORD "COURT" IN THE BOX */
     .lineup-table th.lineup-court-col { font-size: 1rem !important; padding: 5px 2px; }
 
     .lineup-table td { padding: 12px; border: 1px solid #e2e8f0; font-weight: 800; text-align: center; font-size: 1.1rem; color: #1e293b; overflow-wrap: break-word; vertical-align: middle; }
     .lineup-row-even { background-color: #f8fafc; }
     .lineup-row-odd { background-color: #ffffff; }
-    /* IMPORTANT: PRE-LINE RESPECTS THE NEWLINES IN OUR PROCESSED DATA */
     .lineup-matchup-col { text-align: center !important; line-height: 1.4; white-space: pre-line; letter-spacing: -0.5px; }
     .lineup-court-col { width: 80px; background: #1e293b; color: #38bdf8 !important; border-right: 4px solid #000 !important; font-size: 1.5rem; font-weight: 900; }
 
@@ -164,11 +162,10 @@
     #customDialog { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
     .dialog-box { background: #18181b; border: 2px solid #3f3f46; width: 100%; max-width: 400px; padding: 24px; color: white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
 
-    /* LANDSCAPE SPECIFIC ADJUSTMENTS - HUGE SCORE RESTORED */
+    /* LANDSCAPE SPECIFIC ADJUSTMENTS */
     @media (orientation: landscape) {
         .sticky-scorer { position: relative !important; top: 0 !important; width: 100% !important; max-width: none !important; }
         
-        /* INCREASE TEXT OF FRAMED SCORES */
         .micro-container { height: auto !important; min-height: 250px; overflow-y: visible !important; }
         .micro-table td { font-size: 1.6rem !important; padding: 15px 0 !important; }
         .micro-table th { font-size: 0.8rem !important; }
@@ -177,7 +174,6 @@
         .t-micro-table td { font-size: 1.4rem !important; padding: 12px 0 !important; }
         .t-micro-table th { font-size: 0.7rem !important; }
 
-        /* INCREASE TEXT OF END GAME SUMMARY */
         .sum-row-table { font-size: 1.4rem !important; }
         .sum-row-table th { font-size: 1rem !important; }
         .sum-row-table td { font-size: 1.4rem !important; padding: 15px 5px !important; }
@@ -191,7 +187,6 @@
         .sticky-scorer .text-[12px] { font-size: 1.2rem !important; }
         .sticky-scorer .text-[11px] { font-size: 1rem !important; }
         
-        /* MAKE NAME CLICK TARGETS EVEN BIGGER IN LANDSCAPE */
         .sticky-scorer button[onclick*="setScoringSlot"] { font-size: 1.8rem !important; padding: 12px 20px !important; }
 
         .t-btn-score-grid { grid-template-columns: repeat(6, 1fr) !important; padding: 8px !important; }
@@ -244,7 +239,7 @@
     <button onclick="window.setTab('STATS')" id="tabSTATS" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Club Stats</button>
     <button onclick="window.setTab('LINEUP')" id="tabLINEUP" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Lineup</button>
     <button onclick="window.setTab('REPORT')" id="tabREPORT" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">Report</button>
-    <button onclick="window.setTab('SCORER')" id="tabSCORER" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap text-red-500">Scorer</button>
+    <button onclick="window.setTab('SCORER')" id="tabSCORER" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-red-500 text-nowrap">Scorer</button>
     <button onclick="window.setTab('TOURNAMENT')" id="tabTOURNAMENT" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-sky-500 text-nowrap" style="display:none;">Tournament</button>
     <button onclick="window.setTab('HISTORY')" id="tabHISTORY" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">History</button>
     <button onclick="window.setTab('NHPA')" id="tabNHPA" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-nowrap">NHPA</button>
@@ -254,7 +249,6 @@
 <main id="viewContent" class="p-2 max-w-6xl mx-auto no-print"></main>
 
 <script type="module">
-    // 1. PWA Logic: Register Service Worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').then(() => console.log("SW Registered"));
     }
@@ -278,11 +272,10 @@
     const docRefTourney = doc(db, "tournament_final_v1", "data");
 
 	window.openPrintSystem = () => {
-    // This tells the printer which mode (Singles or Doubles) you are currently looking at
-    state.activeMode = mode; 
-    localStorage.setItem('lphc_print_data', JSON.stringify(state));
-    window.open('scoresheets.html', '_blank');
-};
+        state.activeMode = mode; 
+        localStorage.setItem('lphc_print_data', JSON.stringify(state));
+        window.open('scoresheets.html', '_blank');
+    };
 
     let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
     let mode = 'DOUBLES';
@@ -290,7 +283,6 @@
     let scorerMode = 'LIVE'; 
     let isUnlocked = false;
 
-    // PERSISTENCE FIX: Save manual entries locally so they survive re-renders
     let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0 };
 
     let tState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] };
@@ -329,7 +321,6 @@
         });
     };
 
-    // NEW: Specialized keypad dialog with restricted buttons
     window.smHorseKeypad = (msg, options) => {
         return new Promise(res => {
             dBox.style.display = 'flex';
@@ -390,7 +381,6 @@
             if(state.manualEntryEnabled === undefined) state.manualEntryEnabled = true;
             if(!state.weeklyHoa) state.weeklyHoa = { SINGLES: [], DOUBLES: [] };
             
-            // LOGGING FIX: Safety recovery if fourDeads is an array in DB
             if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
             if(Array.isArray(state.fourDeads.SINGLES)) state.fourDeads.SINGLES = {};
             if(Array.isArray(state.fourDeads.DOUBLES)) state.fourDeads.DOUBLES = {};
@@ -405,7 +395,6 @@
             if(!state.winners) state.winners = {champ:'', runner:'', season:''};
             if(!state.activeMatches) state.activeMatches = [];
             
-            // LINEUP FIX: Ensure weeklyLineup is an object with mode keys
             if(!state.weeklyLineup || typeof state.weeklyLineup.rawPaste === 'string') {
                 const oldRaw = state.weeklyLineup?.rawPaste || '';
                 const oldTitle = state.weeklyLineup?.weekTitle || 'Week 1';
@@ -415,7 +404,6 @@
                 };
             }
             
-            // KEYBOARD FIX: Don't render if user is typing
             if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
             render(); 
         } 
@@ -452,22 +440,18 @@
         const n = cleanN(pName); if(!pName || ['bye','dummy'].includes(n)) return 0;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanN(x.name) === n);
-        // STANDINGS FIX: Filter out entries marked as isNoShow so they don't count toward averages
         const hist = (state.history || []).filter(x => cleanN(x.player) === n && x.mode === mode && !x.isNoShow).slice(-9);
         const rawAvg = hist.length ? hist.reduce((s, g) => s + g.score, 0) / hist.length : (p ? Number(p.startAvg) : 0);
         return Math.round(rawAvg);
     }
 
-    // RETROACTIVE HISTORICAL AVERAGE LOOKUP: Solves HOA determination without database migrations
     function getPlyrAvgAtTimestamp(pName, timestamp) {
         const n = cleanN(pName); if(!pName || ['bye','dummy'].includes(n)) return 0;
         const rList = mode === 'SINGLES' ? (state.roster.SINGLES||[]) : (state.roster.DOUBLES.flatMap(t => t.members));
         const p = rList.find(x => cleanN(x.name) === n);
         
-        // Fallback to standard current average if timestamp is not available
         if (!timestamp) return getPlyrAvg(pName);
 
-        // Filter and evaluate strictly prior matching histories
         const hist = (state.history || [])
             .filter(x => cleanN(x.player) === n && x.mode === mode && !x.isNoShow && x.timestamp && x.timestamp < timestamp)
             .sort((a, b) => a.timestamp - b.timestamp)
@@ -575,7 +559,6 @@
         await save(); window.smAlert("Winners Saved"); render();
     };
 
-    // 3. Fullscreen trigger helper
     function triggerFS() {
         const de = document.documentElement;
         const rfs = de.requestFullscreen || de.webkitRequestFullScreen || de.mozRequestFullScreen || de.msRequestFullscreen;
@@ -872,7 +855,7 @@
 
     function finalizeFrame() {
         ['p1', 'p2', 'p3', 'p4'].forEach(k => {
-            if (match[k] === 'DUMMY') match.currF[k] = 30;
+            if (match[k] === 'DUMMY') match.currF[k] = 0;
         });
         match.currGameFrames.push({ ...match.currF, sh: (match.currGameFrames.length + 1) * 2 });
         match.currF = { p1: null, p2: null, p3: null, p4: null }; 
@@ -910,7 +893,6 @@
         const r1 = dS1 > dS2 ? 'W' : (dS1 < dS2 ? 'L' : 'T'), r2 = dS2 > dS1 ? 'W' : (dS2 < dS1 ? 'L' : 'T');
         const pls = [{n:match.p1,p:'p1',r:r1,d:d1},{n:match.p2,p:'p2',r:r1,d:d2},{n:match.p3,p:'p3',r:r2,d:d3},{n:match.p4,p:'p4',r:r2,d:d4}];
         
-        // Pushing each game's entry with exact timestamp to support retroactive historical lookups
         const entryTimestamp = Date.now();
         pls.forEach(pl => { 
             if(pl.n && !['bye','dummy'].includes(cleanN(pl.n))) { 
@@ -939,9 +921,8 @@
         else mW = match.sessionAgg.t1 > match.sessionAgg.t2 ? match.t1Name : (match.sessionAgg.t1 < match.t2Name ? match.t2Name : 'Tie');
         const today = new Date().toLocaleDateString(); 
         
-        // Evaluated unconditionally now that playoff checks are removed
         match.seriesBuffer.forEach(entry => {
-            const pAvg = getPlyrAvg(entry.player); // Entering average
+            const pAvg = getPlyrAvg(entry.player); 
             const hoa = entry.score - pAvg;
             const idx = state.weeklyHoa[mode].findIndex(x => x.date === today);
             if (idx !== -1) { 
@@ -955,7 +936,6 @@
 
         state.history.push(...match.seriesBuffer);
         
-        // LOGGING FIX: Safety check for fourDeads Object
         if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
         if(!state.fourDeads[mode] || Array.isArray(state.fourDeads[mode])) state.fourDeads[mode] = {};
         
@@ -1025,20 +1005,18 @@
         if(val !== null) document.getElementById('mfdCount').value = val;
     };
 
-    // FIXED: Manual Four Dead Logic with safety checks
     window.submitManualFourDeads = async () => {
         const name = document.getElementById('mfdName').value;
         const count = parseInt(document.getElementById('mfdCount').value);
         if(!name || isNaN(count)) return smAlert("Select name and enter count");
         
-        // Logic Fix: Force fourDeads structure to Object for the database
         if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
         if(!state.fourDeads[mode] || Array.isArray(state.fourDeads[mode])) state.fourDeads[mode] = {};
         
         state.fourDeads[mode][name] = (state.fourDeads[mode][name] || 0) + count;
         await save();
         await smAlert(`Success: ${count} Four-Deads added to ${name}'s stats.`);
-        document.getElementById('mfdCount').value = ""; // Clear input
+        document.getElementById('mfdCount').value = ""; 
         render();
     };
 
@@ -1065,7 +1043,6 @@
             });
         }
 
-        // Tally records for manual summary
         const pTally = players.map(p => ({ pIdx: p.pIdx, w: 0, l: 0, t: 0 }));
 
         const target = mode === 'SINGLES' ? 135 : 162;
@@ -1074,21 +1051,40 @@
         const today = new Date().toLocaleDateString();
         
         for(let g=1; g<=3; g++) {
-            // Validation: Ensure exactly 2 players per team are scored (except for BYE)
-            const t1Scored = players.filter(p => p.pIdx <= 3 && p[`g${g}_scr`] !== null);
-            const t2Scored = players.filter(p => p.pIdx > 3 && p[`g${g}_scr`] !== null);
+            let t1Scored = players.filter(p => p.pIdx <= 3 && p[`g${g}_scr`] !== null && cleanN(p.name) !== 'dummy');
+            let t2Scored = players.filter(p => p.pIdx > 3 && p[`g${g}_scr`] !== null && cleanN(p.name) !== 'dummy');
+
+            const t1Dummy = players.find(p => p.pIdx <= 3 && cleanN(p.name) === 'dummy');
+            const t2Dummy = players.find(p => p.pIdx > 3 && cleanN(p.name) === 'dummy');
+
+            if (t1Dummy && t1Scored.length < 2 && cleanN(t1) !== 'bye') {
+                const dummyItem = { ...t1Dummy, [`g${g}_scr`]: 0, [`g${g}_rng`]: 0 };
+                t1Scored.push(dummyItem);
+                const orig = players.find(p => p.pIdx === t1Dummy.pIdx);
+                if (orig) {
+                    orig[`g${g}_scr`] = 0;
+                    orig[`g${g}_rng`] = 0;
+                }
+            }
+            if (t2Dummy && t2Scored.length < 2 && cleanN(t2) !== 'bye') {
+                const dummyItem = { ...t2Dummy, [`g${g}_scr`]: 0, [`g${g}_rng`]: 0 };
+                t2Scored.push(dummyItem);
+                const orig = players.find(p => p.pIdx === t2Dummy.pIdx);
+                if (orig) {
+                    orig[`g${g}_scr`] = 0;
+                    orig[`g${g}_rng`] = 0;
+                }
+            }
             
             if (cleanN(t1) !== 'bye' && t1Scored.length > 2) return window.smAlert(`Game ${g}: Team 1 has more than 2 players scored.`);
             if (cleanN(t2) !== 'bye' && t2Scored.length > 2) return window.smAlert(`Game ${g}: Team 2 has more than 2 players scored.`);
 
-            // Calculation: Use handicaps ONLY from playing players
             let hcp1 = t1Scored.reduce((a, b) => a + b.hcp, 0);
             let hcp2 = t2Scored.reduce((a, b) => a + b.hcp, 0);
 
             let s1Scr = t1Scored.reduce((a, b) => a + (b[`g${g}_scr`] || 0), 0);
             let s2Scr = t2Scored.reduce((a, b) => a + (b[`g${g}_scr`] || 0), 0);
             
-            // Dummy adjustments
             t1Scored.forEach(p => { if(cleanN(p.name) === 'dummy') s1Scr += 30; });
             t2Scored.forEach(p => { if(cleanN(p.name) === 'dummy') s2Scr += 30; });
 
@@ -1108,7 +1104,6 @@
             }
             agg1 += s1; agg2 += s2;
             
-            // Update tally for each player in this game
             players.forEach(p => {
                 if (p[`g${g}_scr`] !== null && p.name && !['BYE','DUMMY'].includes(cleanN(p.name).toUpperCase())) {
                     const res = p.pIdx <= 3 ? r1 : r2;
@@ -1131,11 +1126,9 @@
             players.forEach((p, idx) => { 
                 const scr = p[`g${g}_scr`];
                 if(scr !== null && cleanN(p.name) !== 'dummy' && cleanN(p.name) !== 'bye' && p.name !== '') {
-                    // FIX: Calculate entering average BEFORE pushing the new score record into state.history
                     const pAvg = getPlyrAvg(p.name);
                     const hoaValue = scr - pAvg;
                     
-                    // Push game with unique incrementing timestamp to ensure correct future calculations
                     state.history.push({ 
                         player: p.name, 
                         score: scr, 
@@ -1167,7 +1160,6 @@
 
         state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster });
         
-        // RESET manualEntryState after successful submission
         manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0 };
         
         await save(); 
@@ -1209,7 +1201,6 @@
         </div>`;
     };
 
-    // --- NEW FIXED STANDINGS EDITING & SYNC FUNCTIONS ---
     window.logNoShow = async (idx) => {
         const team = state.roster[mode][idx];
         const name = team.teamName || team.name;
@@ -1223,7 +1214,7 @@
                     state.history.push({
                         player: pN, score: 0, ringers: 0, result: 'L',
                         sessionId: sId, gameNum: g, mode, date: today, timestamp: Date.now(),
-                        isNoShow: true // STATS FIX: Ensure this loss doesn't affect averages
+                        isNoShow: true 
                     });
                 }
             });
@@ -1249,7 +1240,7 @@
             state.history.push({
                 player: pN, score: 0, ringers: 0, result: r,
                 sessionId: sId, gameNum: 1, mode, date: today, timestamp: Date.now(),
-                isNoShow: true // STATS FIX: Ensure manual adjust doesn't affect averages
+                isNoShow: true 
             });
         });
         await save();
@@ -1257,7 +1248,6 @@
         render();
     };
 
-    // --- NEW: DELETE SESSION FROM HISTORY ---
     window.deleteSession = async (sId) => {
         if(await window.smConfirm("PERMANENTLY DELETE this session? This will remove all associated games from history and standings immediately.")){
             state.sessions = state.sessions.filter(s => s.id !== sId);
@@ -1266,34 +1256,6 @@
             render();
         }
     };
-
-    // Helper for Global Renaming stats when name changes
-    function renamePlayerGlobally(oldName, newName) {
-        if (!oldName || !newName || oldName === newName) return;
-        const oldC = cleanN(oldName);
-        
-        // 1. History
-        state.history.forEach(h => { if(cleanN(h.player) === oldC) h.player = newName; });
-        
-        // 2. Sessions
-        state.sessions.forEach(s => {
-            if(cleanN(s.matchWinner) === oldC) s.matchWinner = newName;
-            if(cleanN(s.t1Name) === oldC) s.t1Name = newName;
-            if(cleanN(s.t2Name) === oldC) s.t2Name = newName;
-            s.fullData.forEach(g => {
-                ['p1','p2','p3','p4','p5','p6'].forEach(k => { if(cleanN(g[k]) === oldC) g[k] = newName; });
-            });
-        });
-
-        // 3. Weekly HOA
-        state.weeklyHoa[mode].forEach(h => { if(cleanN(h.player) === cleanN(oldName)) h.player = newName; });
-
-        // 4. Four Deads
-        if(state.fourDeads[mode][oldName]) {
-            state.fourDeads[mode][newName] = (state.fourDeads[mode][newName] || 0) + state.fourDeads[mode][oldName];
-            delete state.fourDeads[mode][oldName];
-        }
-    }
 
     window.addRosterItem = async () => {
         if (mode === 'SINGLES') {
@@ -1345,7 +1307,6 @@
         if (n !== null && n !== oldName) {
             p.name = n;
             renamePlayerGlobally(oldName, n);
-            // Refresh Team Name string
             state.roster.DOUBLES[tIdx].teamName = state.roster.DOUBLES[tIdx].members.map(m => getFirst(m.name)).join('/');
         }
         const avg = await window.smPrompt("Edit Start Avg:", p.startAvg);
@@ -1568,7 +1529,6 @@
 
     window.setTView = (v) => { tView = v; render(); };
 
-    /* UPDATED: LINEUP BULK SAVE FOR MODE-SPECIFIC */
     window.saveWeeklyLineupBulk = async () => {
         state.weeklyLineup[mode].weekTitle = document.getElementById('lineupWeekTitle').value;
         state.weeklyLineup[mode].rawPaste = document.getElementById('lineupPasteInput').value;
@@ -1580,43 +1540,35 @@
         if(!sess) return;
         const g = sess.fullData[sGameIdx];
 
-        // Potential keys based on match type
         const playerKeys = sess.isManual ? ['p1','p2','p5','p3','p4','p6'] : ['p1','p2','p3','p4'];
         
         for (let pk of playerKeys) {
             const pName = g[pk];
             if (!pName || ['bye','dummy'].includes(cleanN(pName))) continue;
 
-            // Check if this player actually has recorded stats for this slot in this game
             const playedInThisSlot = sess.isManual ? 
                 (g[pk + '_scr'] !== null && g[pk + '_scr'] !== undefined) : 
                 (g.frames || []).some(f => f[pk] !== null && f[pk] !== undefined);
 
             if (!playedInThisSlot) continue;
 
-            // Current Stats
             let curS = sess.isManual ? g[pk + '_scr'] : (g.frames || []).reduce((s,f)=>s+Number(f[pk]||0), 0);
             let curR = sess.isManual ? g[pk + '_rng'] : (g.frames || []).reduce((s,f)=>s+getR(f[pk]), 0);
             
-            // Prompts
             const resS = await window.smPrompt(`${getFirst(pName)} - New Points:`, curS);
-            if(resS === null) continue; // Skip player if prompt cancelled
+            if(resS === null) continue; 
             
             const resR = await window.smPrompt(`${getFirst(pName)} - New Ringers:`, curR);
             if(resR === null) continue;
 
-            // Update session data
             if(sess.isManual) {
                 g[pk + '_scr'] = Number(resS);
                 g[pk + '_rng'] = Number(resR);
             } else {
-                // If it's a live game, we effectively turn this slot into a manual override for that game
-                // We'll create the properties if they don't exist to store the edit
                 g[pk + '_scr_override'] = Number(resS);
                 g[pk + '_rng_override'] = Number(resR);
             }
 
-            // Sync with history array (used for standings)
             const hRec = state.history.find(h => h.sessionId === sId && h.gameNum === g.gameNum && cleanN(h.player) === cleanN(pName));
             if(hRec) {
                 hRec.score = Number(resS);
@@ -1624,13 +1576,11 @@
             }
         }
 
-        // Handle Team Handicap Edits
         const newH1 = await window.smPrompt(`Team 1 Total Handicap for this game:`, g.h1);
         if(newH1 !== null) g.h1 = Number(newH1);
         const newH2 = await window.smPrompt(`Team 2 Total Handicap for this game:`, g.h2);
         if(newH2 !== null) g.h2 = Number(newH2);
 
-        // Recalculate Final Game Scores (s1 and s2)
         const calcTeamScr = (pKeys) => {
             let total = 0;
             pKeys.forEach(k => {
@@ -1653,7 +1603,6 @@
         g.s1 = calcTeamScr(t1Keys) + g.h1;
         g.s2 = calcTeamScr(t2Keys) + g.h2;
 
-        // Update results (W/L/T) for the individual games in history
         const r1 = g.s1 > g.s2 ? 'W' : (g.s1 < g.s2 ? 'L' : 'T');
         const r2 = g.s2 > g.s1 ? 'W' : (g.s2 < g.s1 ? 'L' : 'T');
 
@@ -1664,7 +1613,6 @@
             if(hRec) hRec.result = (t1Keys.includes(k) ? r1 : r2);
         });
 
-        // Recalculate Session Aggregates and Match Winner
         sess.agg1 = sess.fullData.reduce((s, gm)=> s + gm.s1, 0);
         sess.agg2 = sess.fullData.reduce((s, gm)=> s + gm.s2, 0);
 
@@ -1683,7 +1631,6 @@
         await save(); render();
     };
 
-    // --- NEW: LAST 9 GAMES REPORT LOGIC ---
     window.printDateReport = () => {
         const roster = mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t => t.members);
         let html = `
@@ -1730,7 +1677,6 @@
                     </tr>`;
             });
 
-            // Fill empty rows if player hasn't played 9 games yet
             for (let i = playerHist.length; i < 9; i++) {
                 html += `<tr><td>&nbsp;</td><td>-</td><td>-</td><td>-</td></tr>`;
             }
@@ -1830,7 +1776,6 @@
             const rList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
             const pNames = rList.map(p => p.name);
             const stats = pNames.map(pN => {
-                // STATS FIX: Ignore No-Show entries for averages
                 const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode && !h.isNoShow);
                 const avg = getPlyrAvg(pN);
                 const totP = g.reduce((s,x)=>s+Number(x.score||0),0);
@@ -1843,7 +1788,6 @@
                 const startAvg = rRec.startAvg;
                 const isNew = Number(rRec.prevHighRinger || 0) === 0;
 
-                // FIX: Calculate HOA relative to the historic average at the moment of that high game
                 return { name: pN, avg, rPct, hiG: g.length ? Math.max(...g.map(x=>x.score)) : 0, hiR: g.length ? Math.max(...g.map(x=>(x.ringers/shoesPG)*100)) : 0, sPct, hoa: g.length ? Math.max(...g.map(x => x.score - getPlyrAvgAtTimestamp(pN, x.timestamp))) : 0, imp: avg - startAvg, isNew };
             });
             const sort = (key) => [...stats].sort((a,b) => b[key] - a[key]).slice(0, 5);
@@ -2082,7 +2026,6 @@
             const rosterList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members);
             const pNames = rosterList.map(p => p.name);
             const rows = pNames.map(pN => { 
-                // STATS FIX: Ignore no-show entries for averages
                 const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode && !h.isNoShow);
                 const playerAvg = getPlyrAvg(pN);
                 const totP = g.reduce((sum, x)=>sum+Number(x.score||0),0);
@@ -2098,7 +2041,6 @@
                 const imp = Math.round(playerAvg - rRec.startAvg); 
                 const highGame = g.length ? Math.max(...g.map(x => x.score)) : 0; 
                 
-                // FIX: Look up historical average retroactively to evaluate historical high over average
                 const hiOA = g.length ? Math.max(...g.map(x => x.score - getPlyrAvgAtTimestamp(pN, x.timestamp))) : 0; 
                 
                 const isNewMember = Number(rRec.prevHighRinger || 0) === 0;
@@ -2264,7 +2206,6 @@
             scoring.frames.push({ ...scoring.currF, sh: fNum * 2 });
             scoring.currF = { p1: null, p2: null, p3: null, p4: null };
             scoring.pitcherIdx = 0;
-            // Check win condition
             const t1s = scoring.frames.reduce((a, b) => a + (Number(b.p1) || 0) + (Number(b.p2) || 0), 0) + scoring.h1;
             const t2s = scoring.frames.reduce((a, b) => a + (Number(b.p3) || 0) + (Number(b.p4) || 0), 0) + scoring.h2;
             if(scoring.frames.length >= 15) {
@@ -2330,7 +2271,6 @@
         const rList = mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t => t.members);
         const pNames = rList.map(p => p.name);
         const pData = pNames.map(pN => {
-            // STATS FIX: Filter out No-Shows
             const g = state.history.filter(h => cleanN(h.player) === cleanN(pN) && h.mode === mode && !h.isNoShow);
             const rRec = rList.find(p => cleanN(p.name) === cleanN(pN)) || {cardNo:'---', category: '---', prevHighRinger: 0};
             const totalPts = g.reduce((s,x)=>s+x.score,0);
