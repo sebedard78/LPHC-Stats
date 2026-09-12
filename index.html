@@ -283,7 +283,7 @@
     let scorerMode = 'LIVE'; 
     let isUnlocked = false;
 
-    let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0 };
+    let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false };
 
     let tState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] };
     let tView = 'BRACKET';
@@ -787,6 +787,23 @@
         else { match.step = 'PLAYERS'; render(); }
     };
 
+    window.pickPlayoffTeams = () => {
+        const t1 = document.getElementById('pt1').value, t2 = document.getElementById('pt2').value;
+        if(!t1 || !t2) return window.smAlert('Select both playoff teams');
+        if(cleanN(t1) === cleanN(t2)) return window.smAlert('Teams must be different');
+        match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode, isPlayoff: true, selectedSlot: null };
+        if (mode === 'SINGLES') {
+            match.p1 = match.t1Name;
+            match.p3 = match.t2Name;
+            match.h1 = Number(getH(match.p1));
+            match.h3 = Number(getH(match.p3));
+        }
+        state.activeMatches.push(match);
+        save();
+        if (mode === 'SINGLES') window.startTheLiveGame();
+        else { match.step = 'PLAYERS'; updateActiveMatchRef(); render(); }
+    };
+
     window.resumeLeagueMatch = (sessId) => { const found = state.activeMatches.find(m => m.sessionId === sessId); if(found) { 
         match = JSON.parse(JSON.stringify(found)); 
         triggerFS();
@@ -905,7 +922,8 @@
                     gameNum: match.gameNum, 
                     mode, 
                     date: new Date().toLocaleDateString(), 
-                    timestamp: entryTimestamp 
+                    timestamp: entryTimestamp,
+                    isPlayoff: match.isPlayoff
                 }); 
             } 
         });
@@ -915,6 +933,40 @@
 
     window.finalizeFullSeries = async () => {
         if (document.fullscreenElement) document.exitFullscreen();
+
+        if (match.isPlayoff) {
+            const game = match.games[match.games.length - 1];
+            if (!game) return;
+            const today = new Date().toLocaleDateString();
+            match.seriesBuffer.forEach(entry => {
+                const pAvg = getPlyrAvg(entry.player);
+                const hoa = entry.score - pAvg;
+                const idx = state.weeklyHoa[mode].findIndex(x => x.date === today);
+                if (idx !== -1) {
+                    if (hoa > state.weeklyHoa[mode][idx].hoa) state.weeklyHoa[mode][idx] = { date: today, player: entry.player, hoa: hoa };
+                } else {
+                    state.weeklyHoa[mode].push({ date: today, player: entry.player, hoa: hoa });
+                }
+            });
+            state.history.push(...match.seriesBuffer.map(x => ({ ...x, isPlayoff: true })));
+            if(!state.fourDeads || Array.isArray(state.fourDeads)) state.fourDeads = { SINGLES: {}, DOUBLES: {} };
+            if(!state.fourDeads[mode] || Array.isArray(state.fourDeads[mode])) state.fourDeads[mode] = {};
+            Object.keys(match.fourDeadLog).forEach(p => { state.fourDeads[mode][p] = (state.fourDeads[mode][p] || 0) + match.fourDeadLog[p]; });
+            state.sessions.push({
+                id: match.sessionId,
+                name: `[PLAYOFF] ${match.t1Name} vs ${match.t2Name}`,
+                t1Name: match.t1Name, t2Name: match.t2Name, date: today, mode,
+                matchWinner: game.s1 > game.s2 ? match.t1Name : (game.s2 > game.s1 ? match.t2Name : 'Tie'),
+                agg1: game.s1, agg2: game.s2, fullData: [...match.games], timestamp: Date.now(), isPlayoff: true
+            });
+            state.activeMatches = state.activeMatches.filter(x => x.sessionId !== match.sessionId);
+            match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {}, isPlayoff: false, selectedSlot: null };
+            view = 'STATS';
+            await save();
+            render();
+            return;
+        }
+
         let mW; const target = mode === 'SINGLES' ? 135 : 162;
         if (cleanN(match.t2Name) === 'bye') { const wins = match.games.filter(g => g.s1 >= target).length; mW = wins > 0 ? match.t1Name : 'BYE'; }
         else if (cleanN(match.t1Name) === 'bye') { const wins = match.games.filter(g => g.s2 >= target).length; mW = wins > 0 ? t2Name : 'BYE'; }
@@ -951,6 +1003,7 @@
 
     /* MANUAL SCORER LOGIC */
     window.setScorerView = (v) => { scorerMode = v; render(); };
+    window.toggleManualPlayoff = () => { manualEntryState.isPlayoff = !manualEntryState.isPlayoff; render(); };
     window.updateManualHcp = (pNum) => { 
         const pName = document.getElementById('mp'+pNum).value; 
         const hcp = getH(pName);
@@ -1046,11 +1099,12 @@
         const pTally = players.map(p => ({ pIdx: p.pIdx, w: 0, l: 0, t: 0 }));
 
         const target = mode === 'SINGLES' ? 135 : 162;
+        const totalGames = manualEntryState.isPlayoff ? 1 : 3;
         const games = []; let agg1 = 0, agg2 = 0;
         const sIdMaster = Date.now();
         const today = new Date().toLocaleDateString();
         
-        for(let g=1; g<=3; g++) {
+        for(let g=1; g<=totalGames; g++) {
             let t1Scored = players.filter(p => p.pIdx <= 3 && p[`g${g}_scr`] !== null && cleanN(p.name) !== 'dummy');
             let t2Scored = players.filter(p => p.pIdx > 3 && p[`g${g}_scr`] !== null && cleanN(p.name) !== 'dummy');
 
@@ -1158,9 +1212,10 @@
         else if (cleanN(t1) === 'bye') mW = games.filter(g => g.s2 >= target).length > 0 ? t2 : 'BYE';
         else mW = agg1 > agg2 ? t1 : (agg1 < agg2 ? t2 : 'Tie');
 
-        state.sessions.push({ id: sIdMaster, name: `${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster });
+        state.sessions.push({ id: sIdMaster, name: `${manualEntryState.isPlayoff ? '[PLAYOFF] ' : ''}${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster, isPlayoff: manualEntryState.isPlayoff });
         
-        manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0 };
+        const wasPlayoff = manualEntryState.isPlayoff;
+        manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false };
         
         await save(); 
         
@@ -1170,8 +1225,8 @@
             <tr class="border-b border-zinc-700 text-[11px]">
                 <td class="p-2 text-left font-black uppercase text-sky-400">${p.name || '---'}</td>
                 <td class="p-2">${p.g1_scr !== null ? `${p.g1_scr} (${p.g1_rng})` : '-'}</td>
-                <td class="p-2">${p.g2_scr !== null ? `${p.g2_scr} (${p.g2_rng})` : '-'}</td>
-                <td class="p-2">${p.g3_scr !== null ? `${p.g3_scr} (${p.g3_rng})` : '-'}</td>
+                ${wasPlayoff ? '' : `<td class="p-2">${p.g2_scr !== null ? `${p.g2_scr} (${p.g2_rng})` : '-'}</td>
+                <td class="p-2">${p.g3_scr !== null ? `${p.g3_scr} (${p.g3_rng})` : '-'}</td>`}
                 <td class="p-2 font-black text-zinc-400">${rec.w}-${rec.l}-${rec.t}</td>
             </tr>
         `}).join('');
@@ -1179,19 +1234,19 @@
         const mod = document.getElementById('modal'); mod.style.display = 'block';
         mod.innerHTML = `
         <div class="p-4 bg-zinc-950 text-white min-h-screen">
-            <h2 class="text-sky-500 font-black italic uppercase text-2xl mb-6 text-center">Manual Match Confirmation</h2>
+            <h2 class="${wasPlayoff ? 'text-red-600' : 'text-sky-500'} font-black italic uppercase text-2xl mb-6 text-center">${wasPlayoff ? 'Playoff Game Confirmation' : 'Manual Match Confirmation'}</h2>
             <div class="bg-zinc-900 border-2 border-zinc-700 p-6 text-center mb-6 shadow-2xl">
                 <p class="text-[10px] uppercase opacity-50 mb-2 tracking-[0.2em]">${t1} vs ${t2}</p>
                 <p class="text-6xl font-black mb-2">${agg1} - ${agg2}</p>
                 <div class="bg-black py-2 px-4 inline-block border border-sky-500/30">
-                    <p class="text-sky-400 font-black uppercase text-xs">Series Winner: ${mW}</p>
+                    <p class="text-sky-400 font-black uppercase text-xs">${wasPlayoff ? "Playoff Winner" : "Series Winner"}: ${mW}</p>
                 </div>
             </div>
             <div class="overflow-x-auto bg-zinc-900 border border-zinc-800 rounded-lg p-2">
                 <table class="w-full text-center">
                     <thead>
                         <tr class="bg-zinc-800 text-[9px] font-black uppercase text-zinc-400 border-b border-zinc-700">
-                            <th class="p-3 text-left">Player</th><th>G1 (S/R)</th><th>G2 (S/R)</th><th>G3 (S/R)</th><th>Series Record</th>
+                            <th class="p-3 text-left">Player</th><th>G1 (S/R)</th>${wasPlayoff ? "" : "<th>G2 (S/R)</th><th>G3 (S/R)</th>"}<th>${wasPlayoff ? "Game Record" : "Series Record"}</th>
                         </tr>
                     </thead>
                     <tbody>${summaryRows}</tbody>
@@ -1407,11 +1462,11 @@
     };
 
     window.importTFromStandings = () => {
-        const hList = (state.history || []).filter(h => h.mode === mode);
+        const hList = (state.history || []).filter(h => h.mode === mode && !h.isPlayoff);
         const rankings = (state.roster[mode]||[]).map(t => { 
             const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0; 
             hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; } } }); 
-            const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
+            const mp = (state.sessions || []).filter(s => s.mode === mode && !s.isPlayoff && cleanN(s.matchWinner) === cleanN(name)).length; 
             return { team: t, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
         }).sort((a,b) => b.pts - a.pts);
         tState.roster = rankings.map((r, idx) => {
@@ -1856,7 +1911,7 @@
                             <button onclick="setScorerView('LIVE')" class="flex-1 py-4 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Live Scorer</button>
                             <button class="flex-1 py-4 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Manual Entry</button>
                         </div>
-                        <h2 class="text-sky-500 font-black italic uppercase text-center mb-6 text-xl">3-Game Manual Entry Results</h2>
+                        <div class="flex items-center justify-between gap-3 mb-6"><h2 class="${manualEntryState.isPlayoff ? 'text-red-600' : 'text-sky-500'} font-black italic uppercase text-center text-xl flex-1">${manualEntryState.isPlayoff ? 'Playoff Game Manual Entry' : '3-Game Manual Entry Results'}</h2><button onclick="toggleManualPlayoff()" class="px-4 py-3 text-[10px] font-black uppercase ${manualEntryState.isPlayoff ? 'bg-red-600 text-white' : 'bg-zinc-100 text-zinc-500'}">${manualEntryState.isPlayoff ? 'Playoff ON' : 'Playoff OFF'}</button></div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-4">
                                 <div class="bg-black text-white p-4 border-b-4 border-sky-500">
@@ -1873,7 +1928,7 @@
                                         <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white" value="${manualEntryState['mh'+i]}">
                                     </div>
                                     <div class="space-y-3">
-                                        ${[1,2,3].map(g => `
+                                        ${(manualEntryState.isPlayoff ? [1] : [1,2,3]).map(g => `
                                         <div class="grid grid-cols-2 gap-2">
                                             <div>
                                                 <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Score</p>
@@ -1902,7 +1957,7 @@
                                         <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white" value="${manualEntryState['mh'+i]}">
                                     </div>
                                     <div class="space-y-3">
-                                        ${[1,2,3].map(g => `
+                                        ${(manualEntryState.isPlayoff ? [1] : [1,2,3]).map(g => `
                                         <div class="grid grid-cols-2 gap-2">
                                             <div>
                                                 <p class="text-[8px] font-black text-zinc-400 mb-1 uppercase">G${g} Score</p>
@@ -1917,7 +1972,8 @@
                                 </div>`).join('')}
                             </div>
                         </div>
-                        <button onclick="submitManualMatch()" class="w-full bg-black text-white p-6 mt-10 font-black uppercase text-lg shadow-2xl hover:bg-sky-600 transition-colors">Submit 3-Game Series Results</button>
+                        <button onclick="submitManualMatch()" class="w-full ${manualEntryState.isPlayoff ? 'bg-red-600 hover:bg-red-700' : 'bg-black hover:bg-sky-600'} text-white p-6 mt-10 font-black uppercase text-lg shadow-2xl transition-colors">${manualEntryState.isPlayoff ? 'Submit Playoff Game' : 'Submit 3-Game Series Results'}</button>
+                         ${manualEntryState.isPlayoff ? '<p class="text-center text-[9px] font-black uppercase text-red-600 mt-3">Playoff game does not affect standings • Counts toward player stats</p>' : ''}
                         <div class="mt-12 pt-8 border-t-4 border-zinc-100 max-w-md mx-auto">
                             <h3 class="text-center text-sky-500 font-black italic uppercase mb-4">Manual Four-Dead Log</h3>
                             <div class="bg-zinc-900 text-white p-6 shadow-2xl space-y-4">
@@ -1930,18 +1986,18 @@
                 return;
             }
             if (!match.active) {
-                const activeMatchHtml = state.activeMatches.filter(m => m.mode === mode).map(m => `<div class="bg-amber-50 border-2 border-amber-200 p-3 mb-2 flex justify-between items-center"><div class="text-left"><p class="text-[10px] font-black uppercase text-amber-600">Game in Progress</p><p class="text-sm font-black uppercase text-black">${m.t1Name} vs ${m.t2Name}</p></div><div class="flex gap-2"><button onclick="resumeLeagueMatch(${m.sessionId})" class="bg-amber-500 text-white px-3 py-2 text-[10px] font-black uppercase">Resume</button><button onclick="deleteLeagueMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase">Del</button></div></div>`).join('');
+                const activeMatchHtml = state.activeMatches.filter(m => m.mode === mode).map(m => `<div class="bg-amber-50 border-2 border-amber-200 p-3 mb-2 flex justify-between items-center"><div class="text-left"><p class="text-[10px] font-black uppercase text-amber-600">${m.isPlayoff ? 'PLAYOFF GAME IN PROGRESS' : 'Game in Progress'}</p><p class="text-sm font-black uppercase text-black">${m.t1Name} vs ${m.t2Name}</p></div><div class="flex gap-2"><button onclick="resumeLeagueMatch(${m.sessionId})" class="bg-amber-500 text-white px-3 py-2 text-[10px] font-black uppercase">Resume</button><button onclick="deleteLeagueMatch(${m.sessionId})" class="bg-red-500 text-white px-3 py-2 text-[10px] font-black uppercase">Del</button></div></div>`).join('');
                 const opts = [...(state.roster[mode]||[]).map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`), `<option value="BYE">BYE</option>`];
                 content.innerHTML = `<div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">
                     <div class="flex gap-2 mb-6 no-print"><button class="flex-1 py-3 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Live Scorer</button>${state.manualEntryEnabled ? `<button onclick="setScorerView('MANUAL')" class="flex-1 py-3 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Manual Entry</button>` : ''}</div>
-                ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Series Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black">${opts}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black">${opts}</select><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start</button></div>`;
+                ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Match Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black"><option value="">Select Team 1</option>${opts.join('')}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black"><option value="">Select Team 2</option>${opts.join('')}</select><div class="grid grid-cols-1 gap-2"><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start 3-Game Series</button><button onclick="document.getElementById('playoffSetup').classList.toggle('hidden')" class="w-full bg-red-600 text-white p-5 font-black uppercase shadow-lg">Start Playoff Game</button></div><div id="playoffSetup" class="hidden mt-4 p-4 bg-red-50 border-2 border-red-200"><p class="text-[10px] font-black uppercase text-red-600 mb-3">Playoff Game — One Game Only</p><select id="pt1" class="w-full p-4 border mb-3 font-bold text-sm text-black"><option value="">Select Playoff Team 1</option>${opts.join('')}</select><select id="pt2" class="w-full p-4 border mb-4 font-bold text-sm text-black"><option value="">Select Playoff Team 2</option>${opts.join('')}</select><button onclick="window.pickPlayoffTeams()" class="w-full bg-red-600 text-white p-5 font-black uppercase shadow-lg">Enter Playoff Game</button><p class="text-[9px] font-bold text-red-700 mt-3 uppercase">Does not affect standings • Counts toward player stats</p></div></div>`;
             } else if (match.step === 'PLAYERS') {
                 const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = (state.roster.DOUBLES||[]).find(x => (x.teamName || x.name) === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
                 const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
-                content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center font-black uppercase italic text-sky-500">G${match.gameNum} Lineup<div class="space-y-4 mt-4 text-left text-black"><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t1Name}</p><select id="sp1" class="w-full p-2 border mb-2 font-bold">${t1.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp2" class="w-full p-2 border font-bold">${t1.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t2Name}</p><select id="sp3" class="w-full p-2 border mb-2 font-bold">${t2.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp4" class="w-full p-2 border font-bold">${t2.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-none font-black uppercase">Ready</button></div></div>`;
+                content.innerHTML = `<div class="p-6 bg-white max-w-md mx-auto mt-4 text-center font-black uppercase italic ${match.isPlayoff ? 'text-red-600' : 'text-sky-500'}">${match.isPlayoff ? 'PLAYOFF GAME' : 'G'+match.gameNum+' Lineup'}<div class="space-y-4 mt-4 text-left text-black"><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t1Name}</p><select id="sp1" class="w-full p-2 border mb-2 font-bold">${t1.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp2" class="w-full p-2 border font-bold">${t1.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><div class="p-3 bg-gray-50 border text-black font-bold uppercase text-left"><p class="text-[10px] mb-2">${match.t2Name}</p><select id="sp3" class="w-full p-2 border mb-2 font-bold">${t2.map(m=>`<option value="${m.name}">${m.name}</option>`)}</select><select id="sp4" class="w-full p-2 border font-bold">${t2.map((m,i)=>`<option value="${m.name}" ${i===1?'selected':''}>${m.name}</option>`)}</select></div><button onclick="window.startTheLiveGame()" class="w-full bg-black text-white p-5 rounded-none font-black uppercase">Ready</button></div></div>`;
             } else if (match.step === 'GAME_SUMMARY' || match.step === 'MATCH_SUMMARY') {
                 const isMatch = match.step === 'MATCH_SUMMARY', players = [match.p1, match.p2, match.p3, match.p4].filter(x => x && !['BYE','DUMMY'].includes(cleanN(x).toUpperCase()));
-                let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th><th>G2</th><th>G3</th><th>W-L-T</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
+                let tableHtml = `<table class="sum-row-table"><thead><tr><th class="text-left">Player</th><th>G1</th>${manualEntryState.isPlayoff ? '' : '<th>G2</th><th>G3</th>'}<th>W-L-T</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
                 players.forEach(p => { 
                     let pS = []; 
                     for(let gN=1; gN<=match.gameNum; gN++) { 
@@ -1957,7 +2013,7 @@
 
                     tableHtml += `<tr><td class="text-left uppercase font-black text-[9px]">${p}</td><td>${pS[0]}</td><td>${pS[1]}</td><td>${pS[2]}</td><td class="font-black text-zinc-500">${pWins}-${pLoss}-${pTies}</td><td class="text-sky-500 font-black">${sTot}</td><td class="bg-gray-100 font-black">${statAvg}</td></tr>`; 
                 });
-                content.innerHTML = `<div class="p-4 bg-white shadow-2xl max-w-xl mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase">${isMatch ? 'Series Final' : 'Game Summary'}</h2><p class="text-4xl font-black my-4">${match.games[match.gameNum-1].s1} - ${match.games[match.gameNum-1].s2}</p>${tableHtml}<button onclick="${isMatch ? 'window.finalizeFullSeries()' : 'window.nextGame()'}" class="w-full bg-sky-500 text-black p-5 rounded-2xl font-black uppercase shadow-lg mt-6">${isMatch ? 'Save & Close' : 'Next Game'}</button></div>`;
+                content.innerHTML = `<div class="p-4 bg-white shadow-2xl max-w-xl mx-auto mt-4 text-center"><h2 class="text-sky-500 font-black italic uppercase">${isMatch ? 'Series Final' : 'Game Summary'}</h2><p class="text-4xl font-black my-4">${match.games[match.gameNum-1].s1} - ${match.games[match.gameNum-1].s2}</p>${tableHtml}<button onclick="${match.isPlayoff ? 'window.finalizeFullSeries()' : (isMatch ? 'window.finalizeFullSeries()' : 'window.nextGame()')}" class="w-full ${match.isPlayoff ? 'bg-red-600 text-white' : 'bg-sky-500 text-black'} p-5 rounded-2xl font-black uppercase shadow-lg mt-6">${match.isPlayoff ? 'Save Playoff Game' : (isMatch ? 'Save & Close' : 'Next Game')}</button></div>`;
             } else {
                 const upPLead = getPitcherLead();
                 const d1 = cleanN(match.p1) === 'dummy' ? 30 : 0, d2 = cleanN(match.p2) === 'dummy' ? 30 : 0, d3 = cleanN(match.p3) === 'dummy' ? 30 : 0, d4 = cleanN(match.p4) === 'dummy' ? 30 : 0;
@@ -2013,11 +2069,11 @@
                 </div>`;
             }
         } else if (view === 'STANDINGS') {
-            let hList = (state.history || []).filter(h => h.mode === mode);
+            let hList = (state.history || []).filter(h => h.mode === mode && !h.isPlayoff);
             const rows = (state.roster[mode]||[]).map(t => { 
                 const name = t.teamName || t.name, tPs = mode==='DOUBLES'?t.members.map(m=>cleanN(m.name)):[cleanN(t.name)], gS = new Set(); let w=0, ti=0, l=0; 
                 hList.forEach(h => { if(tPs.includes(cleanN(h.player))){ const k=`${h.sessionId}-${h.gameNum}`; if(!gS.has(k)){ gS.add(k); if(h.result==='W') w++; else if(h.result==='T') ti++; else if(h.result==='L') l++; } } }); 
-                const mp = (state.sessions || []).filter(s => s.mode === mode && cleanN(s.matchWinner) === cleanN(name)).length; 
+                const mp = (state.sessions || []).filter(s => s.mode === mode && !s.isPlayoff && cleanN(s.matchWinner) === cleanN(name)).length; 
                 return { name, w, l, ti, mp, pts: (w*2)+ti+(mode==='DOUBLES'?mp:0) }; 
             }).sort((a,b) => b.pts - a.pts || b.w - a.w).map(d => `<tr><td class="st-name-col font-black">${d.name}</td><td class="st-num-col">${d.w}</td><td class="st-num-col">${d.l}</td><td class="st-num-col">${d.ti}</td>${mode==='DOUBLES'?`<td class="st-num-col">${d.mp}</td>`:''} <td class="pts-col font-black">${d.pts}</td></tr>`).join('');
             content.innerHTML = `<div class="action-bar flex justify-end p-2 no-print"><button onclick="window.printActive('Current Standings')" class="bg-black text-white px-4 py-2 font-black uppercase shadow-lg border border-zinc-700">Print</button></div><div class="shadow overflow-x-auto"><table class="std-table"><thead><tr><th class="st-name-col">Team</th><th class="st-num-col">W</th><th class="st-num-col">L</th><th class="st-num-col">T</th>${mode==='DOUBLES'?'<th class="st-num-col">MP</th>':''} <th class="pts-col">Pts</th></tr></thead><tbody>${rows}</tbody></table></div>`;
