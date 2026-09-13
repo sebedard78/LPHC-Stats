@@ -283,7 +283,7 @@
     let scorerMode = 'LIVE'; 
     let isUnlocked = false;
 
-    let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false };
+    let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false, shoes: (mode === 'DOUBLES' ? 30 : 50) };
 
     let tState = { roster: [], bracket: null, bracketHistory: {}, matchHistory: [], tActiveMatches: [] };
     let tView = 'BRACKET';
@@ -1100,6 +1100,7 @@
 
         const target = mode === 'SINGLES' ? 135 : 162;
         const totalGames = manualEntryState.isPlayoff ? 1 : 3;
+        const playoffShoes = manualEntryState.isPlayoff ? Math.max(1, Number(document.getElementById('mShoes')?.value || (mode === 'DOUBLES' ? 30 : 50))) : (mode === 'DOUBLES' ? 30 : 50);
         const games = []; let agg1 = 0, agg2 = 0;
         const sIdMaster = Date.now();
         const today = new Date().toLocaleDateString();
@@ -1168,7 +1169,7 @@
             });
 
             games.push({ 
-                gameNum: g, s1, s2, h1: hcp1, h2: hcp2, 
+                gameNum: g, s1, s2, h1: hcp1, h2: hcp2, shoes: playoffShoes, 
                 p1: players.find(p=>p.pIdx===1)?.name||'', p1_scr: players.find(p=>p.pIdx===1)?.[`g${g}_scr`]||0, p1_rng: players.find(p=>p.pIdx===1)?.[`g${g}_rng`]||0, 
                 p2: players.find(p=>p.pIdx===2)?.name||'', p2_scr: players.find(p=>p.pIdx===2)?.[`g${g}_scr`]||0, p2_rng: players.find(p=>p.pIdx===2)?.[`g${g}_rng`]||0, 
                 p3: players.find(p=>p.pIdx===4)?.name||'', p3_scr: players.find(p=>p.pIdx===4)?.[`g${g}_scr`]||0, p3_rng: players.find(p=>p.pIdx===4)?.[`g${g}_rng`]||0, 
@@ -1215,7 +1216,7 @@
         state.sessions.push({ id: sIdMaster, name: `${manualEntryState.isPlayoff ? '[PLAYOFF] ' : ''}${t1} vs ${t2}`, t1Name: t1, t2Name: t2, date: today, mode, matchWinner: mW, agg1, agg2, fullData: games, isManual: true, timestamp: sIdMaster, isPlayoff: manualEntryState.isPlayoff });
         
         const wasPlayoff = manualEntryState.isPlayoff;
-        manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false };
+        manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false, shoes: (mode === 'DOUBLES' ? 30 : 50) };
         
         await save(); 
         
@@ -1835,7 +1836,7 @@
                 const avg = getPlyrAvg(pN);
                 const totP = g.reduce((s,x)=>s+Number(x.score||0),0);
                 const totR = g.reduce((s,x)=>s+Number(x.ringers||0),0);
-                const tShoes = g.length * shoesPG;
+                const tShoes = g.reduce((sum, x) => sum + (Number(x.shoes) || shoesPG), 0);
                 const rPct = tShoes > 0 ? (totR / tShoes) * 100 : 0;
                 const sPct = tShoes > 0 ? Math.min(100, Math.max(0, ((totP - (2 * totR)) / tShoes) * 100)) : 0;
                 
@@ -1843,7 +1844,7 @@
                 const startAvg = rRec.startAvg;
                 const isNew = Number(rRec.prevHighRinger || 0) === 0;
 
-                return { name: pN, avg, rPct, hiG: g.length ? Math.max(...g.map(x=>x.score)) : 0, hiR: g.length ? Math.max(...g.map(x=>(x.ringers/shoesPG)*100)) : 0, sPct, hoa: g.length ? Math.max(...g.map(x => x.score - getPlyrAvgAtTimestamp(pN, x.timestamp))) : 0, imp: avg - startAvg, isNew };
+                return { name: pN, avg, rPct, hiG: g.length ? Math.max(...g.map(x=>x.score)) : 0, hiR: g.length ? Math.max(...g.map(x=>(x.ringers/(Number(x.shoes)||shoesPG))*100)) : 0, sPct, hoa: g.length ? Math.max(...g.map(x => x.score - getPlyrAvgAtTimestamp(pN, x.timestamp))) : 0, imp: avg - startAvg, isNew };
             });
             const sort = (key) => [...stats].sort((a,b) => b[key] - a[key]).slice(0, 5);
             const sortImproved = () => stats.filter(s => !s.isNew).sort((a,b) => b.imp - a.imp).slice(0, 5);
@@ -1972,6 +1973,7 @@
                                 </div>`).join('')}
                             </div>
                         </div>
+                        ${manualEntryState.isPlayoff ? `<div class="mt-6 max-w-sm mx-auto bg-red-50 border-2 border-red-200 p-4"><label class="block text-[10px] font-black uppercase text-red-600 mb-2">Shoes Thrown Per Player</label><input id="mShoes" type="number" min="1" step="1" class="w-full p-3 border-2 border-red-200 text-center font-black text-lg bg-white" value="${manualEntryState.shoes || (mode==='DOUBLES'?30:50)}"><p class="text-[9px] font-bold text-red-700 mt-2 uppercase text-center">Change this for a playoff game if fewer or more shoes were thrown.</p></div>` : ''}
                         <button onclick="submitManualMatch()" class="w-full ${manualEntryState.isPlayoff ? 'bg-red-600 hover:bg-red-700' : 'bg-black hover:bg-sky-600'} text-white p-6 mt-10 font-black uppercase text-lg shadow-2xl transition-colors">${manualEntryState.isPlayoff ? 'Submit Playoff Game' : 'Submit 3-Game Series Results'}</button>
                          ${manualEntryState.isPlayoff ? '<p class="text-center text-[9px] font-black uppercase text-red-600 mt-3">Playoff game does not affect standings • Counts toward player stats</p>' : ''}
                         <div class="mt-12 pt-8 border-t-4 border-zinc-100 max-w-md mx-auto">
@@ -2089,7 +2091,7 @@
                 const rRec = rosterList.find(p => cleanN(p.name) === cleanN(pN)) || {startAvg:0, prevHighRinger:0}; 
                 let scPctText = "0.0%";
                 if (g.length > 0) {
-                    const tShoes = g.length * shoesPerG;
+                    const tShoes = g.reduce((sum, x) => sum + (Number(x.shoes) || shoesPerG), 0);
                     const rawVal = ((totP - (2 * totR)) / tShoes) * 100;
                     const finalVal = Math.min(100, Math.max(0, rawVal));
                     scPctText = (Math.floor(finalVal * 10) / 10).toFixed(1) + "%";
@@ -2103,7 +2105,7 @@
                 const impText = isNewMember ? 'NEW' : (imp >= 0 ? '+' + imp : imp);
                 const impColor = isNewMember ? '#38bdf8' : (imp >= 0 ? '#4ade80' : '#f87171');
 
-                return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td style="width:7.5%">${getH(pN)}</td><td style="width:7.5%">${playerAvg}</td><td style="width:7.5%">${g.length ? ((totR/(g.length*shoesPerG))*100).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${g.length ? (Math.max(...g.map(x=>(x.ringers/shoesPerG)*100))).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${scPctText}</td><td style="width:7.5%">${totP}</td><td style="width:7.5%">${highGame}</td><td style="width:7.5%; color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td style="width:7.5%">${rRec.startAvg}</td><td class="pts-col font-black" style="width:8%; color:${impColor}">${impText}</td></tr>`; 
+                return `<tr><td class="stats-name-col font-black uppercase">${pN}</td><td style="width:7.5%">${getH(pN)}</td><td style="width:7.5%">${playerAvg}</td><td style="width:7.5%">${g.length ? ((totR/(g.length*shoesPerG))*100).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${g.length ? (Math.max(...g.map(x=>(x.ringers/(Number(x.shoes)||shoesPerG))*100))).toFixed(1) : '0.0'}%</td><td style="width:7.5%">${scPctText}</td><td style="width:7.5%">${totP}</td><td style="width:7.5%">${highGame}</td><td style="width:7.5%; color:#fb923c;">${hiOA >= 0 ? '+' : ''}${Math.round(hiOA)}</td><td style="width:7.5%">${rRec.startAvg}</td><td class="pts-col font-black" style="width:8%; color:${impColor}">${impText}</td></tr>`; 
             }).sort((a,b)=>b.totP-a.totP).join('');
             const weeklyHoaRows = (state.weeklyHoa[mode] || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date)).map(entry => `<tr><td style="width: 85px;">${entry.date}</td><td>${entry.player}</td><td class="val-col">${entry.hoa >= 0 ? '+' : ''}${entry.hoa}</td></tr>`).join('');
             const fdSource = state.fourDeads[mode] || {}; const fourDeadRows = Object.keys(fdSource).map(name => ({ name: name, val: fdSource[name] })).sort((a,b) => b.val - a.val).map(d => `<tr><td>${d.name}</td><td class="val-col">${d.val}</td></tr>`).join('');
@@ -2331,10 +2333,10 @@
             const rRec = rList.find(p => cleanN(p.name) === cleanN(pN)) || {cardNo:'---', category: '---', prevHighRinger: 0};
             const totalPts = g.reduce((s,x)=>s+x.score,0);
             const highPts = g.length ? Math.max(...g.map(x=>x.score)) : 0;
-            const totalShoes = g.length * shoesPerG;
+            const totalShoes = g.reduce((sum, x) => sum + (Number(x.shoes) || shoesPerG), 0);
             const totalRingers = g.reduce((s,x)=>s+x.ringers,0);
             const prevHighR = Number(rRec.prevHighRinger || 0);
-            const currSeasonHiR = g.length ? Math.max(...g.map(x=>(x.ringers/shoesPerG)*100)) : 0;
+            const currSeasonHiR = g.length ? Math.max(...g.map(x=>(x.ringers/(Number(x.shoes)||shoesPerG))*100)) : 0;
             const finalRingerPct = totalShoes > 0 ? (totalRingers / totalShoes) * 100 : 0;
             const np = pN.includes(',') ? pN.split(',') : [pN, ''];
             return { last: np[0].trim(), first: np[1]?.trim() || '', div: rRec.category || '---', card: rRec.cardNo || '---', c1: totalPts, c2: highPts, c3: totalShoes, c4: totalRingers, c5: prevHighR.toFixed(1), c6: currSeasonHiR.toFixed(1), c7: finalRingerPct.toFixed(1), elig: Math.floor(currSeasonHiR / 10) > Math.floor(prevHighR / 10) ? 'Y' : '' };
