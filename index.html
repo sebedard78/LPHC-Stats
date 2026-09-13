@@ -2030,9 +2030,11 @@
                                     <select id="mp${i}" onchange="updateManualHcp(${i}); updateManualSelection('mp${i}', this.value);" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50">
                                         ${getMemberOpts(manualEntryState.mt1, manualEntryState['mp'+i])}
                                     </select>
-                                    <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
+                                    <div class="flex items-center gap-3 bg-zinc-50 p-2 border border-zinc-100">
                                         <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
                                         <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value); updateManualHcpValue(${i}, this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black ${manualEntryState.isPlayoff && cleanN(manualEntryState['mp'+i] || '') !== 'dummy' ? 'bg-zinc-100' : 'bg-white'}" value="${manualEntryState['mh'+i] !== undefined ? manualEntryState['mh'+i] : (manualEntryState.isPlayoff && cleanN(manualEntryState['mp'+i] || '') === 'dummy' ? 54 : '')}" ${manualEntryState.isPlayoff && cleanN(manualEntryState['mp'+i] || '') !== 'dummy' ? 'readonly' : ''}>
+                                        ${manualEntryState.isPlayoff && i === 1 ? `<label class="text-[10px] font-black uppercase text-red-600 ml-1">Bonus</label><input id="mBonus1" type="number" step="1" class="w-16 p-2 border-2 border-red-200 text-center font-black bg-white" value="${manualEntryState.bonus1 || 0}" oninput="updateManualBonus(1,this.value)" onchange="updateManualBonus(1,this.value)" title="Bonus points added to Team 1 total">` : ''}
+                                        ${manualEntryState.isPlayoff && i === 4 ? `<label class="text-[10px] font-black uppercase text-red-600 ml-1">Bonus</label><input id="mBonus2" type="number" step="1" class="w-16 p-2 border-2 border-red-200 text-center font-black bg-white" value="${manualEntryState.bonus2 || 0}" oninput="updateManualBonus(2,this.value)" onchange="updateManualBonus(2,this.value)" title="Bonus points added to Team 2 total">` : ''}
                                     </div>
                                     <div class="space-y-3">
                                         ${(manualEntryState.isPlayoff ? [1] : [1,2,3]).map(g => `
@@ -2049,7 +2051,7 @@
                                     </div>
                                 </div>`).join('')}
                             </div>
-                            ${manualEntryState.isPlayoff ? `<div class="mt-4 bg-red-50 border-2 border-red-200 p-4"><label class="block text-[10px] font-black uppercase text-red-600 mb-2">Team 1 Bonus Points</label><input id="mBonus1" type="number" step="1" class="w-full p-3 border-2 border-red-200 text-center font-black text-lg bg-white" value="${manualEntryState.bonus1 || 0}" oninput="updateManualBonus(1,this.value)" onchange="updateManualBonus(1,this.value)"><p class="text-[9px] font-bold text-red-700 mt-2 uppercase text-center">Added directly to Team 1's playoff total.</p></div>` : ''}
+
                             <div class="space-y-4">
                                 <div class="bg-black text-white p-4 border-b-4 border-sky-500">
                                     <p class="text-[10px] font-black mb-1 uppercase tracking-widest text-sky-300">Team 2 Selection</p>
@@ -2060,9 +2062,11 @@
                                     <select id="mp${i}" onchange="updateManualHcp(${i}); updateManualSelection('mp${i}', this.value);" class="w-full p-3 border-2 border-zinc-100 text-sm font-black uppercase bg-zinc-50">
                                         ${getMemberOpts(manualEntryState.mt2, manualEntryState['mp'+i])}
                                     </select>
-                                    <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
+                                    <div class="flex items-center gap-3 bg-zinc-50 p-2 border border-zinc-100">
                                         <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
                                         <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value); updateManualHcpValue(${i}, this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black ${manualEntryState.isPlayoff && cleanN(manualEntryState['mp'+i] || '') !== 'dummy' ? 'bg-zinc-100' : 'bg-white'}" value="${manualEntryState['mh'+i] !== undefined ? manualEntryState['mh'+i] : (manualEntryState.isPlayoff && cleanN(manualEntryState['mp'+i] || '') === 'dummy' ? 54 : '')}" ${manualEntryState.isPlayoff && cleanN(manualEntryState['mp'+i] || '') !== 'dummy' ? 'readonly' : ''}>
+                                        ${manualEntryState.isPlayoff && i === 1 ? `<label class="text-[10px] font-black uppercase text-red-600 ml-1">Bonus</label><input id="mBonus1" type="number" step="1" class="w-16 p-2 border-2 border-red-200 text-center font-black bg-white" value="${manualEntryState.bonus1 || 0}" oninput="updateManualBonus(1,this.value)" onchange="updateManualBonus(1,this.value)" title="Bonus points added to Team 1 total">` : ''}
+                                        ${manualEntryState.isPlayoff && i === 4 ? `<label class="text-[10px] font-black uppercase text-red-600 ml-1">Bonus</label><input id="mBonus2" type="number" step="1" class="w-16 p-2 border-2 border-red-200 text-center font-black bg-white" value="${manualEntryState.bonus2 || 0}" oninput="updateManualBonus(2,this.value)" onchange="updateManualBonus(2,this.value)" title="Bonus points added to Team 2 total">` : ''}
                                     </div>
                                     <div class="space-y-3">
                                         ${(manualEntryState.isPlayoff ? [1] : [1,2,3]).map(g => `
@@ -2079,7 +2083,7 @@
                                     </div>
                                 </div>`).join('')}
                             </div>
-                            ${manualEntryState.isPlayoff ? `<div class="mt-4 bg-red-50 border-2 border-red-200 p-4"><label class="block text-[10px] font-black uppercase text-red-600 mb-2">Team 2 Bonus Points</label><input id="mBonus2" type="number" step="1" class="w-full p-3 border-2 border-red-200 text-center font-black text-lg bg-white" value="${manualEntryState.bonus2 || 0}" oninput="updateManualBonus(2,this.value)" onchange="updateManualBonus(2,this.value)"><p class="text-[9px] font-bold text-red-700 mt-2 uppercase text-center">Added directly to Team 2's playoff total.</p></div>` : ''}
+
                         </div>
                         ${manualEntryState.isPlayoff ? `<div class="mt-6 max-w-sm mx-auto bg-red-50 border-2 border-red-200 p-4"><label class="block text-[10px] font-black uppercase text-red-600 mb-2">Shoes Thrown Per Player</label><input id="mShoes" type="number" min="1" step="1" class="w-full p-3 border-2 border-red-200 text-center font-black text-lg bg-white" value="${manualEntryState.shoes || (mode==='DOUBLES'?30:50)}" oninput="updateManualShoes(this.value)" onchange="updateManualShoes(this.value)"><p class="text-[9px] font-bold text-red-700 mt-2 uppercase text-center">Change this for a playoff game if fewer or more shoes were thrown.</p></div>` : ''}
                         <button onclick="submitManualMatch()" class="w-full ${manualEntryState.isPlayoff ? 'bg-red-600 hover:bg-red-700' : 'bg-black hover:bg-sky-600'} text-white p-6 mt-10 font-black uppercase text-lg shadow-2xl transition-colors">${manualEntryState.isPlayoff ? 'Submit Playoff Game' : 'Submit 3-Game Series Results'}</button>
