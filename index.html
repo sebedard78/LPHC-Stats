@@ -1159,7 +1159,12 @@
         }
 
         if (manualEntryState.isPlayoff && !(state.playoffHcpLocked && state.playoffHcpLocked[mode])) return window.smAlert(`Lock the ${mode} playoff handicaps in Manage before entering playoff games.`);
-        if (manualEntryState.isPlayoff) players.forEach(p => { if(p.name) p.hcp = getPlayoffHcp(p.name); });
+        if (manualEntryState.isPlayoff) players.forEach(p => {
+            if (!p.name) return;
+            // Regular playoff players use the locked playoff handicap.
+            // A DUMMY is the one exception: its handicap is editable for this playoff entry.
+            if (cleanN(p.name) !== 'dummy') p.hcp = getPlayoffHcp(p.name);
+        });
 
         const pTally = players.map(p => ({ pIdx: p.pIdx, w: 0, l: 0, t: 0 }));
 
@@ -1710,9 +1715,14 @@
         const calcTeamScr = (pKeys) => {
             let total = 0;
             pKeys.forEach(k => {
-                if(cleanN(g[k]) === 'dummy' || cleanN(g[k]) === 'BYE') { 
-                    if(cleanN(g[k]) === 'dummy') total += 30; 
-                    return; 
+                if(cleanN(g[k]) === 'dummy' || cleanN(g[k]) === 'BYE') {
+                    if(cleanN(g[k]) === 'dummy') {
+                        // Normal games use the automatic 30-point dummy value.
+                        // Playoff manual games use the dummy score entered for that game.
+                        if (sess.isPlayoff && sess.isManual) total += Number(g[k + '_scr'] || 0);
+                        else total += 30;
+                    }
+                    return;
                 }
                 if(sess.isManual) {
                     total += (g[k + '_scr'] || 0);
