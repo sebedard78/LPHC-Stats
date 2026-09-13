@@ -277,7 +277,7 @@
         window.open('scoresheets.html', '_blank');
     };
 
-    let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
+    let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, playoffHcpLocked: {SINGLES:false, DOUBLES:false}, playoffHcp: {SINGLES:{}, DOUBLES:{}}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, tournamentEnabled: false, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } } };
     let mode = 'DOUBLES';
     let view = 'NEWS';
     let scorerMode = 'LIVE'; 
@@ -378,6 +378,10 @@
             if(!state.managePin) state.managePin = '1234';
             if(!state.nhpa) state.nhpa = {SINGLES:{}, DOUBLES:{}};
             if(!state.hcpLocked) state.hcpLocked = {SINGLES:true, DOUBLES:true};
+            if(!state.playoffHcpLocked) state.playoffHcpLocked = {SINGLES:false, DOUBLES:false};
+            if(!state.playoffHcp) state.playoffHcp = {SINGLES:{}, DOUBLES:{}};
+            if(!state.playoffHcp.SINGLES) state.playoffHcp.SINGLES = {};
+            if(!state.playoffHcp.DOUBLES) state.playoffHcp.DOUBLES = {};
             if(state.manualEntryEnabled === undefined) state.manualEntryEnabled = true;
             if(!state.weeklyHoa) state.weeklyHoa = { SINGLES: [], DOUBLES: [] };
             
@@ -476,6 +480,31 @@
 
         return currentCalc;
     }
+
+
+    function getPlayoffHcp(pName) {
+        const n = cleanN(pName);
+        if(!pName || n === 'bye') return 0;
+        if(n === 'dummy') return 54;
+        if(state.playoffHcpLocked && state.playoffHcpLocked[mode] && state.playoffHcp && state.playoffHcp[mode] && state.playoffHcp[mode][n] !== undefined) return Number(state.playoffHcp[mode][n]) || 0;
+        return getH(pName);
+    }
+
+    window.lockPlayoffHcp = async () => {
+        if(!state.playoffHcpLocked) state.playoffHcpLocked = {SINGLES:false, DOUBLES:false};
+        if(!state.playoffHcp) state.playoffHcp = {SINGLES:{}, DOUBLES:{}};
+        if(state.playoffHcpLocked[mode]) return window.smAlert(`Playoff handicaps are already locked for ${mode}.`);
+        const hasPlayoffGames = (state.sessions || []).some(s => s.mode === mode && s.isPlayoff) || (state.history || []).some(h => h.mode === mode && h.isPlayoff);
+        if(hasPlayoffGames) return window.smAlert(`Playoff games already exist for ${mode}. The handicap lock cannot be changed after playoff games have been added.`);
+        const roster = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members || []);
+        const snapshot = {};
+        roster.forEach(p => { if(p && p.name) snapshot[cleanN(p.name)] = getH(p.name); });
+        state.playoffHcp[mode] = snapshot;
+        state.playoffHcpLocked[mode] = true;
+        await save();
+        await window.smAlert(`${mode} playoff handicaps locked. These values will be used for every playoff game until playoff data is removed.`);
+        render();
+    };
 
     window.zoomB = (delta) => {
         if (delta === 'reset') bScale = 1.0;
@@ -778,8 +807,8 @@
         if (mode === 'SINGLES') {
             match.p1 = match.t1Name;
             match.p3 = match.t2Name;
-            match.h1 = Number(getH(match.p1));
-            match.h3 = Number(getH(match.p3));
+            match.h1 = Number(getPlayoffHcp(match.p1));
+            match.h3 = Number(getPlayoffHcp(match.p3));
         }
         
         state.activeMatches.push(match); save();
@@ -791,6 +820,7 @@
         const t1 = document.getElementById('pt1').value, t2 = document.getElementById('pt2').value;
         if(!t1 || !t2) return window.smAlert('Select both playoff teams');
         if(cleanN(t1) === cleanN(t2)) return window.smAlert('Teams must be different');
+        if(!(state.playoffHcpLocked && state.playoffHcpLocked[mode])) return window.smAlert(`Lock the ${mode} playoff handicaps in Manage before starting playoff games.`);
         match = { active: true, step: 'TEAMS', t1Name: t1, t2Name: t2, gameNum: 1, games: [], seriesBuffer: [], sessionAgg: { t1: 0, t2: 0 }, fourDeadLog: {}, sessionId: Date.now(), mode: mode, isPlayoff: true, selectedSlot: null };
         if (mode === 'SINGLES') {
             match.p1 = match.t1Name;
@@ -824,8 +854,10 @@
             match.p2 = document.getElementById('sp2').value; 
             match.p3 = document.getElementById('sp3').value; 
             match.p4 = document.getElementById('sp4').value; 
-            match.h1 = Number(getH(match.p1)); match.h2 = Number(getH(match.p2)); 
-            match.h3 = Number(getH(match.p3)); match.h4 = Number(getH(match.p4));
+            if (match.isPlayoff && !(state.playoffHcpLocked && state.playoffHcpLocked[mode])) return window.smAlert(`Lock the ${mode} playoff handicaps in Manage before starting playoff games.`);
+            const hcpFn = match.isPlayoff ? getPlayoffHcp : getH;
+            match.h1 = Number(hcpFn(match.p1)); match.h2 = Number(hcpFn(match.p2)); 
+            match.h3 = Number(hcpFn(match.p3)); match.h4 = Number(hcpFn(match.p4));
         } else { 
             match.p1 = match.t1Name; 
             match.p2 = 'BYE'; 
@@ -1006,7 +1038,8 @@
     window.toggleManualPlayoff = () => { manualEntryState.isPlayoff = !manualEntryState.isPlayoff; render(); };
     window.updateManualHcp = (pNum) => { 
         const pName = document.getElementById('mp'+pNum).value; 
-        const hcp = getH(pName);
+        if (manualEntryState.isPlayoff && !(state.playoffHcpLocked && state.playoffHcpLocked[mode])) return;
+        const hcp = manualEntryState.isPlayoff ? getPlayoffHcp(pName) : getH(pName);
         manualEntryState['mh'+pNum] = hcp;
         document.getElementById('mh'+pNum).value = hcp; 
     };
@@ -1095,6 +1128,9 @@
                 g3_rng: document.getElementById(`mr${i}_g3`).dataset.value !== undefined ? Number(document.getElementById(`mr${i}_g3`).dataset.value) : 0
             });
         }
+
+        if (manualEntryState.isPlayoff && !(state.playoffHcpLocked && state.playoffHcpLocked[mode])) return window.smAlert(`Lock the ${mode} playoff handicaps in Manage before entering playoff games.`);
+        if (manualEntryState.isPlayoff) players.forEach(p => { if(p.name) p.hcp = getPlayoffHcp(p.name); });
 
         const pTally = players.map(p => ({ pIdx: p.pIdx, w: 0, l: 0, t: 0 }));
 
@@ -1687,6 +1723,14 @@
         await save(); render();
     };
 
+    window.printPlayoffReport = () => {
+        const sessions = (state.sessions || []).filter(s => s.mode === mode && s.isPlayoff).sort((a,b) => (a.timestamp||0) - (b.timestamp||0));
+        let html = `<style>.po-title{font-family:Arial;font-weight:900;font-size:18pt;text-align:center;text-transform:uppercase}.po-sub{font-family:Arial;font-size:9pt;font-weight:bold;text-align:center;margin-bottom:14px}.po-game{border:2px solid #000;margin-bottom:14px;padding:8px;page-break-inside:avoid}.po-head{display:flex;justify-content:space-between;font-family:Arial;font-weight:900;font-size:10pt;border-bottom:1px solid #000;padding-bottom:5px}.po-score{text-align:center;font:900 15pt Arial;margin:7px}.po-table{width:100%;border-collapse:collapse;font:8.5pt Arial}.po-table th,.po-table td{border:1px solid #000;padding:4px;text-align:center}.po-table th{background:#eee;font-weight:900}.po-table th:first-child,.po-table td:first-child{text-align:left}</style><div class="po-title">${mode} Playoff Games</div><div class="po-sub">Playoff games count toward player statistics but do not affect league standings • Handicaps locked: ${state.playoffHcpLocked && state.playoffHcpLocked[mode] ? 'YES' : 'NO'}</div>`;
+        if(!sessions.length) html += `<div style="font: bold 12pt Arial;text-align:center;padding:30px">No playoff games have been recorded.</div>`;
+        sessions.forEach((s,i) => { const g=(s.fullData||[])[0]||{}; const keys=s.isManual?['p1','p2','p5','p3','p4','p6']:['p1','p2','p3','p4']; const rows=keys.map((k,idx)=>{const n=g[k];if(!n||['bye','dummy'].includes(cleanN(n)))return '';const sc=s.isManual?Number(g[k+'_scr']||0):(g[k+'_scr_override']!==undefined?Number(g[k+'_scr_override']):(g.frames||[]).reduce((a,f)=>a+Number(f[k]||0),0));const rg=s.isManual?Number(g[k+'_rng']||0):(g[k+'_rng_override']!==undefined?Number(g[k+'_rng_override']):(g.frames||[]).reduce((a,f)=>a+getR(f[k]),0));const h=mode==='SINGLES'?(idx===0?Number(g.h1||0):Number(g.h2||0)):(idx<3?Number(g.h1||0):Number(g.h2||0));return `<tr><td>${n}</td><td>${h}</td><td>${sc}</td><td>${rg}</td><td>${Number(g.shoes||(mode==='DOUBLES'?30:50))}</td></tr>`}).join('');const w=s.matchWinner||(g.s1>g.s2?s.t1Name:(g.s2>g.s1?s.t2Name:'Tie'));html+=`<div class="po-game"><div class="po-head"><span>PLAYOFF ${i+1} • ${s.date}</span><span>WINNER: ${w}</span></div><div class="po-score">${s.t1Name} ${g.s1} — ${g.s2} ${s.t2Name}</div><table class="po-table"><thead><tr><th>Player</th><th>HCP</th><th>Scratch Pts</th><th>Ringers</th><th>Shoes/Player</th></tr></thead><tbody>${rows}</tbody></table></div>`;});
+        window.executePrint(`${mode} Playoff Games Report`, html, true);
+    };
+
     window.printDateReport = () => {
         const roster = mode === 'SINGLES' ? state.roster.SINGLES : state.roster.DOUBLES.flatMap(t => t.members);
         let html = `
@@ -1888,6 +1932,10 @@
                         <div class="p-4 text-center font-bold text-sm">${rookie}</div>
                     </div>
                     ${renderT('Score %', sort('sPct'), 'sPct', '%')}
+                </div>
+                <div class="max-w-4xl mx-auto mt-6 bg-white border-4 border-red-600 shadow-xl p-4">
+                    <div class="flex justify-between items-center gap-2 mb-3"><h3 class="text-red-600 font-black uppercase italic">Playoff Games Report</h3><button onclick="window.printPlayoffReport()" class="bg-red-600 text-white px-4 py-2 font-black uppercase text-[10px] no-print">Print Playoff Report</button></div>
+                    ${(() => { const ps=(state.sessions||[]).filter(s=>s.mode===mode&&s.isPlayoff).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)); return ps.length ? `<div class="overflow-x-auto"><table class="w-full border-collapse text-[10px] font-bold uppercase"><thead><tr class="bg-zinc-900 text-white"><th class="p-2 text-left">Date</th><th class="p-2 text-left">Team 1</th><th class="p-2">Score</th><th class="p-2 text-left">Team 2</th><th class="p-2">Winner</th><th class="p-2">HCP</th></tr></thead><tbody>${ps.map(s=>{const g=(s.fullData||[])[0]||{};const w=s.matchWinner||(g.s1>g.s2?s.t1Name:(g.s2>g.s1?s.t2Name:'Tie'));return `<tr class="border-b border-zinc-200"><td class="p-2">${s.date}</td><td class="p-2">${s.t1Name}</td><td class="p-2 text-center font-black">${g.s1} - ${g.s2}</td><td class="p-2">${s.t2Name}</td><td class="p-2">${w}</td><td class="p-2 text-center">${g.h1||0} - ${g.h2||0}</td></tr>`}).join('')}</tbody></table></div>` : `<p class="text-center text-zinc-400 italic py-6 font-bold uppercase text-[10px]">No playoff games recorded yet.</p>`; })()}
                 </div>`;
         } else if (view === 'SCORER') {
             if(!state.scorerEnabled) { view = 'STANDINGS'; render(); return; }
@@ -1926,7 +1974,7 @@
                                     </select>
                                     <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
                                         <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
-                                        <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white" value="${manualEntryState['mh'+i]}">
+                                        <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black ${manualEntryState.isPlayoff ? 'bg-zinc-100' : 'bg-white'}" value="${manualEntryState['mh'+i]}" ${manualEntryState.isPlayoff ? 'readonly' : ''}>
                                     </div>
                                     <div class="space-y-3">
                                         ${(manualEntryState.isPlayoff ? [1] : [1,2,3]).map(g => `
@@ -1955,7 +2003,7 @@
                                     </select>
                                     <div class="flex items-center gap-4 bg-zinc-50 p-2 border border-zinc-100">
                                         <label class="text-[10px] font-black uppercase text-zinc-400">Handicap</label>
-                                        <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black bg-white" value="${manualEntryState['mh'+i]}">
+                                        <input id="mh${i}" type="number" onchange="updateManualSelection('mh${i}', this.value)" placeholder="0" class="w-20 p-2 border-2 border-zinc-200 text-center font-black ${manualEntryState.isPlayoff ? 'bg-zinc-100' : 'bg-white'}" value="${manualEntryState['mh'+i]}" ${manualEntryState.isPlayoff ? 'readonly' : ''}>
                                     </div>
                                     <div class="space-y-3">
                                         ${(manualEntryState.isPlayoff ? [1] : [1,2,3]).map(g => `
@@ -1992,7 +2040,7 @@
                 const opts = [...(state.roster[mode]||[]).map(r=>`<option value="${r.teamName||r.name}">${r.teamName||r.name}</option>`), `<option value="BYE">BYE</option>`];
                 content.innerHTML = `<div class="p-6 bg-white shadow max-w-md mx-auto mt-4 text-center">
                     <div class="flex gap-2 mb-6 no-print"><button class="flex-1 py-3 text-[10px] font-black uppercase bg-sky-500 text-white shadow-lg">Live Scorer</button>${state.manualEntryEnabled ? `<button onclick="setScorerView('MANUAL')" class="flex-1 py-3 text-[10px] font-black uppercase bg-zinc-100 text-zinc-400">Manual Entry</button>` : ''}</div>
-                ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Match Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black"><option value="">Select Team 1</option>${opts.join('')}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black"><option value="">Select Team 2</option>${opts.join('')}</select><div class="grid grid-cols-1 gap-2"><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start 3-Game Series</button><button onclick="document.getElementById('playoffSetup').classList.toggle('hidden')" class="w-full bg-red-600 text-white p-5 font-black uppercase shadow-lg">Start Playoff Game</button></div><div id="playoffSetup" class="hidden mt-4 p-4 bg-red-50 border-2 border-red-200"><p class="text-[10px] font-black uppercase text-red-600 mb-3">Playoff Game — One Game Only</p><select id="pt1" class="w-full p-4 border mb-3 font-bold text-sm text-black"><option value="">Select Playoff Team 1</option>${opts.join('')}</select><select id="pt2" class="w-full p-4 border mb-4 font-bold text-sm text-black"><option value="">Select Playoff Team 2</option>${opts.join('')}</select><button onclick="window.pickPlayoffTeams()" class="w-full bg-red-600 text-white p-5 font-black uppercase shadow-lg">Enter Playoff Game</button><p class="text-[9px] font-bold text-red-700 mt-3 uppercase">Does not affect standings • Counts toward player stats</p></div></div>`;
+                ${activeMatchHtml ? `<div class="mb-6">${activeMatchHtml}</div><div class="h-px bg-gray-200 mb-6"></div>` : ''}<h2 class="font-black uppercase text-sky-500 italic mb-6">New Match Setup</h2><select id="lt1" class="w-full p-4 border mb-4 font-bold text-sm text-black"><option value="">Select Team 1</option>${opts.join('')}</select><select id="lt2" class="w-full p-4 border mb-6 font-bold text-sm text-black"><option value="">Select Team 2</option>${opts.join('')}</select><div class="grid grid-cols-1 gap-2"><button onclick="window.pickLiveTeams()" class="w-full bg-black text-white p-5 font-black uppercase shadow-lg">Start 3-Game Series</button><button onclick="document.getElementById('playoffSetup').classList.toggle('hidden')" class="w-full bg-red-600 text-white p-5 font-black uppercase shadow-lg">Start Playoff Game</button></div><div id="playoffSetup" class="hidden mt-4 p-4 bg-red-50 border-2 border-red-200"><p class="text-[10px] font-black uppercase text-red-600 mb-3">Playoff Game — One Game Only</p><select id="pt1" class="w-full p-4 border mb-3 font-bold text-sm text-black"><option value="">Select Playoff Team 1</option>${opts.join('')}</select><select id="pt2" class="w-full p-4 border mb-4 font-bold text-sm text-black"><option value="">Select Playoff Team 2</option>${opts.join('')}</select><button onclick="window.pickPlayoffTeams()" class="w-full bg-red-600 text-white p-5 font-black uppercase shadow-lg">Enter Playoff Game</button><p class="text-[9px] font-bold text-red-700 mt-3 uppercase">Does not affect standings • Counts toward player stats</p><p class="text-[9px] font-black mt-2 uppercase ${state.playoffHcpLocked && state.playoffHcpLocked[mode] ? 'text-green-700' : 'text-red-700'}">Playoff HCP: ${state.playoffHcpLocked && state.playoffHcpLocked[mode] ? 'LOCKED' : 'LOCK REQUIRED IN MANAGE'}</p></div></div>`;
             } else if (match.step === 'PLAYERS') {
                 const getL = (n) => { if(cleanN(n)==='bye') return [{name:'BYE'}]; let t = (state.roster.DOUBLES||[]).find(x => (x.teamName || x.name) === n); return t ? [...t.members, {name:'DUMMY'}] : [{name:'DUMMY'}]; };
                 const t1 = getL(match.t1Name), t2 = getL(match.t2Name);
@@ -2188,6 +2236,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <button onclick="window.toggleHcpLock()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.hcpLocked[mode] ? 'bg-orange-500 text-white' : 'bg-green-500 text-white'}">${state.hcpLocked[mode] ? 'HCP: Locked' : 'HCP: Auto'}</button>
+                    <button onclick="window.lockPlayoffHcp()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.playoffHcpLocked && state.playoffHcpLocked[mode] ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700 border border-red-300'}">${state.playoffHcpLocked && state.playoffHcpLocked[mode] ? 'Playoff HCP: LOCKED' : 'Lock Playoff HCP'}</button>
                     <button onclick="window.toggleManualEntry()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.manualEntryEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Manual Entry: ${state.manualEntryEnabled ? 'ON' : 'OFF'}</button>
                     <button onclick="window.toggleScorer()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.scorerEnabled ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Scorer: ${state.scorerEnabled ? 'ON' : 'OFF'}</button>
                     <button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled ? 'bg-blue-600 text-white' : 'bg-zinc-500 text-white'}">Tourney: ${state.tournamentEnabled ? 'ON' : 'OFF'}</button>
