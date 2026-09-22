@@ -247,7 +247,7 @@
         window.open('scoresheets.html', '_blank');
     };
 
-    let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, playoffHcpLocked: {SINGLES:false, DOUBLES:false}, playoffHcp: {SINGLES:{}, DOUBLES:{}}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } }, tournamentEnabled: true, tournament: { SINGLES: { participants: [], matches: [], activeId: null, complete: false }, DOUBLES: { participants: [], matches: [], activeId: null, complete: false } }, roundRobin: { SINGLES: { weeks: [], positionRound: false, halfPositionRound: false, requestedWeeks: 0, updatedAt: 0 }, DOUBLES: { weeks: [], positionRound: false, halfPositionRound: false, requestedWeeks: 0, updatedAt: 0 } } };
+    let state = { roster: { SINGLES: [], DOUBLES: [] }, history: [], sessions: [], managePin: '1234', hcpLocked: {SINGLES:true, DOUBLES:true}, playoffHcpLocked: {SINGLES:false, DOUBLES:false}, playoffHcp: {SINGLES:{}, DOUBLES:{}}, manualEntryEnabled: true, nhpa: { SINGLES: {}, DOUBLES: {} }, weeklyHoa: { SINGLES: [], DOUBLES: [] }, fourDeads: { SINGLES: {}, DOUBLES: {} }, news: '', scorerEnabled: true, reportEnabled: true, historyEnabled: true, nhpaEnabled: true, winners: {champ:'', runner:'', season:''}, activeMatches: [], weeklyLineup: { SINGLES: { weekTitle: 'Singles Week 1', rawPaste: '' }, DOUBLES: { weekTitle: 'Doubles Week 1', rawPaste: '' } }, tournament: { SINGLES: { participants: [], matches: [], activeId: null, complete: false }, DOUBLES: { participants: [], matches: [], activeId: null, complete: false } }, roundRobin: { SINGLES: { weeks: [], positionRound: false, halfPositionRound: false, requestedWeeks: 0, updatedAt: 0 }, DOUBLES: { weeks: [], positionRound: false, halfPositionRound: false, requestedWeeks: 0, updatedAt: 0 } } };
     let mode = 'DOUBLES';
     let view = 'NEWS';
     let scorerMode = 'LIVE'; 
@@ -362,7 +362,6 @@
         if(state.reportEnabled === undefined) state.reportEnabled = true;
         if(state.historyEnabled === undefined) state.historyEnabled = true;
         if(state.nhpaEnabled === undefined) state.nhpaEnabled = true;
-        if(state.tournamentEnabled === undefined) state.tournamentEnabled = true;
         if(!state.winners) state.winners = {champ:'', runner:'', season:''};
         if(!state.activeMatches) state.activeMatches = [];
         if(!state.tournament) state.tournament = { SINGLES:{participants:[],matches:[],activeId:null,complete:false}, DOUBLES:{participants:[],matches:[],activeId:null,complete:false} };
@@ -762,10 +761,7 @@
             const pinInput = await window.smPrompt("Enter System PIN:");
             if (pinInput === state.managePin) { isUnlocked = true; view = t; render(); }
             else if (pinInput !== null) await window.smAlert("Incorrect PIN");
-        } else {
-            if(t === 'TOURNAMENT' && state.tournamentEnabled === false) { view = 'MANAGE'; render(); return; }
-            view = t; render();
-        }
+        } else { view = t; render(); }
     };
 
     window.toggleHcpLock = async () => {
@@ -801,12 +797,6 @@
     window.toggleNHPA = async () => {
         state.nhpaEnabled = !state.nhpaEnabled;
         if(!state.nhpaEnabled && view === 'NHPA') view = 'STANDINGS';
-        await save(); render();
-    }
-
-    window.toggleTournament = async () => {
-        state.tournamentEnabled = !state.tournamentEnabled;
-        if(!state.tournamentEnabled && view === 'TOURNAMENT') view = 'MANAGE';
         await save(); render();
     }
 
@@ -1893,8 +1883,12 @@
     };
     
     window.saveNhpaForm = async () => { 
-        const f = ['clubName','phone','sanctionNum','director','state','address','city','startDate','endDate','dateSubmitted','cancellation','countAll']; 
-        if(!state.nhpa[mode]) state.nhpa[mode] = {}; f.forEach(k => state.nhpa[mode][k] = document.getElementById('f-'+k).value); 
+        const f = ['clubName','phone','sanctionNum','director','state','address','city','startDate','endDate','dateSubmitted','presentationDate','email','cancellation','countAll','yearEndTournament','yearEndClasses','yearEndTeams','yearEndPitchers']; 
+        if(!state.nhpa[mode]) state.nhpa[mode] = {}; 
+        f.forEach(k => { const el = document.getElementById('f-'+k); if(el) state.nhpa[mode][k] = el.value; });
+        const patchFields = ['LeagueChampion','ClassChampion','HighAverage','HighGame','HighGameOverAverage','Sportsmanship','Rookie','MostImproved'];
+        if(!state.nhpa[mode].patchQty) state.nhpa[mode].patchQty = {};
+        patchFields.forEach(k => { const el = document.getElementById('f-patch-'+k); if(el) state.nhpa[mode].patchQty[k] = el.value; });
         await save(); window.smAlert("Saved"); 
     };
 
@@ -2396,67 +2390,6 @@
         return rounds;
     }
     function roundRobinPairKey(a,b){return[cleanN(a),cleanN(b)].sort().join('|');}
-    function roundRobinAssignCourts(games, previousGames, courtCount, courtUseCounts){
-        const list=(games||[]).map(g=>({...g}));
-        if(!list.length)return[];
-        const count=Math.max(1,Math.min(courtCount||list.length,list.length));
-        const prevCourt={};
-        (previousGames||[]).forEach(g=>{
-            if(!g)return;
-            if(g.a)prevCourt[cleanN(g.a)]=Number(g.court||0);
-            if(g.b)prevCourt[cleanN(g.b)]=Number(g.court||0);
-        });
-        const use=courtUseCounts||{};
-        for(let c=1;c<=count;c++)if(use[c]===undefined)use[c]=0;
-
-        // Assign the entire week's games to courts as a permutation.  The objective
-        // first avoids back-to-back court repeats, then sends players toward courts
-        // they have used less often.  This is deliberately global for the week so
-        // the same player is not repeatedly trapped on the same pair of courts.
-        const best={cost:Infinity,assign:null};
-        const chosen=Array(list.length).fill(0);
-        const usedCourts=new Set();
-        const playerCounts={};
-        Object.keys(use).forEach(c=>{});
-        const playerCourtCounts={};
-        // The caller keeps cumulative counts in use._players.
-        const pc=use._players||{};
-        const cleanPlayer=n=>cleanN(n||'');
-        const cost=(g,c)=>{
-            const pa=cleanPlayer(g.a),pb=cleanPlayer(g.b);
-            let v=0;
-            if(prevCourt[pa]===c)v+=100000;
-            if(prevCourt[pb]===c)v+=100000;
-            v+=Number(use[c]||0)*10;
-            v+=(Number(pc[pa]?.[c]||0)+Number(pc[pb]?.[c]||0))*100;
-            // Strongly prefer a court a player has never used yet. This makes
-            // the rotation cover every available court before reusing courts.
-            if(pa && pa!=='bye' && !Number(pc[pa]?.[c]||0))v-=10000;
-            if(pb && pb!=='bye' && !Number(pc[pb]?.[c]||0))v-=10000;
-            return v;
-        };
-        const search=(i,total)=>{
-            if(i>=list.length){if(total<best.cost)best.cost=total,best.assign=chosen.slice();return;}
-            const g=list[i];
-            for(let c=1;c<=count;c++){
-                if(usedCourts.has(c))continue;
-                usedCourts.add(c);chosen[i]=c;
-                search(i+1,total+cost(g,c));
-                usedCourts.delete(c);
-            }
-        };
-        search(0,0);
-        const assigned=list.map((g,i)=>({...g,court:best.assign?.[i]||((i%count)+1)}));
-        assigned.forEach(g=>{
-            const c=g.court;use[c]=(Number(use[c])||0)+1;
-            for(const n of [g.a,g.b]){
-                const k=cleanPlayer(n);if(!k||k==='bye')continue;
-                pc[k]=pc[k]||{};pc[k][c]=(Number(pc[k][c])||0)+1;
-            }
-        });
-        use._players=pc;
-        return assigned.sort((a,b)=>Number(a.court||0)-Number(b.court||0));
-    }
     function roundRobinRealGames(games){return(games||[]).filter(g=>!g.bye&&g.a!=='BYE'&&g.b!=='BYE');}
     function roundRobinRepeatRound(teams,usedCounts,roundNo,previousWeekPairs){
         const remaining=teams.slice(),games=[]; const prev=previousWeekPairs||new Set();
@@ -2512,7 +2445,7 @@
                 const g=games[i];
                 return `<td>${g?`${g.a} <b>vs</b> ${g.b}`:'—'}</td>`;
             }).join('');
-            return `<tr><th class="rr-print-week">${w.week}${w.isPositionRound?`<br><span>POSITION</span>`:''}</th>${cells}</tr>`;
+            return `<tr><th class="rr-print-week">${w.week}<br><span>${w.isPositionRound?'POSITION':w.isRepeatRound?'RETURN':'REGULAR'}</span></th>${cells}</tr>`;
         }).join('');
         const seedLine=teams.map((t,i)=>`${i+1}. ${t.name}`).join(' &nbsp; • &nbsp; ');
         const html=`<style>
@@ -2549,8 +2482,8 @@
             const addLast=!!document.getElementById('rrPositionRound')?.checked;
             const addHalf=!!document.getElementById('rrHalfPositionRound')?.checked;
             if(addHalf&&addLast&&requested<3)return window.smAlert('Use at least 3 weeks when adding both a mid-season and final Position Round.');
-            const base=roundRobinBaseSchedule(teams),uniqueRounds=base.length,all=[],used={},courtRotation={};
-            const baseRound=(r,weekNo)=>({...r,week:weekNo,title:`${mode==='SINGLES'?'Singles':'Doubles'} Week ${weekNo}`,games:roundRobinAssignCourts((r.games||[]).map(g=>({...g})),all.length?all[all.length-1].games:null,Math.ceil(teams.length/2))});
+            const base=roundRobinBaseSchedule(teams),uniqueRounds=base.length,all=[],used={};
+            const baseRound=(r,weekNo)=>({...r,week:weekNo,title:`${mode==='SINGLES'?'Singles':'Doubles'} Week ${weekNo}`,games:(r.games||[]).map(g=>({...g}))});
             const markUsed=r=>roundRobinRealGames(r.games).forEach(g=>{const k=roundRobinPairKey(g.a,g.b);used[k]=(used[k]||0)+1;});
             const realCount=teams.length%2?Math.floor(teams.length/2):Math.floor(teams.length/2);
 
@@ -2565,17 +2498,11 @@
                     const names=new Set(),games=[];
                     for(const x of pool){if(names.has(x.g.a)||names.has(x.g.b))continue;names.add(x.g.a);names.add(x.g.b);games.push({...x.g,court:games.length+1});if(games.length>=realCount)break;}
                     // Preserve a BYE marker for odd rosters: whichever player is not scheduled gets BYE.
-                    if(teams.length%2){const bye=teams.find(t=>!names.has(t.name));if(bye)games.push({a:bye.name,b:'BYE',aHcp:bye.hcp,bHcp:0,bye:true});}
-                    const scheduledGames=roundRobinAssignCourts(games,all.length?all[all.length-1].games:null,Math.ceil(teams.length/2));
-                    const rr={week:w,title:`${mode==='SINGLES'?'Singles':'Doubles'} Week ${w}`,games:scheduledGames};all.push(rr);markUsed(rr);prevPairs=new Set(roundRobinRealGames(scheduledGames).map(g=>roundRobinPairKey(g.a,g.b)));
+                    if(teams.length%2){const bye=teams.find(t=>!names.has(t.name));if(bye)games.push({court:games.length+1,a:bye.name,b:'BYE',aHcp:bye.hcp,bHcp:0,bye:true});}
+                    const rr={week:w,title:`${mode==='SINGLES'?'Singles':'Doubles'} Week ${w}`,games};all.push(rr);markUsed(rr);prevPairs=new Set(roundRobinRealGames(games).map(g=>roundRobinPairKey(g.a,g.b)));
                 }
             }else{
-                for(let i=0;i<uniqueRounds&&all.length<requested;i++){
-                    const source=base[i];
-                    const scheduledGames=roundRobinAssignCourts(source.games,all.length?all[all.length-1].games:null,Math.ceil(teams.length/2));
-                    const rr={...source,week:all.length+1,title:`${mode==='SINGLES'?'Singles':'Doubles'} Week ${all.length+1}`,games:scheduledGames};
-                    all.push(rr);markUsed(rr);
-                }
+                for(let i=0;i<uniqueRounds&&all.length<requested;i++){const rr=baseRound(base[i],all.length+1);all.push(rr);markUsed(rr);}
                 if(doubleRR && all.length<requested){
                     const returnCount=Math.min(uniqueRounds,requested-uniqueRounds);
                     // When a full second rotation does not fit, take a suffix of the return rotation.
@@ -2584,41 +2511,12 @@
                     let prevPairs=new Set(roundRobinRealGames(all[all.length-1]?.games).map(g=>roundRobinPairKey(g.a,g.b)));
                     for(let i=start;i<uniqueRounds&&all.length<requested;i++){
                         const source=base[i];
-                        // Keep the BYE from the corresponding first-rotation round.
-                        // A BYE is not a real matchup, so roundRobinRealGames() removes it;
-                        // restore it explicitly in every return-rotation week for odd rosters.
-                        const sourceBye=(teams.length%2)
-                            ? (source.games||[]).find(g=>g.bye||g.a==='BYE'||g.b==='BYE')
-                            : null;
                         let games=roundRobinRealGames(source.games).map(g=>({...g}));
                         // The final return round intentionally matches the final round of rotation one,
                         // so it is the one allowed back-to-back exception required to align the rotations.
                         if(i!==uniqueRounds-1) games=games.filter(g=>!prevPairs.has(roundRobinPairKey(g.a,g.b)));
-                        if(!games.length && !sourceBye) continue;
-                        // For an odd roster, the BYE is a court assignment too.
-                        // In the second rotation it must continue rotating through the
-                        // available courts instead of following the same court as the
-                        // corresponding first-rotation round.
-                        let byeGame=null;
-                        if(sourceBye){
-                            const byeTeam=sourceBye.a==='BYE'?sourceBye.b:sourceBye.a;
-                            const byeData=teams.find(t=>cleanN(t.name)===cleanN(byeTeam));
-                            if(byeData){
-                                byeGame={a:byeData.name,b:'BYE',aHcp:byeData.hcp,bHcp:0,bye:true};
-                            }
-                        }
-
-                        const courtCount=Math.ceil(teams.length/2);
-                        if(byeGame) games.push(byeGame);
-                        // Assign every matchup, including BYE, through the same court-rotation
-                        // algorithm. This prevents players/teams from being stuck on only
-                        // alternating courts such as 1 and 3.
-                        const scheduledGames=roundRobinAssignCourts(
-                            games,
-                            all.length?all[all.length-1].games:null,
-                            courtCount
-                        );
-                        const rr={week:all.length+1,title:`${mode==='SINGLES'?'Singles':'Doubles'} Week ${all.length+1} — Return Round`,games:scheduledGames,isRepeatRound:true};
+                        if(!games.length) continue;
+                        const rr={week:all.length+1,title:`${mode==='SINGLES'?'Singles':'Doubles'} Week ${all.length+1} — Return Round`,games:games.map((g,j)=>({...g,court:j+1})),isRepeatRound:true};
                         all.push(rr);markUsed(rr);prevPairs=new Set(roundRobinRealGames(rr.games).map(g=>roundRobinPairKey(g.a,g.b)));
                     }
                 }
@@ -2629,17 +2527,6 @@
             }
             if(addHalf){const w=Math.ceil(requested/2);all[w-1]=roundRobinPositionWeek(teams,w,'Mid-Season');}
             if(addLast)all[requested-1]=roundRobinPositionWeek(teams,requested,'Final');
-            // Final court-rotation pass: no player/team stays on the same court in consecutive weeks.
-            for(let i=0;i<all.length;i++){
-                all[i].games=roundRobinAssignCourts(all[i].games,i>0?all[i-1].games:null,Math.ceil(teams.length/2),courtRotation);
-                // Always put BYE on the right: Team vs BYE.
-                all[i].games=all[i].games.map(g=>{
-                    if(cleanN(g.a)==='bye' && cleanN(g.b)!=='bye'){
-                        return {...g,a:g.b,b:'BYE',aHcp:g.bHcp,bHcp:g.aHcp};
-                    }
-                    return g;
-                });
-            }
             cfg.weeks=all;cfg.positionRound=addLast;cfg.halfPositionRound=addHalf;cfg.doubleRoundRobin=doubleRR;cfg.requestedWeeks=requested;cfg.updatedAt=Date.now();
             roundRobinStoreLocal(cfg);roundRobinDirty=true;render();
             try{
@@ -2681,8 +2568,7 @@
                 if(t === 'SCORER') el.style.display = state.scorerEnabled ? 'block' : 'none'; 
                 if(t === 'REPORT') el.style.display = state.reportEnabled ? 'block' : 'none'; 
                 if(t === 'HISTORY') el.style.display = state.historyEnabled ? 'block' : 'none'; 
-                if(t === 'NHPA') el.style.display = state.nhpaEnabled ? 'block' : 'none';
-                if(t === 'TOURNAMENT') el.style.display = state.tournamentEnabled !== false ? 'block' : 'none'; 
+                if(t === 'NHPA') el.style.display = state.nhpaEnabled ? 'block' : 'none'; 
             } 
         });
         const content = document.getElementById('viewContent');
@@ -3094,7 +2980,9 @@
             content.innerHTML = `<div class="p-4"><h2 class="text-sky-500 font-black italic uppercase mb-4">Series History</h2>${sessionHtml}</div>`;
         } else if (view === 'NHPA') {
             const cfg = state.nhpa[mode] || {};
-            content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div></div><div class="mt-6 flex gap-2"><button onclick="window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save Settings</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button></div></div></div>`;
+            const pq = cfg.patchQty || {};
+            const patchInput = (key,label) => `<div><label class="block text-[10px] font-black uppercase">${label}</label><input id="f-patch-${key}" type="number" min="0" inputmode="numeric" class="w-full p-2 border mb-2" value="${pq[key] ?? ''}" placeholder="Qty"></div>`;
+            content.innerHTML = `<div class="p-4 space-y-4 no-print"><div class="bg-white p-6 shadow"><h2 class="text-sky-500 font-black italic uppercase mb-4">NHPA Form Settings</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-[10px] font-black uppercase">Club Name</label><input id="f-clubName" class="w-full p-2 border mb-2" value="${cfg.clubName||''}"></div><div><label class="block text-[10px] font-black uppercase">Phone</label><input id="f-phone" class="w-full p-2 border mb-2" value="${cfg.phone||''}"></div><div><label class="block text-[10px] font-black uppercase">Email</label><input id="f-email" class="w-full p-2 border mb-2" value="${cfg.email||''}"></div><div><label class="block text-[10px] font-black uppercase">Sanction #</label><input id="f-sanctionNum" class="w-full p-2 border mb-2" value="${cfg.sanctionNum||''}"></div><div><label class="block text-[10px] font-black uppercase">Director</label><input id="f-director" class="w-full p-2 border mb-2" value="${cfg.director||''}"></div><div><label class="block text-[10px] font-black uppercase">Address</label><input id="f-address" class="w-full p-2 border mb-2" value="${cfg.address||''}"></div><div><label class="block text-[10px] font-black uppercase">City</label><input id="f-city" class="w-full p-2 border mb-2" value="${cfg.city||''}"></div><div><label class="block text-[10px] font-black uppercase">State</label><input id="f-state" class="w-full p-2 border mb-2" value="${cfg.state||''}"></div><div><label class="block text-[10px] font-black uppercase">Shoes Per Game</label><input id="f-shoesPerGame" type="number" class="w-full p-2 border mb-2" value="${cfg.shoesPerGame||(mode==='DOUBLES'?30:50)}"></div><div><label class="block text-[10px] font-black uppercase">League Start</label><input id="f-startDate" class="w-full p-2 border mb-2" value="${cfg.startDate||''}"></div><div><label class="block text-[10px] font-black uppercase">League End</label><input id="f-endDate" class="w-full p-2 border mb-2" value="${cfg.endDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Date Submitted</label><input id="f-dateSubmitted" class="w-full p-2 border mb-2" value="${cfg.dateSubmitted||''}"></div><div><label class="block text-[10px] font-black uppercase">Presentation Date</label><input id="f-presentationDate" class="w-full p-2 border mb-2" value="${cfg.presentationDate||''}"></div><div><label class="block text-[10px] font-black uppercase">Cancellation</label><input id="f-cancellation" class="w-full p-2 border mb-2" value="${cfg.cancellation||''}"></div><div><label class="block text-[10px] font-black uppercase">Count All</label><input id="f-countAll" class="w-full p-2 border mb-2" value="${cfg.countAll||''}"></div><div><label class="block text-[10px] font-black uppercase">Year End Tournament?</label><select id="f-yearEndTournament" class="w-full p-2 border mb-2"><option value="" ${!cfg.yearEndTournament?'selected':''}>Select</option><option value="Y" ${cfg.yearEndTournament==='Y'?'selected':''}>Y</option><option value="N" ${cfg.yearEndTournament==='N'?'selected':''}>N</option></select></div><div><label class="block text-[10px] font-black uppercase">If Y, # of Classes</label><input id="f-yearEndClasses" type="number" min="0" inputmode="numeric" class="w-full p-2 border mb-2" value="${cfg.yearEndClasses||''}"></div><div><label class="block text-[10px] font-black uppercase">If Team Play, # of Teams</label><input id="f-yearEndTeams" type="number" min="0" inputmode="numeric" class="w-full p-2 border mb-2" value="${cfg.yearEndTeams||''}"></div><div><label class="block text-[10px] font-black uppercase"># of Pitchers Per Team</label><input id="f-yearEndPitchers" type="number" min="0" inputmode="numeric" class="w-full p-2 border mb-2" value="${cfg.yearEndPitchers||''}"></div></div><div class="mt-6 border-t-2 border-zinc-200 pt-5"><h3 class="text-sky-600 font-black uppercase mb-3">Patch Quantities</h3><p class="text-[10px] text-zinc-500 font-bold uppercase mb-3">Enter the quantity needed for each award. Percentage patch quantities are calculated automatically from the league results.</p><div class="grid grid-cols-2 md:grid-cols-4 gap-3">${patchInput('LeagueChampion','League Champion')}${patchInput('ClassChampion','Class Champion')}${patchInput('HighAverage','High Average')}${patchInput('HighGame','High Game')}${patchInput('HighGameOverAverage','High Game Over Average')}${patchInput('Sportsmanship','Sportsmanship')}${patchInput('Rookie','Rookie')}${patchInput('MostImproved','Most Improved')}</div></div><div class="mt-6 flex gap-2"><button onclick="window.saveNhpaForm()" class="flex-1 bg-black text-white p-4 font-black uppercase">Save Settings</button><button onclick="window.printSanctionSheet()" class="flex-1 bg-sky-500 text-white p-4 font-black uppercase">Print NHPA Form</button><button onclick="window.printPatchOrderForm()" class="flex-1 bg-emerald-600 text-white p-4 font-black uppercase">Print Patch Order Form</button></div></div></div>`;
         } else if (view === 'MANAGE') {
             const rH = (state.roster[mode]||[]).map((t, i) => {
                 let teamInnerHtml = `
@@ -3173,7 +3061,6 @@
                     <button onclick="window.toggleReport()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.reportEnabled ? 'bg-purple-600 text-white' : 'bg-zinc-500 text-white'}">Report: ${state.reportEnabled ? 'ON' : 'OFF'}</button>
                     <button onclick="window.toggleHistory()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.historyEnabled ? 'bg-zinc-800 text-white' : 'bg-zinc-400 text-white'}">History: ${state.historyEnabled ? 'ON' : 'OFF'}</button>
                     <button onclick="window.toggleNHPA()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.nhpaEnabled ? 'bg-zinc-800 text-white' : 'bg-zinc-400 text-white'}">NHPA: ${state.nhpaEnabled ? 'ON' : 'OFF'}</button>
-                    <button onclick="window.toggleTournament()" class="w-full p-4 font-black uppercase text-[10px] shadow-md transition ${state.tournamentEnabled !== false ? 'bg-sky-500 text-white' : 'bg-zinc-500 text-white'}">Tournament: ${state.tournamentEnabled !== false ? 'VISIBLE' : 'HIDDEN'}</button>
                 </div>
                 <div class="bg-sky-50 p-6 border-2 border-sky-200 shadow-lg">
                     <h3 class="text-sky-600 font-black uppercase italic mb-4">Individual Entry</h3>
@@ -3188,6 +3075,59 @@
     }
 
     }
+
+    window.printPatchOrderForm = () => {
+        const cfg = state.nhpa[mode] || {};
+        const rList = mode === 'SINGLES' ? (state.roster.SINGLES || []) : (state.roster.DOUBLES || []).flatMap(t => t.members || []);
+        const shoesPerG = Number(cfg.shoesPerGame) || (mode === 'DOUBLES' ? 30 : 50);
+        const patchLevels = [10,20,30,40,50,60,70,80,90,100];
+        const qty = {0:0,6:0,10:0,20:0,30:0,40:0,50:0,60:0,70:0,80:0,90:0,100:0};
+        rList.forEach(p => {
+            if (!p || !p.name) return;
+            const g = (state.history || []).filter(h => cleanN(h.player) === cleanN(p.name) && h.mode === mode && !h.isNoShow);
+            if (!g.length) return;
+            const prev = Number(p.prevHighRinger || 0);
+            const hi = Math.max(...g.map(x => (Number(x.ringers || 0) / (Number(x.shoes) || shoesPerG)) * 100));
+            const prevLevel = Math.floor(prev / 10);
+            const currentLevel = Math.floor(hi / 10);
+            if (currentLevel > prevLevel && currentLevel >= 1) {
+                const level = Math.min(100, currentLevel * 10);
+                qty[level] = (qty[level] || 0) + 1;
+            }
+        });
+        const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        const row = (label, value, cls='') => `<tr><td class="label ${cls}">${label}</td><td class="qty">${value === '' ? '&nbsp;' : esc(value)}</td></tr>`;
+        const pq = cfg.patchQty || {};
+        const awardRows = [
+            ['League Champion', pq.LeagueChampion ?? ''], ['Class Champion', pq.ClassChampion ?? ''], ['High Average', pq.HighAverage ?? ''], ['High Game', pq.HighGame ?? ''], ['High Game Over Average', pq.HighGameOverAverage ?? ''], ['Sportsmanship', pq.Sportsmanship ?? ''], ['Rookie', pq.Rookie ?? ''], ['Most Improved', pq.MostImproved ?? '']
+        ].map(x => row(x[0], x[1])).join('');
+        const pctRows = [
+            ['0-5%',qty[0]], ['6-9%',qty[6]], ['10%',qty[10]], ['20%',qty[20]], ['30%',qty[30]], ['40%',qty[40]], ['50%',qty[50]], ['60%',qty[60]], ['70%',qty[70]], ['80%',qty[80]], ['90%',qty[90]], ['100%',qty[100]]
+        ].map(x => row(x[0], x[1])).join('');
+        const html = `<div class="patch-form">
+            <style>
+              @page { size: letter portrait; margin: 0.35in; }
+              .patch-form{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;font-size:9pt;line-height:1.2;max-width:7.7in;margin:0 auto}
+              .patch-logo{width:58px;height:58px;object-fit:contain}.patch-title{text-align:center;font-weight:900;font-size:17pt;margin:0 0 2px}.patch-sub{text-align:center;font-size:10pt;font-weight:700;margin-bottom:10px}
+              .patch-note{font-size:8pt;margin:3px 0}.patch-box{border:2px solid #000;margin-top:8px}.patch-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:0}.patch-field{border-right:1px solid #000;border-bottom:1px solid #000;padding:5px;min-height:28px}.patch-field:nth-child(3n){border-right:0}.patch-field b{display:inline-block;margin-right:4px}.patch-field.wide{grid-column:span 2}.patch-field.full{grid-column:1/-1}.patch-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}.patch-section{border:2px solid #000}.patch-section h3{margin:0;padding:5px;background:#eee;border-bottom:2px solid #000;font-size:9pt;text-transform:uppercase}.patch-table{width:100%;border-collapse:collapse}.patch-table td{border-bottom:1px solid #000;padding:4px}.patch-table td.label{font-weight:700}.patch-table td.qty{width:55px;text-align:center;font-weight:900;border-left:1px solid #000}.patch-footer{margin-top:10px;border-top:2px solid #000;padding-top:7px;font-size:8pt}.patch-recipients{margin-top:10px;font-size:7.5pt}.patch-recipients table{width:100%;border-collapse:collapse}.patch-recipients th,.patch-recipients td{border:1px solid #000;padding:3px}.patch-recipients th{background:#eee}
+            </style>
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px"><div style="width:64px;height:64px;border:1.5px solid #000;display:flex;align-items:center;justify-content:center"><img src="nhpa_logo.png" class="patch-logo"></div><div style="text-align:center"><h1 class="patch-title">Patch Order Form</h1><div class="patch-sub">NHPA Sanctioned Club/League Program</div></div></div>
+            <div class="patch-box"><div class="patch-grid">
+              <div class="patch-field"><b>Club Name</b>${esc(cfg.clubName)}</div><div class="patch-field"><b>Sanction Number</b>${esc(cfg.sanctionNum)}</div><div class="patch-field"><b>State</b>${esc(cfg.state)}</div>
+              <div class="patch-field"><b>Date League Began</b>${esc(cfg.startDate)}</div><div class="patch-field"><b>Date League Ended</b>${esc(cfg.endDate)}</div><div class="patch-field"><b>Presentation Date</b>${esc(cfg.presentationDate)}</div>
+            </div></div>
+            <p class="patch-note"><b>NHPA patches are for club/league members ONLY!</b> Submit this form at the end of your league along with the final stats report. Presentation Date should allow 2-3 weeks for delivery and mailing.</p>
+            <div class="patch-cols">
+              <div class="patch-section"><h3>Qty Awards Needed</h3><table class="patch-table">${awardRows}</table></div>
+              <div class="patch-section"><h3>Qty</h3><table class="patch-table">${pctRows}</table></div>
+            </div>
+            <div class="patch-box" style="padding:6px;margin-top:10px"><b>Year End Tournament?</b> ${esc(cfg.yearEndTournament)} &nbsp;&nbsp;&nbsp; <b>If Y, # of classes?</b> ${esc(cfg.yearEndClasses)}<br><b>If team play, # of teams?</b> ${esc(cfg.yearEndTeams)} &nbsp;&nbsp;&nbsp; <b># of pitchers per team?</b> ${esc(cfg.yearEndPitchers)}</div>
+            <div class="patch-section" style="margin-top:10px"><h3>These patches are to be mailed to:</h3><div style="padding:7px;line-height:1.8"><b>Name:</b> ${esc(cfg.director)}<br><b>Address:</b> ${esc(cfg.address)}<br><b>City, State, Zip:</b> ${esc(cfg.city)}, ${esc(cfg.state)} ____________________<br><b>Phone:</b> ${esc(cfg.phone)}<br><b>Email:</b> ${esc(cfg.email)}</div></div>
+            <div class="patch-footer"><b>Percentage patch quantities are calculated from the current Report's High Ringer Game results using the same eligibility rule as the report:</b> a player must reach a higher 10% patch level than their previous highest level. Each eligible player is counted once at the highest new patch level earned. Percentage quantities are filled automatically; enter the other award quantities above in NHPA Form Settings.</div>
+            <div style="margin-top:18px;display:flex;justify-content:space-between"><span>Signed: ________________________________</span><span>Club Officer / League Director</span></div>
+        </div>`;
+        window.executePrint('NHPA Patch Order Form', html, true);
+    };
 
     window.printSanctionSheet = () => {
         const cfg = state.nhpa[mode] || {};
