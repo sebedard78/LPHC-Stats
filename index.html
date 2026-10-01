@@ -2574,7 +2574,21 @@
         const content = document.getElementById('viewContent');
 
         if (view === 'NEWS') {
-            content.innerHTML = `<div class="flex flex-col items-center py-8 px-4 max-w-2xl mx-auto"><img src="logo.jpg" class="w-48 h-48 object-contain mb-8 shadow-xl border-4 border-white"><div class="w-full bg-white p-8 shadow-2xl border-t-4 border-sky-500 min-h-[300px]"><h2 class="text-2xl font-black italic uppercase text-sky-500 mb-6 border-b pb-2 tracking-tighter">Club News & Announcements</h2><div class="prose prose-sky max-w-none text-zinc-800 font-medium leading-relaxed whitespace-pre-wrap">${state.news || '<p class="opacity-40 italic text-center py-10 text-zinc-400 font-normal">No news updates at this time.</p>'}</div></div></div>`;
+            const facebookGroupUrl = 'https://www.facebook.com/share/g/19ZaAHMrPo/';
+            content.innerHTML = `<div class="flex flex-col items-center py-8 px-4 max-w-2xl mx-auto">
+                <img src="logo.jpg" class="w-48 h-48 object-contain mb-8 shadow-xl border-4 border-white">
+                <div class="w-full bg-white p-8 shadow-2xl border-t-4 border-sky-500 min-h-[300px] mb-6">
+                    <h2 class="text-2xl font-black italic uppercase text-sky-500 mb-6 border-b pb-2 tracking-tighter">Club News & Announcements</h2>
+                    <div class="prose prose-sky max-w-none text-zinc-800 font-medium leading-relaxed whitespace-pre-wrap">${state.news || '<p class="opacity-40 italic text-center py-10 text-zinc-400 font-normal">No news updates at this time.</p>'}</div>
+                </div>
+                <div class="w-full bg-white shadow-2xl border-t-4 border-sky-500 overflow-hidden">
+                    <div class="p-5">
+                        <h2 class="text-xl font-black italic uppercase text-sky-500 tracking-tight">Loon Pond Horseshoe Club Facebook Group</h2>
+                        <p class="text-xs text-zinc-500 font-medium mt-1 mb-4">Join the Loon Pond Horseshoe Club Facebook Group for club announcements, tournament information, photos, and discussion.</p>
+                        <a href="${facebookGroupUrl}" target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center rounded-lg bg-sky-500 hover:bg-sky-600 text-white px-4 py-3 text-xs font-black uppercase tracking-wide transition">Open Loon Pond Facebook Group</a>
+                    </div>
+                </div>
+            </div>`;
         } else if (view === 'LINEUP') {
             const currentLineup = state.weeklyLineup[mode] || { weekTitle: 'Weekly Lineup', rawPaste: '' };
             const rawLines = currentLineup.rawPaste.split('\n');
