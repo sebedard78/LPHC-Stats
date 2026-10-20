@@ -255,6 +255,8 @@
 
     let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false, shoes: (mode === 'DOUBLES' ? 30 : 50), bonus1: 0, bonus2: 0 };
     let lineupScorerPreset = null;
+    // Allows a court selected from Lineup to open Scorer even when the Scorer tab is hidden/disabled.
+    let lineupScorerAccess = false;
     let bScale = 1.0;
 
     let match = { active: false, step: 'TEAMS', gameNum: 1, sessionId: null, t1Name: '', t2Name: '', p1: '', p2: '', p3: '', p4: '', h1: 0, h2: 0, h3: 0, h4: 0, games: [], pitcherIdx: 0, sessionAgg: { t1: 0, t2: 0 }, currGameFrames: [], currF: { p1: null, p2: null, p3: null, p4: null }, seriesBuffer: [], fourDeadLog: {}, isPlayoff: false, selectedSlot: null };
@@ -684,6 +686,7 @@
         const close = () => { dBox.style.display = 'none'; };
         const openManual = () => {
             close();
+            lineupScorerAccess = true;
             lineupScorerPreset = null;
             match.active = false;
             if(mode === 'SINGLES') {
@@ -699,6 +702,7 @@
         };
         const openLive = () => {
             close();
+            lineupScorerAccess = true;
             scorerMode = 'LIVE';
 
             // Singles has no player-selection screen.  Start the match directly
@@ -756,6 +760,7 @@
     };
     
     window.setTab = async (t) => { 
+        if (t !== 'SCORER') lineupScorerAccess = false;
         const lockedTabs = ['MANAGE', 'HISTORY', 'NHPA'];
         if (lockedTabs.includes(t) && !isUnlocked) {
             const pinInput = await window.smPrompt("Enter System PIN:");
@@ -778,7 +783,7 @@
 
     window.toggleScorer = async () => {
         state.scorerEnabled = !state.scorerEnabled;
-        if(!state.scorerEnabled && view === 'SCORER') view = 'STANDINGS';
+        if(!state.scorerEnabled && view === 'SCORER' && !lineupScorerAccess) view = 'STANDINGS';
         await save(); render();
     };
 
@@ -2719,7 +2724,7 @@
                     ${(() => { const ps=(state.sessions||[]).filter(s=>s.mode===mode&&s.isPlayoff).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)); return ps.length ? `<div class="overflow-x-auto"><table class="w-full border-collapse text-[10px] font-bold uppercase"><thead><tr class="bg-zinc-900 text-white"><th class="p-2 text-left">Date</th><th class="p-2 text-left">Team 1</th><th class="p-2">Score</th><th class="p-2 text-left">Team 2</th><th class="p-2">Winner</th><th class="p-2">HCP</th></tr></thead><tbody>${ps.map(s=>{const g=(s.fullData||[])[0]||{};const w=s.matchWinner||(g.s1>g.s2?s.t1Name:(g.s2>g.s1?s.t2Name:'Tie'));return `<tr class="border-b border-zinc-200"><td class="p-2">${s.date}</td><td class="p-2">${s.t1Name}</td><td class="p-2 text-center font-black">${g.s1} - ${g.s2}</td><td class="p-2">${s.t2Name}</td><td class="p-2">${w}</td><td class="p-2 text-center">${g.h1||0} - ${g.h2||0}</td><td class="p-2 text-center">${g.bonus1||0} - ${g.bonus2||0}</td></tr>`}).join('')}</tbody></table></div>` : `<p class="text-center text-zinc-400 italic py-6 font-bold uppercase text-[10px]">No playoff games recorded yet.</p>`; })()}
                 </div>`;
         } else if (view === 'SCORER') {
-            if(!state.scorerEnabled) { view = 'STANDINGS'; render(); return; }
+            if(!state.scorerEnabled && !lineupScorerAccess) { view = 'STANDINGS'; render(); return; }
             
             if (scorerMode === 'MANUAL' && !match.active) {
                 const teamOpts = (state.roster[mode] || []).map(r => `<option value="${r.teamName || r.name}" ${manualEntryState.mt1 === (r.teamName || r.name) ? 'selected' : ''}>${r.teamName || r.name}</option>`).join('') + `<option value="BYE">BYE</option>`;
