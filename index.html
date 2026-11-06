@@ -264,6 +264,8 @@
     let voiceScoreRecognition = null;
     let voiceScoreListening = false;
     let voiceScoreCourt = 1;
+    let voiceScoreRestartTimer = null;
+    let voiceScoreStartPending = false;
     // Allows a court selected from Lineup to open Scorer even when the Scorer tab is hidden/disabled.
     let lineupScorerAccess = false;
     let bScale = 1.0;
@@ -771,7 +773,7 @@
     };
     
     window.setTab = async (t) => { 
-        if (t !== 'SCORER' && voiceScoreListening) { voiceScoreListening = false; try { voiceScoreRecognition && voiceScoreRecognition.stop(); } catch(e) {} }
+        if (t !== 'SCORER' && voiceScoreListening) { voiceScoreListening = false; clearTimeout(voiceScoreRestartTimer); voiceScoreStartPending = false; try { voiceScoreRecognition && voiceScoreRecognition.stop(); } catch(e) {} }
         if (t !== 'SCORER') lineupScorerAccess = false;
         const lockedTabs = ['MANAGE', 'HISTORY', 'NHPA'];
         if (lockedTabs.includes(t) && !isUnlocked) {
@@ -1049,11 +1051,29 @@
     // Singles voice scoring: require the spoken court number before accepting
     // exactly two legal shoe scores. Recognition stays alive across scorer renders.
     window.setVoiceScoreCourt = (value) => { voiceScoreCourt = Math.max(1, Math.min(99, parseInt(value,10)||1)); };
+    function startVoiceScoreRecognition() {
+        if (!voiceScoreListening || !voiceScoreRecognition || voiceScoreStartPending) return;
+        voiceScoreStartPending = true;
+        try {
+            voiceScoreRecognition.start();
+        } catch (e) {
+            // Android Chrome can fire onend before the recognition service is
+            // fully released. Retry shortly instead of requiring another tap.
+            voiceScoreStartPending = false;
+            if (voiceScoreListening) {
+                clearTimeout(voiceScoreRestartTimer);
+                voiceScoreRestartTimer = setTimeout(startVoiceScoreRecognition, 500);
+            }
+        }
+    }
+
     window.toggleVoiceScoring = () => {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return window.smAlert('Voice scoring is not supported by this browser. Try Chrome on Android and allow microphone access.');
         if (voiceScoreListening) {
             voiceScoreListening = false;
+            clearTimeout(voiceScoreRestartTimer);
+            voiceScoreStartPending = false;
             try { voiceScoreRecognition && voiceScoreRecognition.stop(); } catch(e) {}
             render();
             return;
@@ -1064,6 +1084,7 @@
             voiceScoreRecognition.continuous = true;
             voiceScoreRecognition.interimResults = false;
             voiceScoreRecognition.maxAlternatives = 3;
+            voiceScoreRecognition.onstart = () => { voiceScoreStartPending = false; };
             voiceScoreRecognition.onresult = (event) => {
                 for (let i=event.resultIndex; i<event.results.length; i++) {
                     if (!event.results[i].isFinal) continue;
@@ -1074,16 +1095,24 @@
             voiceScoreRecognition.onerror = (event) => {
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     voiceScoreListening = false;
+                    clearTimeout(voiceScoreRestartTimer);
+                    voiceScoreStartPending = false;
                     window.smAlert('Microphone access was denied. Allow microphone access for this app/browser.');
                     render();
                 }
+                // no-speech and intermittent network errors are recoverable;
+                // onend below will restart recognition automatically.
             };
             voiceScoreRecognition.onend = () => {
-                if (voiceScoreListening) { try { voiceScoreRecognition.start(); } catch(e) {} }
+                voiceScoreStartPending = false;
+                if (voiceScoreListening) {
+                    clearTimeout(voiceScoreRestartTimer);
+                    voiceScoreRestartTimer = setTimeout(startVoiceScoreRecognition, 350);
+                }
             };
         }
         voiceScoreListening = true;
-        try { voiceScoreRecognition.start(); } catch(e) { voiceScoreListening = false; return window.smAlert('Could not start voice scoring. Check microphone permission and try again.'); }
+        startVoiceScoreRecognition();
         render();
     };
     window.processVoiceScore = (spoken) => {
