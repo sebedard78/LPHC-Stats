@@ -261,6 +261,9 @@
 
     let manualEntryState = { mt1: '', mt2: '', mp1: '', mp2: '', mp3: '', mp4: '', mp5: '', mp6: '', mh1: 0, mh2: 0, mh3: 0, mh4: 0, mh5: 0, mh6: 0, isPlayoff: false, shoes: (mode === 'DOUBLES' ? 30 : 50), bonus1: 0, bonus2: 0 };
     let lineupScorerPreset = null;
+    let voiceScoreRecognition = null;
+    let voiceScoreListening = false;
+    let voiceScoreCourt = 1;
     // Allows a court selected from Lineup to open Scorer even when the Scorer tab is hidden/disabled.
     let lineupScorerAccess = false;
     let bScale = 1.0;
@@ -646,6 +649,7 @@
     // from the court's matchup text and carried into either Manual Entry or
     // Live Scorer so the user does not have to select them again.
     window.openLineupCourt = (court, matchup) => {
+        voiceScoreCourt = Math.max(1, parseInt(court,10) || 1);
         // Lineup data may be stored either as `Team 1 vs Team 2` or as two
         // separate lines.  Preserve the line breaks long enough to correctly
         // identify the two teams instead of flattening them into one name.
@@ -767,6 +771,7 @@
     };
     
     window.setTab = async (t) => { 
+        if (t !== 'SCORER' && voiceScoreListening) { voiceScoreListening = false; try { voiceScoreRecognition && voiceScoreRecognition.stop(); } catch(e) {} }
         if (t !== 'SCORER') lineupScorerAccess = false;
         const lockedTabs = ['MANAGE', 'HISTORY', 'NHPA'];
         if (lockedTabs.includes(t) && !isUnlocked) {
@@ -1038,6 +1043,66 @@
         if (match[slot] === 'BYE' || match[slot] === 'DUMMY') return;
         if (match.currF[slot] !== null) return;
         match.selectedSlot = slot;
+        render();
+    };
+
+    // Singles voice scoring: require the spoken court number before accepting
+    // exactly two legal shoe scores. Recognition stays alive across scorer renders.
+    window.setVoiceScoreCourt = (value) => { voiceScoreCourt = Math.max(1, Math.min(99, parseInt(value,10)||1)); };
+    window.toggleVoiceScoring = () => {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return window.smAlert('Voice scoring is not supported by this browser. Try Chrome on Android and allow microphone access.');
+        if (voiceScoreListening) {
+            voiceScoreListening = false;
+            try { voiceScoreRecognition && voiceScoreRecognition.stop(); } catch(e) {}
+            render();
+            return;
+        }
+        if (!voiceScoreRecognition) {
+            voiceScoreRecognition = new SR();
+            voiceScoreRecognition.lang = 'en-US';
+            voiceScoreRecognition.continuous = true;
+            voiceScoreRecognition.interimResults = false;
+            voiceScoreRecognition.maxAlternatives = 3;
+            voiceScoreRecognition.onresult = (event) => {
+                for (let i=event.resultIndex; i<event.results.length; i++) {
+                    if (!event.results[i].isFinal) continue;
+                    const transcript = Array.from(event.results[i]).map(a=>a.transcript).join(' ').toLowerCase();
+                    window.processVoiceScore(transcript);
+                }
+            };
+            voiceScoreRecognition.onerror = (event) => {
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    voiceScoreListening = false;
+                    window.smAlert('Microphone access was denied. Allow microphone access for this app/browser.');
+                    render();
+                }
+            };
+            voiceScoreRecognition.onend = () => {
+                if (voiceScoreListening) { try { voiceScoreRecognition.start(); } catch(e) {} }
+            };
+        }
+        voiceScoreListening = true;
+        try { voiceScoreRecognition.start(); } catch(e) { voiceScoreListening = false; return window.smAlert('Could not start voice scoring. Check microphone permission and try again.'); }
+        render();
+    };
+    window.processVoiceScore = (spoken) => {
+        if (!voiceScoreListening || mode !== 'SINGLES' || !match.active || match.step !== 'LIVE') return;
+        const words = {zero:0,oh:0,one:1,two:2,three:3,four:4,six:6};
+        const tokens = String(spoken).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
+        const nums = tokens.map(t => /^\d+$/.test(t) ? Number(t) : words[t]).filter(n => n !== undefined);
+        const courtWord = tokens[0] === 'court' || tokens[0] === 'caught';
+        if (!courtWord || nums.length !== 3) return;
+        const [spokenCourt, leftScore, rightScore] = nums;
+        if (spokenCourt !== voiceScoreCourt) return;
+        const legal = [0,1,2,3,4,6];
+        if (!legal.includes(leftScore) || !legal.includes(rightScore)) return;
+        if (match.currF.p1 !== null || match.currF.p3 !== null) return;
+        match.currF.p1 = leftScore;
+        match.currF.p3 = rightScore;
+        match.selectedSlot = null;
+        finalizeFrame();
+        updateActiveMatchRef();
         render();
     };
 
@@ -2989,6 +3054,7 @@
                             <button onclick="window.openExitModal()" class="bg-red-600 text-white px-8 font-black text-[10px] uppercase rounded">Exit</button>
                         </div>
                         <div class="btn-score-grid">${[0,1,2,3,4,6].map(s=>`<button onclick="window.addScore(${s})" class="btn-score"><span class="num ${s>=3?'text-sky-500':''}" style="font-size:1.8rem;">${s}</span><span class="sym">${getSym(s)}</span></button>`).join('')}</div>
+                        ${mode==='SINGLES' ? `<div class="mt-2 mb-2 p-3 border-2 border-sky-300 bg-sky-50 text-left"><div class="flex items-center justify-between gap-2"><div><p class="text-[11px] font-black uppercase text-sky-800">Voice Score Entry</p><p class="text-[9px] font-bold text-zinc-600">Say: “Court ${voiceScoreCourt}, 6, 2”</p></div><button onclick="window.toggleVoiceScoring()" class="px-4 py-3 font-black uppercase text-[10px] ${voiceScoreListening?'bg-red-600 text-white':'bg-sky-600 text-white'}">${voiceScoreListening?'Stop Listening':'Start Listening'}</button></div><label class="text-[9px] font-black uppercase text-zinc-600 mt-2 block">This court number must be spoken first</label><input type="number" min="1" max="99" value="${voiceScoreCourt}" onchange="window.setVoiceScoreCourt(this.value)" class="mt-1 w-20 p-2 border font-black text-center"><p class="text-[9px] text-zinc-500 mt-2">Only matching court calls with two valid scores (0, 1, 2, 3, 4 or 6) are entered. Voice scoring works best in Chrome with microphone permission.</p></div>` : ''}
                         <table class="micro-table border-b border-sky-500">
                              <thead>${mode==='SINGLES'?'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-t">SC</th></tr>':'<tr><th class="c-sh">SH</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t">T1</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-r">R</th><th class="c-p">P</th><th class="c-s">S</th><th class="c-t2">T2</th>'}</thead>
                         </table>
